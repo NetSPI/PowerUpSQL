@@ -23,7 +23,9 @@ Below are the functions included in this module.  Many are complete, but I've al
 
 ### Discovery Functions 
 
-These are functions that can be used for enumerating SQL Servers instances that can then be targeted by other functions.
+These functions can be used for enumerating SQL Server instances.  Discovered instances can then be piped into other PowerUpSQL functions. Below are a few examples.
+
+Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
 |Function Name|Description |Status    |
 |:--------------------------------|:-----------|:---------|

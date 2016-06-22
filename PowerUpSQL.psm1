@@ -627,15 +627,6 @@ Function  Get-SQLQueryThreaded {
 #region          COMMON FUNCTIONS
 #
 #########################################################################
-#
-#  Roadmap Functions:
-#  ------------------
-#  Get-SQLProxyAccount
-#  Get-SQLTempObject
-#  Get-SQLCachePlan
-#  Get-SQLQueryHistory
-#  Get-SQLHiddenSystemObjects
-
 
 # ----------------------------------
 #  Invoke-SQLOSCmd
@@ -3901,41 +3892,6 @@ Function  Get-SQLStoredProcure {
 #region          UTILITY FUNCTIONS
 #
 #########################################################################
-#  
-#  Roadmap Functions:
-#  ------------------
-#  Get-SQLDatabaseOrphanUser
-#  Get-SQLDatabaseUser- add fuzzing option 
-#  Get-SQLDecryptedStoreProcedure
-#  Get-SQLDomainAccount
-#  Get-SQLDomainComputer
-#  Get-SQLDomainGroup
-#  Get-SQLDownloadFile
-#  Get-SQLDownloadFileAdHocQuery
-#  Get-SQLDownloadFileAssembly
-#  Get-SQLDownloadFileBulkInsert
-#  Get-SQLDownloadFileServerLink
-#  Get-SQLDownloadFileXpCmdshell
-#  Get-SQLInstalledSoftware
-#  Get-SQLSampleDataByColumnName
-#  Get-SQLServerLogin - add fuzzing option
-#  Get-SQLUploadFile
-#  Get-SQLUploadFileAdHocQuery
-#  Get-SQLUploadFileAgent
-#  Get-SQLUploadFileAssembly
-#  Get-SQLUploadFileServerLink
-#  Get-SQLUploadFileXpCmdshell
-#  Invoke-SqlCmdExec
-#  Invoke-SqlCmdExecAdHoQueryMdb
-#  Invoke-SqlCmdExecAgentActiveX
-#  Invoke-SqlCmdExecAgentAnalysis
-#  Invoke-SqlCmdExecAgentCmdExec
-#  Invoke-SqlCmdExecAgentPs
-#  Invoke-SqlCmdExecAgentVbscript
-#  Invoke-SqlCmdExecAssembly
-#  Invoke-SqlCmdExecServerLinkMdb
-#  Invoke-SqlCmdExecSsisExecuteProcessTask
-#  Invoke-SqlCmdExecXpCmdshell
 
 # ----------------------------------
 #  Get-SQLFuzzObjectName
@@ -5255,16 +5211,6 @@ Function  Get-SQLInstanceFile {
 #
 #########################################################################
 #
-#  Roadmap Functions:
-#  ------------------
-#  Get-SQLRecoverPwCredential
-#  Get-SQLRecoverPwServerLink
-#  Get-SQLRecoverPWProxyAccount
-#  Get-SQLRecoverPwAutoLogon
-#  Get-SQLRecoverLoginHash
-#  Get-SQLRecoverMasterKey
-#  Get-SQLRecoverMachineKey
-#
 #endregion
 
 #########################################################################
@@ -5272,17 +5218,6 @@ Function  Get-SQLInstanceFile {
 #region          DATA EXFILTRATION FUNCTIONS
 #
 #########################################################################
-#
-#  Roadmap Functions:
-#  ------------------
-#  Get-SQLExfilHttp
-#  Get-SQLExfilHttps
-#  Get-SQLExfilDns
-#  Get-SQLExfilUnc
-#  Get-SQLExfilSmtp
-#  Get-SQLExfilFtp
-#  Get-SQLExfilServerLink
-#  Get-SQLExfilAdHocQuery
 #
 #endregion
 
@@ -5292,22 +5227,6 @@ Function  Get-SQLInstanceFile {
 #
 #########################################################################
 #
-#  Roadmap Functions:
-#  ------------------
-#  Get-SQLPersistAssembly
-#  Get-SQLPersistSp
-#  Get-SQLPersistSpStartup
-#  Get-SQLPersistTriggerDml
-#  Get-SQLPersistTriggerDdl
-#  Get-SQLPersistTriggerLogon
-#  Get-SQLPersistView
-#  Get-SQLPersistInternalObject
-#  Get-SQLPersistAgentJob
-#  Get-SQLPersistXstatus
-#  Get-SQLPersistSkeletonKey
-#  Get-SQLPersistFullPrivLogin
-#  Get-SQLPersistImpersonateSysadmin
-#
 #endregion
 
 #########################################################################
@@ -5315,42 +5234,6 @@ Function  Get-SQLInstanceFile {
 #region          PRIVILEGE ESCALATION FUNCTIONS
 #
 #########################################################################
-#
-#  Roadmap Functions:
-#  ------------------
-#  Invoke-SQLEscalate-DbOwner
-#  Invoke-SQLEscalate-AgentJob 
-#  Invoke-SQLEscalate-SQLi-ExecuteAs
-#  Invoke-SQLEscalate-SQLi-SignedSp
-#  Invoke-SQLEscalate-CreateStartUpSP
-#  Invoke-SQLEscalate-CrawlServerLink
-#  Invoke-SQLEscalate-CreateAssembly
-#  Invoke-SQLEscalate-CreateTriggerDDL
-#  Invoke-SQLEscalate-CreateTriggerLOGON
-#  Invoke-SQLEscalate-CreateTriggerDML
-#  Invoke-SQLEscalate-StealServiceToken
-#  Invoke-SQLEscalate-ControlServer
-#  Invoke-SQLEscalate-DDLAdmin
-#  Invoke-SqlInjectUncPath
-#  Create-SqlStoredProcedure - db_owner, db_ddladmin, db_securityadmin, or db_accessadmin
-#  Invoke-SqlXpCmdshell
-#  Create-SqlStoredProcedureStartUp
-#  Create-SqlAgentJob
-#  --
-#  Create-SqlSysadmin
-#  Invoke-Escalate-CrawlServerLinks
-#  Invoke-Escalate-CrawlOwnershipChain
-#  Create-SqlTriggerDdl
-#  Create-SqlTriggerDml
-#  Invoke-SqlInjectSqliSp
-#  Invoke-Escalate-PrivAlterServerLogin
-#  Invoke-Escalate-PrivAlterServerRole
-#  Invoke-Escalate-PrivExternalAssembly
-#  Invoke-Escalate-PrivAdministerBulkOps
-#  Invoke-Escalate-PrivControlServer
-#  Invoke-Escalate-DictionaryAttackOnline
-#  Invoke-Escalate-DictionaryAttackOffline
-#  Impersonate-SqlDatabaseUser
 
 # ---------------------------------------
 # Template Function

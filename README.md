@@ -22,6 +22,7 @@ Script Information
 Below are the functions included in this module.  Many are complete, but I've also outlined the intended roadmap.
 
 ### Discovery Functions 
+These are functions that can be used for enumerating SQL Servers instances that can then be targeted by other functions.
 |Function Name|Description |Status    |
 |:--------------------------------|:-----------|:---------|
 |Get-SQLInstanceFile|Returns SQL Server instances from a file.  One per line. |Complete|

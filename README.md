@@ -39,6 +39,7 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 These functions are used to test connections, execute SQL Server queries, and execute OS commands.  All other functions use these core functions.  However, they can also be executed independently. 
 
 Example: Get-SQLInstanceDomain -Verbose | Get-SQLConnectionTestThreaded -Verbose -Threads 20 
+
 Example: Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -Command "whoami"
 
 |Function Name                 |Description |Status    |
@@ -54,6 +55,7 @@ Example: Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -
 These functions are used for common information gathering tasks.  Similar to core functions, the common functions can be executed as standalone functions, but are also used other functions in the PowerUpSQL module.
 
 Example: Get-SQLInstanceLocal | Get-SQLDatabase -Verbose -NoDefaults
+
 Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC 
 
 |Function Name                 |Description |Status    |
@@ -97,6 +99,7 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 These functions are used for obtaining sysadmin privileges from various levels of access in SQL Server.  Invoke-PowerUpSQL can be used to run all privileges escalation functions against provided SQL Server instances.
 
 Example: Get-SQLInstanceLocal | Invoke-SQLEscalate-ImpersonateLogin -Verbose
+
 Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 
 |Function Name                 |Description |Status    |

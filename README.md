@@ -21,45 +21,51 @@ Script Information
 
 Below are the functions included in this module.  Many are complete, but I've also outlined the intended roadmap.
 
-### Discovery Functions:  
-	Get-SQLInstanceFile			-   [Complete] 	- Returns SQL Server instances from a file.  One per line.
-	Get-SQLInstanceLocal		-   [Complete] 	- Returns SQL Server instances from the local system based on a registry search.
-	Get-SQLInstanceDomain		-   [Complete] 	- Returns SQL Server instances from LDAP query results. Based on SPNs and UDP scanning of management servers.
-	Get-SQLInstanceScanUDP		-   [Complete] 	- Returns SQL Server instances from UDP scan results.
+### Discovery Functions 
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Get-SQLInstanceFile           |Returns SQL Server instances from a file.  One per line. |Complete|
+|Get-SQLInstanceLocal          |Returns SQL Server instances from the local system based on a registry search.|Complete|
+|Get-SQLInstanceDomain	       |Returns SQL Server instances from LDAP query results. Search is based on MSSQL SPNs and UDP scanning of management servers. Will default to current user's domain, but domain,user,and password can be provided for alternative domains.|Complete|
+|Get-SQLInstanceScanUDP	       |Returns SQL Server instances from UDP scan results.|Complete|
 
-### Core Functions:
-	Get-SQLConnectionTest			-   [Complete] 	- Tests if the current Windows account or provided SQL Server login can log into an SQL Server.
-	Get-SQLConnectionTestThreaded	-   [Complete] 	- Tests if the current Windows account or provided SQL Server login can log into an SQL Server and supports threading.
-	Get-SQLQuery					-   [Complete] 	- Executes a query on target SQL servers.
-	Get-SQLQueryThreaded			-   [Complete] 	- Executes a query on target SQL servers and supports threading.
-	Invoke-SQLOSCmd					-   [Complete] 	- Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.
+### Core Functions
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Get-SQLConnectionTest|Tests if the current Windows account or provided SQL Server login can log into an SQL Server.|Complete|
+|Get-SQLConnectionTestThreaded|Tests if the current Windows account or provided SQL Server login can log into an SQL Server and supports threading.|Complete|
+|Get-SQLQuery|Executes a query on target SQL servers.|Complete|
+|Get-SQLQueryThreaded|Executes a query on target SQL servers and supports threading.|Complete|
+|Invoke-SQLOSCmd|Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.|Complete|
 	
-### Common Functions:	
-	Get-SQLAuditDatabaseSpec	-   [Complete] 	- Returns Audit database specifications from target SQL Servers.
-	Get-SQLAuditServerSpec		-   [Complete] 	- Returns Audit server specifications from target SQL Servers.
-	Get-SQLColumn				-   [Complete] 	- Returns column information from target SQL Servers. Supports keyword search.
-	Get-SQLColumnSampleData		-   [Complete] 	- Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.
-	Get-SQLDatabase				-   [Complete] 	- Returns database information from target SQL Servers.
-	Get-SQLDatabasePriv			-   [Complete] 	- Returns database user privilege information from target SQL Servers.
-	Get-SQLDatabaseRole			-   [Complete]	- Returns database role information from target SQL Servers.
-	Get-SQLDatabaseRoleMember	-   [Complete]	- Returns database role member information from target SQL Servers.
-	Get-SQLDatabaseSchema		-   [Complete] 	- Returns schema information from target SQL Servers. 			
-	Get-SQLDatabaseUser			-   [Complete] 	- Returns database user information from target SQL Servers.
-	Get-SQLServerCredential		-   [Complete] 	- Returns credentials from target SQL Servers.
-	Get-SQLServerInfo			-   [Complete] 	- Returns basic server and user information from target SQL Servers.
-	Get-SQLServerLink			-   [Complete] 	- Returns link servers from target SQL Servers. 
-	Get-SQLServerLogin			-   [Complete] 	- Returns logins from target SQL Servers.
-	Get-SQLServerPriv			-   [Complete] 	- Returns SQL Server login privilege information from target SQL Servers.
-	Get-SQLServerRole			-   [Complete] 	- Returns SQL Server role information from target SQL Servers.
-	Get-SQLServerRoleMember		-   [Complete] 	- Returns SQL Server role member information from target SQL Servers.
-	Get-SQLServiceAccount		-   [Complete] 	- Returns a list of local SQL Server services.
-	Get-SQLSession				-   [Complete] 	- Returns active sessions from target SQL Servers.
-	Get-SQLStoredProcure		-   [Complete] 	- Returns stored procedures from target SQL Servers.	
-	Get-SQLSysadminCheck		-   [Complete] 	- Check if login is has sysadmin privilege on the target SQL Servers. 
-	Get-SQLTable				-   [Complete] 	- Returns table information from target SQL Servers.
-	Get-SQLTriggerDdl			-   [Complete] 	- Returns DDL trigger information from target SQL Servers.  This includes logon triggers.
-	Get-SQLTriggerDml			-   [Complete] 	- Returns DML trigger information from target SQL Servers.
-	Get-SQLView					-   [Complete] 	- Returns view information from target SQL Servers.
+### Common Functions
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Get-SQLAuditDatabaseSpec|Returns Audit database specifications from target SQL Servers.|Complete|
+|Get-SQLAuditServerSpec|Returns Audit server specifications from target SQL Servers.|Complete|
+|Get-SQLColumn|Returns column information from target SQL Servers. Supports keyword search.|Complete|
+|Get-SQLColumnSampleData|Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.|Complete|
+|Get-SQLDatabase|Returns database information from target SQL Servers.|Complete|
+|Get-SQLDatabasePriv|Returns database user privilege information from target SQL Servers.|Complete|
+|Get-SQLDatabaseRole|Returns database role information from target SQL Servers.|Complete|
+|Get-SQLDatabaseRoleMember|Returns database role member information from target SQL Servers.|Complete|
+|Get-SQLDatabaseSchema|Returns schema information from target SQL Servers. |Complete|	
+|Get-SQLDatabaseUser|Returns database user information from target SQL Servers.|Complete|
+|Get-SQLServerCredential|Returns credentials from target SQL Servers.|Complete|
+|Get-SQLServerInfo|Returns basic server and user information from target SQL Servers.|Complete|
+|Get-SQLServerLink|Returns link servers from target SQL Servers.|Complete|
+|Get-SQLServerLogin|Returns logins from target SQL Servers.|Complete|
+|Get-SQLServerPriv|Returns SQL Server login privilege information from target SQL Servers.|Complete|
+|Get-SQLServerRole|Returns SQL Server role information from target SQL Servers.|Complete|
+|Get-SQLServerRoleMember|Returns SQL Server role member information from target SQL Servers.|Complete|
+|Get-SQLServiceAccount|Returns a list of local SQL Server services.|Complete|
+|Get-SQLSession|Returns active sessions from target SQL Servers.|Complete|
+|Get-SQLStoredProcure|Returns stored procedures from target SQL Servers.|Complete|	
+|Get-SQLSysadminCheck|Check if login is has sysadmin privilege on the target SQL Servers.|Complete|
+|Get-SQLTable|Returns table information from target SQL Servers.|Complete|
+|Get-SQLTriggerDdl|Returns DDL trigger information from target SQL Servers.  This includes logon triggers.|Complete|
+|Get-SQLTriggerDml|Returns DML trigger information from target SQL Servers.|Complete|
+|Get-SQLView|Returns view information from target SQL Servers.|Complete|
 
 	Roadmap:
 	
@@ -69,12 +75,14 @@ Below are the functions included in this module.  Many are complete, but I've al
 	Get-SQLQueryHistory			-   [Roadmap] 	- Returns recent query history from target SQL Servers.	
 	Get-SQLHiddenSystemObject	-   [Roadmap] 	- Returns hidden system objects from target SQL Servers.	 
 	
-### Privilege Escalation Functions:
-	Invoke-SQLEscalate-CreateProcedure      -   [Complete] 	- Get sysadmin using create procedure privileges.
-	Invoke-SQLEscalate-DbOwnerRole          -   [Complete] 	- Get sysadmin using dbowner privileges.
-	Invoke-SQLEscalate-ImpersonateLogin     -   [Complete] 	- Get sysadmin using impersonate login privileges.
-	Invoke-SQLEscalate-SampleDataByColumn   -   [Complete] 	- Find password and potentially sensitive data.  Support column name keyword search and custom data sample size.
-	Invoke-PowerUpSQL                       -   [Complete] 	- Run all privilege escalation checks.  There is an options to auto-escalation to sysadmin.
+### Privilege Escalation Functions
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Invoke-SQLEscalate-CreateProcedure|Get sysadmin using create procedure privileges.|Complete|
+|Invoke-SQLEscalate-DbOwnerRole|Get sysadmin using dbowner privileges.|Complete|
+|Invoke-SQLEscalate-ImpersonateLogin|Get sysadmin using impersonate login privileges.|Complete|
+|Invoke-SQLEscalate-SampleDataByColumn|Find password and potentially sensitive data.  Support column name keyword search and custom data sample size.|Complete|
+|Invoke-PowerUpSQL|Run all privilege escalation checks.  There is an options to auto-escalation to sysadmin.|Complete|
 
 	Roadmap:
 	
@@ -108,7 +116,7 @@ Below are the functions included in this module.  Many are complete, but I've al
 	Invoke-SQLEscalate-ImpersonateDatabaseUser
 	Invoke-SQLOSAdmintoSysadmin - https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/Invoke-SqlServerServiceImpersonation-Cmd.ps1
 
-### Persistence Functions: 
+### Persistence Functions
 
 	Roadmap:
 	
@@ -126,7 +134,7 @@ Below are the functions included in this module.  Many are complete, but I've al
 	Get-SQLPersistFullPrivLogin					
 	Get-SQLPersistImpersonateSysadmin	
 
-### Password Recovery Functions:
+### Password Recovery Functions
 	
 	Roadmap:
 	
@@ -138,7 +146,7 @@ Below are the functions included in this module.  Many are complete, but I've al
 	Get-SQLRecoverMasterKey						 
 	Get-SQLRecoverMachineKey		
 
-### Data Exfiltration Functions:
+### Data Exfiltration Functions
 
 	Roadmap:
 	
@@ -151,17 +159,19 @@ Below are the functions included in this module.  Many are complete, but I've al
 	Get-SQLExfilServerLink						  
 	Get-SQLExfilAdHocQuery					
 	
-### Utility Functions:
-	Get-SQLConnectionObject			-   [Complete] 	- Creates a object for connecting to SQL Server.
-	Get-SQLFuzzObjectName			-   [Complete] 	- Enumerates objects based on object id using OBJECT_NAME() and only the Public role.
-	Get-SQLFuzzDatabaseName			-   [Complete] 	- Enumerates databases based on database id using DB_NAME() and only the Public role.
-	Get-SQLFuzzServerLogin			-   [Complete] 	- Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.
-	Get-SQLFuzzDomainAccount		-   [Complete] 	- Enumerates domain accounts based on domain RID using SUSER_SNAME() and only the Public role.
-	Get-ComputerNameFromInstance	-   [Complete] 	- Parses computer name form a provided instance.
-	Get-SQLServiceLocal				-   [Complete] 	- Returns local SQL Server services.
-	Create-SQLFile-XPDLL			-   [Complete] 	- Used to create DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.
-	Get-DomainSpn					-   [Complete] 	- Returns a list of SPNs for the target domain. Supports authentication from non domain systems. (consider moving to utility)
-	Get-DomainObject				-   [Complete] 	- Used to query domain controllers via LDAP.  Based on @Harmj0y's function to query LDAP.		 (consider moving to utility)
+### Utility Functions
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Get-SQLConnectionObject | Creates a object for connecting to SQL Server.|Complete|
+|Get-SQLFuzzObjectName | Enumerates objects based on object id using OBJECT_NAME() and only the Public role.|Complete|	
+|Get-SQLFuzzDatabaseName | Enumerates databases based on database id using DB_NAME() and only the Public role.|Complete|
+|Get-SQLFuzzServerLogin | Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.|Complete|
+|Get-SQLFuzzDomainAccount | Enumerates domain accounts based on domain RID using SUSER_SNAME() and only the Public role.|Complete|
+|Get-ComputerNameFromInstance | Parses computer name form a provided instance.|Complete|
+|Get-SQLServiceLocal | Returns local SQL Server services.|Complete|
+|Create-SQLFile-XPDLL | Used to create DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.|Complete|
+|Get-DomainSpn | Returns a list of SPNs for the target domain. Supports authentication from non domain systems.|Complete|
+|Get-DomainObject | Used to query domain controllers via LDAP.  Based on @Harmj0y's function to query LDAP.|Complete|
 	
 	Roadmap:
 
@@ -192,6 +202,8 @@ Below are the functions included in this module.  Many are complete, but I've al
 	Invoke-SqlOSCmdServerLinkMd			
 	Invoke-SqlOSCmdSsisExecuteProcessTask		
 
-### Third Party Functions:
-	Invoke-Parallel					-   [Complete] 	- Modified version of RamblingCookieMonster's function that supports importing functions from the current session.
-	Test-IsLuhnValid				-   [Complete] 	- Valdidate a number based on the Luhn Algorithm.  Function written by ØYVIND KALLSTAD.
+### Third Party Functions
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Invoke-Parallel|Modified version of RamblingCookieMonster's function that supports importing functions from the current session.|Complete|
+|Test-IsLuhnValid|Valdidate a number based on the Luhn Algorithm.  Function written by ØYVIND KALLSTAD.|Complete|

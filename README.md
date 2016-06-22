@@ -88,11 +88,11 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 
 	Roadmap:
 	
-	Get-SQLProxyAccount			-   [Roadmap]	- Returns proxy accounts from target SQL Servers.
-	Get-SQLTempObject			-   [Roadmap] 	- Returns temp objects from target SQL Servers.	
-	Get-SQLCachePlan			-   [Roadmap] 	- Returns cache plans from target SQL Servers.	
-	Get-SQLQueryHistory			-   [Roadmap] 	- Returns recent query history from target SQL Servers.	
-	Get-SQLHiddenSystemObject	-   [Roadmap] 	- Returns hidden system objects from target SQL Servers.	 
+	Get-SQLProxyAccount - Returns proxy accounts from target SQL Servers.
+	Get-SQLTempObject - Returns temp objects from target SQL Servers.	
+	Get-SQLCachePlan - Returns cache plans from target SQL Servers.	
+	Get-SQLQueryHistory - Returns recent query history from target SQL Servers.	
+	Get-SQLHiddenSystemObject - Returns hidden system objects from target SQL Servers.	 
 	
 ### Privilege Escalation Functions
 

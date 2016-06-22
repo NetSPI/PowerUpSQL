@@ -824,14 +824,14 @@ Function  Invoke-SQLOSCmd {
                 if($DisableXpCmdshell -eq 1){
                     
                     Write-Verbose "$Instance : Disabling xp_cmdshell"
-                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'xp_cmdshell',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'xp_cmdshell',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
                 }
 
                 # Restore Show Advanced Options state if needed                
                 if($DisableShowAdvancedOptions -eq 1){
                     
                     Write-Verbose "$Instance : Disabling Show Advanced Options"
-                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
                 }
 
                 # Close connection

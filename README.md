@@ -23,7 +23,7 @@ Script Information
 * Required Dependencies: None
 * Optional Dependencies: None
 
-Below are the functions included in this module.  Many are complete, but I've also outlined the intended roadmap.
+Below are the functions included in this module.  Many of them are complete, but I've also outlined the intended evelopment roadmap. High levle roadmap Goals include adding roadmapped modules, adding multi-threading to all common functions, and  testing against SQL Server version 2000 to 2014.
 
 ### Discovery Functions 
 

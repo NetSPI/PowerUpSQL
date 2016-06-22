@@ -35,7 +35,7 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 |:--------------------------------|:-----------|:---------|
 |Get-SQLInstanceFile|Returns SQL Server instances from a file.  One per line. |Complete|
 |Get-SQLInstanceLocal|Returns SQL Server instances from the local system based on a registry search.|Complete|
-|Get-SQLInstanceDomain|Returns SQL Server instances from LDAP query results. Search is based on MSSQL SPNs and UDP scanning of management servers. Will default to current user's domain, but domain,user,and password can be provided for alternative domains.|Complete|
+|Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|Complete|
 |Get-SQLInstanceScanUDP|Returns SQL Server instances from UDP scan results.|Complete|
 
 ### Core Functions

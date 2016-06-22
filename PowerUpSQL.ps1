@@ -4800,7 +4800,86 @@ function Get-DomainObject
 # -------------------------------------------
 # Function:  Get-SQLInstanceDomain
 # -------------------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLInstanceDomain {
+<#
+    .SYNOPSIS
+        Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  
+        The function will default to the current user's domain and logon server, but an alternative domain controller can be provided.
+        UDP scanning of management servers is optional.
+    .PARAMETER Username
+        Domain user to authenticate with domain\user.
+    .PARAMETER Password
+        Domain password to authenticate with domain\user.
+    .PARAMETER Credential
+        Credentials to use when connecting to a Domain Controller.
+    .PARAMETER DomainController
+        Domain controller for Domain and Site that you want to query against.  Only used when username/password or credential is provided.
+    .PARAMETER ComputerName
+        Domain computer name to filter for.
+    .PARAMETER DomainAccount
+        Domain account to filter for.
+    .PARAMETER CheckMgmt
+        Performs UDP scan of servers with registered MSServerClusterMgmtAPI SPNs to help find additional SQL Server instances.
+    .PARAMETER UDPTimeOut
+        Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain -Verbose
+        VERBOSE: Grabbing SQL Server SPNs from domain...
+        VERBOSE: Getting domain SPNs...
+        VERBOSE: Parsing SQL Server instances from SPNs...
+        VERBOSE: 35 instances were found.
+
+        ComputerName     : SQLServer1.domain.com
+        Instance         : SQLServer1.domain.com
+        DomainAccountSid : 1500000521000123456712921821222049996811922123456
+        DomainAccount    : SQLServer1$
+        DomainAccountCn  : SQLServer1
+        Service          : MSSQLSvc
+        Spn              : MSSQLSvc/SQLServer1.domain.com
+        LastLogon        : 6/22/2016 9:00 AM
+        [TRUNCATED]
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain -Verbose -CheckMgmt 
+        PS C:\> Get-SQLInstanceDomain -Verbose
+        VERBOSE: Grabbing SQL Server SPNs from domain...
+        VERBOSE: Getting domain SPNs...
+        VERBOSE: Parsing SQL Server instances from SPNs...
+        VERBOSE: 35 instances were found.
+        VERBOSE: Getting domain SPNs...
+        VERBOSE: 10 SPNs found on servers that matched search criteria.
+        VERBOSE: Performing a UDP scan of management servers to obtain managed SQL Server instances...
+        VERBOSE:  - MServer1.domain.com - UDP Scan Start.
+        VERBOSE:  - MServer1.domain.com - UDP Scan Complete.
+
+        ComputerName     : SQLServer1.domain.com
+        Instance         : SQLServer1.domain.com
+        DomainAccountSid : 1500000521000123456712921821222049996811922123456
+        DomainAccount    : SQLServer1$
+        DomainAccountCn  : SQLServer1
+        Service          : MSSQLSvc
+        Spn              : MSSQLSvc/SQLServer1.domain.com
+        LastLogon        : 6/22/2016 9:00 AM
+        [TRUNCATED]        
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain -DomainController 10.10.10.1 -Username domain\user -Password SecretPassword123!
+        VERBOSE: Grabbing SQL Server SPNs from domain...
+        VERBOSE: Getting domain SPNs...
+        VERBOSE: Parsing SQL Server instances from SPNs...
+        VERBOSE: 35 instances were found.
+
+        ComputerName     : SQLServer1.domain.com
+        Instance         : SQLServer1.domain.com
+        DomainAccountSid : 1500000521000123456712921821222049996811922123456
+        DomainAccount    : SQLServer1$
+        DomainAccountCn  : SQLServer1
+        Service          : MSSQLSvc
+        Spn              : MSSQLSvc/SQLServer1.domain.com
+        LastLogon        : 6/22/2016 9:00 AM
+        [TRUNCATED]
+
+                
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -4933,7 +5012,39 @@ Function  Get-SQLInstanceDomain {
 # -------------------------------------------
 # Function:  Get-SQLInstanceLocal
 # -------------------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLInstanceLocal {
+<#
+    .SYNOPSIS
+        Returns a list of the SQL Server instances found in the Windows registry for the local system.
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal
+        
+        ComputerName       : Computer1
+        Instance           : Computer1\SQLEXPRESS
+        ServiceDisplayName : SQL Server (SQLEXPRESS)
+        ServiceName        : MSSQL$SQLEXPRESS
+        ServicePath        : "C:\Program Files\Microsoft SQL Server\MSSQL12.SQLEXPRESS\MSSQL\Binn\sqlservr.exe" -sSQLEXPRESS
+        ServiceAccount     : NT Service\MSSQL$SQLEXPRESS
+        State              : Running
+
+        ComputerName       : Computer1
+        Instance           : Computer1\STANDARDDEV2014
+        ServiceDisplayName : SQL Server (STANDARDDEV2014)
+        ServiceName        : MSSQL$STANDARDDEV2014
+        ServicePath        : "C:\Program Files\Microsoft SQL Server\MSSQL12.STANDARDDEV2014\MSSQL\Binn\sqlservr.exe" -sSTANDARDDEV2014
+        ServiceAccount     : LocalSystem
+        State              : Running
+
+        ComputerName       : Computer1
+        Instance           : Computer1
+        ServiceDisplayName : SQL Server (MSSQLSERVER)
+        ServiceName        : MSSQLSERVER
+        ServicePath        : "C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERVER\MSSQL\Binn\sqlservr.exe" -sMSSQLSERVER
+        ServiceAccount     : NT Service\MSSQLSERVER
+        State              : Running
+           
+#>
     Begin
     {
         # Table for output
@@ -4998,9 +5109,59 @@ Function  Get-SQLInstanceLocal {
 #  Get-SQLInstanceScanUDP
 # ----------------------------------
 # Author: Eric Gruber
-# Note: Pipeline, timeout mods by Scott Sutherland
+# Note: Pipeline and timeout mods by Scott Sutherland
 function Get-SQLInstanceScanUDP
 {
+<#
+    .SYNOPSIS
+        Returns a list of SQL Servers resulting from a UDP discovery scan of provided computers.
+    .PARAMETER ComputerName
+        Computer name or IP address to enumerate SQL Instance from.
+    .PARAMETER UDPTimeOut
+        Timeout in seconds. Longer timeout = more accurate.    
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceScanUDP -Verbose -ComputerName SQLServer1.domain.com
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Start.
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Complete.
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Express
+        InstanceName : Express
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51663
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Standard
+        InstanceName : Standard
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51861
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLInstanceScanUDP -Verbose
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Start.
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Complete.
+
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Express
+        InstanceName : Express
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51663
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Standard
+        InstanceName : Standard
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51861
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+        [TRUNCATED]                
+#>
     [CmdletBinding()]
     param(
 
@@ -5031,7 +5192,7 @@ function Get-SQLInstanceScanUDP
 
     Process
     {
-        Write-Verbose -Message " - $ComputerName - Enumerating managed SQL Server instances - UDP Scan Start."
+        Write-Verbose -Message " - $ComputerName - UDP Scan Start."
 
         # Verify server name isn't empty
         if ($ComputerName -ne '')
@@ -5116,6 +5277,26 @@ function Get-SQLInstanceScanUDP
 # ----------------------------------
 # Author: Scott Sutherland
 Function  Get-SQLInstanceFile {
+<#
+    .SYNOPSIS
+        Returns a list of SQL Server instances from a file.  
+        One per line. Three instance formats supported:
+        1 - computername
+        2 - computername\instance
+        3 - computername,1433
+    .PARAMETER FilePath
+        Path to file containing instances.  One per line.
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceFile -Verbose -FilePath c:\temp\servers.txt
+        VERBOSE: Importing instances from file path.
+        VERBOSE: 3 instances where found in c:\temp\servers.txt.
+
+        ComputerName   Instance                      
+        ------------   --------                      
+        Computer1      Computer1\SQLEXPRESS     
+        Computer1      Computer1\STANDARDDEV2014
+        Computer1      Computer1                
+#>
     [CmdletBinding()]
     Param(        
         [Parameter(Mandatory=$true,

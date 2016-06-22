@@ -1,46 +1,13 @@
+#requires -version 3
 <#
-Script: PowerUpSQL.psm1
-Version: Super Beta x3002
-Version name: SQL Configuration Offensive Tools and Techniques (SCOTT) ;)
-Author: Scott Sutherland (@_nullbind), NetSPI - 2016
-Description
-PowerUpSQL: A SQL Server Recon, Privilege Escalation, and Data Exfiltration Toolkit
-The PowerUpSQL is an offensive toolkit designed to accomplish six goals:
-* Scalability: Multi-threading is supported so commands can be executed against many SQL Servers quickly.
-* Portability: Default .net libraries are used, and there are no SMO dependancies so commands can be run without having to install SQL Server. Also, function are designed so they can run independantly.
-* Support SQL Server Discovery: Discovery functions help users blindly identify local, domain, and non-domain SQL Server instances.
-* Support SQL Server Auditing: Invoke-PowerUpSQL audits for common high impact vulnerabilities and weak configurations by default.
-* Support SQL Server Exploitation: Invoke-PowerUpSQL can leverage SQL Server vulnerabilities to obtain sysadmin privileges to illistrate risk.
-* Pipeline Support: Most functions support the pipeline so they can be used with other toolsets.
-
-
-########## EXAMPLES: SQL Server Instance Discovery ##########
-# Locate SQL Server targets.
-# Example command:  Get-SQLInstanceFile -Verbose
-# Example command:  Get-SQLInstanceLocal -Verbose
-# Example command:  Get-SQLInstanceDomain -Verbose
-# Example command:  Get-SQLInstanceDomain -Verbose -CheckMgmt
-# Example command:  Get-SQLInstanceScanUDP -Verbose
-
-########## EXAMPLES: SQL Server - Login Testing ##########
-# Check if the SQL Server login, current Windows account, or alternative Windows account can log into target SQL Servers.
-# Example command - SQL Login:  Get-SQLInstanceDomain -Verbose -CheckMgmt | Get-SQLConnectionTestThreaded -Verbose -Threads 20 -Username test -Password test
-# Example command - Current Windows User:  Get-SQLInstanceDomain -Verbose -CheckMgmt | Get-SQLConnectionTestThreaded -Verbose -Threads 20
-# Example command - Alternative Windows User:  runas /noprofile /netonly /user:domain\user powershell.exe -c "Import-Module PowerUpSQL.psm1;Get-SQLInstanceDomain -Verbose -CheckMgmt | Get-SQLConnectionTestThreaded -Verbose -Threads 20"
-
-########## EXAMPLES: SQL Server - Data Targeting ##########
-# Find accessible domain databases using transparent encryption
-# Example command: Get-SQLInstanceDomain -Verbose -CheckMgmt | Get-SQLConnectionTestThreaded -Verbose -Threads 20 | ? {$_.status -like "Accessible"} | Get-SQLDatabase -Verbose |? {$_.is_encrypted -like "True"}
-# Find potentially sensitive columns
-# Example command: Get-SQLInstanceDomain -Verbose -CheckMgmt | Get-SQLConnectionTestThreaded -Verbose -Threads 20 | ? {$_.status -like "Accessible"} | Get-SQLDatabase -Verbose | Get-SQLColumn -Verbose -ColumnNameSearch Credit
-# Find potentialy credit card number and validate them
-# Example command: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC | ft -AutoSize
-
-########## General Todo List ############### 
-# Modify all existing functions to support multi-threading (core, common, and utility) - invoke-parallel (runspaces)
-# Add verbose message suppression options for core and common functions
-# Test all functions in the lab against SQL Server 2000-2016
-# Clean up formatting etc
+    File: PowerUpSQL.ps1
+    Author: Scott Sutherland (@_nullbind), NetSPI - 2016
+    Version: 1.0.0.0
+    Version Name: SQL Configuration Offensive Tools and Techniques (SCOTT) Edition
+    Description: PowerUpSQL is a offensive toolkit that supports common attack workflow against SQL Server.
+    License: BSD 3-Clause
+    Required Dependencies: None
+    Optional Dependencies: None
 #>
 
 #########################################################################

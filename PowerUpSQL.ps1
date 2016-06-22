@@ -113,7 +113,32 @@ Function  Get-SQLConnectionObject {
 # ----------------------------------
 #  Get-SQLConnectionTest
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLConnectionTest {
+<#
+    .SYNOPSIS
+        Tests if the current Windows account or provided SQL Server login can log into an SQL Server.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER TimeOut
+        Connection time out. 
+    .PARAMETER SuppressVerbose
+        Suppress verbose errors.  Used when function is wrapped.
+    .EXAMPLE
+        PS C:\> Get-SQLConnectionTest -Verbose -Instance "SQLSERVER1.domain.com\SQLExpress"
+    .EXAMPLE
+        PS C:\> Get-SQLConnectionTest -Verbose -Instance "SQLSERVER1.domain.com,1433"
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLConnectionTest -Verbose         
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -219,7 +244,34 @@ Function  Get-SQLConnectionTest {
 # ----------------------------------
 #  Get-SQLConnectionTestThreaded
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLConnectionTestThreaded {
+<#
+    .SYNOPSIS
+        Tests if the current Windows account or provided SQL Server login can log into an SQL Server.  This version support threading using runspaces.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER TimeOut
+        Connection time out. 
+    .PARAMETER SuppressVerbose
+        Suppress verbose errors.  Used when function is wrapped.
+    .PARAMETER Threads
+        Number of concurrent threads.
+    .EXAMPLE
+        PS C:\> Get-SQLConnectionTestThreaded -Verbose -Instance "SQLSERVER1.domain.com\SQLExpress" -Threads 15
+    .EXAMPLE
+        PS C:\> Get-SQLConnectionTestThreaded -Verbose -Instance "SQLSERVER1.domain.com,1433" -Threads 15
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded -Verbose -Threads 15
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -344,7 +396,36 @@ Function  Get-SQLConnectionTestThreaded {
 # ----------------------------------
 #  Get-SQLQuery
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLQuery {
+<#
+    .SYNOPSIS
+        Executes a query on target SQL servers.This
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER TimeOut
+        Connection time out. 
+    .PARAMETER SuppressVerbose
+        Suppress verbose errors.  Used when function is wrapped.
+    .PARAMETER Threads
+        Number of concurrent threads.
+    .PARAMETER Query
+        Query to be executed on the SQL Server.
+    .EXAMPLE
+        PS C:\> Get-SQLQuery -Verbose -Instance "SQLSERVER1.domain.com\SQLExpress" -Query "Select @@version" -Threads 15
+    .EXAMPLE
+        PS C:\> Get-SQLQuery -Verbose -Instance "SQLSERVER1.domain.com,1433" -Query "Select @@version" -Threads 15
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLQuery -Verbose -Query "Select @@version" -Threads 15
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -459,7 +540,36 @@ Function  Get-SQLQuery {
 # ----------------------------------
 #  Get-SQLQueryThreaded 
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLQueryThreaded {
+<#
+    .SYNOPSIS
+        Executes a query on target SQL servers.This version support threading using runspaces.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER TimeOut
+        Connection time out. 
+    .PARAMETER SuppressVerbose
+        Suppress verbose errors.  Used when function is wrapped.
+    .PARAMETER Threads
+        Number of concurrent threads.
+    .PARAMETER Query
+        Query to be executed on the SQL Server.
+    .EXAMPLE
+        PS C:\> Get-SQLQueryThreaded -Verbose -Instance "SQLSERVER1.domain.com\SQLExpress" -Query "Select @@version" -Threads 15
+    .EXAMPLE
+        PS C:\> Get-SQLQueryThreaded -Verbose -Instance "SQLSERVER1.domain.com,1433" -Query "Select @@version" -Threads 15
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLQueryThreaded -Verbose -Query "Select @@version" -Threads 15
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -598,7 +708,116 @@ Function  Get-SQLQueryThreaded {
 # ----------------------------------
 #  Invoke-SQLOSCmd
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Invoke-SQLOSCmd {
+<#
+    .SYNOPSIS
+        Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER TimeOut
+        Connection time out. 
+    .PARAMETER SuppressVerbose
+        Suppress verbose errors.  Used when function is wrapped.
+    .PARAMETER Threads
+        Number of concurrent threads.
+    .PARAMETER Command
+        Operating command to be executed on the SQL Server.
+    .PARAMETER RawResults
+        Just show the raw results without the computer or instance name.
+    .EXAMPLE
+        PS C:\> Invoke-SQLOSCmd -Verbose -Instance "SQLServer1" -Command "dir c:\windows\system32\drivers\etc\" -RawResults
+        VERBOSE: Creating runspace pool and session states
+        VERBOSE: SQLServer1 : Connection Success.
+        VERBOSE: SQLServer1 : Connection Success.
+        VERBOSE: SQLServer1 : You are a sysadmin.
+        VERBOSE: SQLServer1 : Show Advanced Options is disabled.
+        VERBOSE: SQLServer1 : Enabled Show Advanced Options.
+        VERBOSE: SQLServer1 : xp_cmdshell is disabled.
+        VERBOSE: SQLServer1 : Enabled xp_cmdshell.
+        VERBOSE: SQLServer1 : Running command: dir c:\windows\system32\drivers\etc\
+        VERBOSE: SQLServer1 : Disabling xp_cmdshell
+        VERBOSE: SQLServer1 : Disabling Show Advanced Options
+         Volume in drive C is OSDisk
+         Volume Serial Number is C044-F8BC
+
+        VERBOSE: Closing the runspace pool
+        output
+        ------
+      
+         Directory of c:\windows\system32\drivers\etc
+      
+        06/22/2016  09:09 AM    <DIR>          .
+        06/22/2016  09:09 AM    <DIR>          ..
+        09/22/2015  10:16 AM               851 hosts
+        08/22/2013  10:35 AM             3,683 lmhosts.sam
+        08/22/2013  08:25 AM               407 networks
+        08/22/2013  08:25 AM             1,358 protocol
+        08/22/2013  08:25 AM            17,463 services
+                       5 File(s)         23,762 bytes
+                       2 Dir(s)  56,438,497,280 bytes free
+    .EXAMPLE
+        PS C:\> Invoke-SQLOSCmd -Verbose -Instance "SQLSERVER1.domain.com,1433" -Command "whoami" 
+        Invoke-SQLOSCmd -Verbose -Instance "SQLServer1" -Command "whoami" 
+        VERBOSE: Creating runspace pool and session states
+        VERBOSE: SQLServer1 : Connection Success.
+        VERBOSE: SQLServer1 : Connection Success.
+        VERBOSE: SQLServer1 : You are a sysadmin.
+        VERBOSE: SQLServer1 : Show Advanced Options is disabled.
+        VERBOSE: SQLServer1 : Enabled Show Advanced Options.
+        VERBOSE: SQLServer1 : xp_cmdshell is disabled.
+        VERBOSE: SQLServer1 : Enabled xp_cmdshell.
+        VERBOSE: SQLServer1 : Running command: whoami
+        VERBOSE: SQLServer1 : Disabling xp_cmdshell
+        VERBOSE: SQLServer1 : Disabling Show Advanced Options
+        VERBOSE: Closing the runspace pool
+
+        ComputerName   Instance       CommandResults         
+        ------------   --------       --------------         
+        SQLServer1     SQLServer1     nt service\mssqlserver 
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLOSCmd -Verbose -Command "whoami" -Threads 5
+        Get-SQLInstanceLocal | Invoke-SQLOSCmd -Verbose -Command "whoami" 
+        VERBOSE: Creating runspace pool and session states
+        VERBOSE: SQLServer1\SQLEXPRESS : Connection Success.
+        VERBOSE: SQLServer1\SQLEXPRESS : Connection Success.
+        VERBOSE: SQLServer1\SQLEXPRESS : You are a sysadmin.
+        VERBOSE: SQLServer1\SQLEXPRESS : Show Advanced Options is already enabled.
+        VERBOSE: SQLServer1\SQLEXPRESS : xp_cmdshell is already enabled.
+        VERBOSE: SQLServer1\SQLEXPRESS : Running command: whoami
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : You are a sysadmin.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Show Advanced Options is already enabled.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : xp_cmdshell is already enabled.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Running command: whoami
+        VERBOSE: SQLServer1 : Connection Success.
+        VERBOSE: SQLServer1 : Connection Success.
+        VERBOSE: SQLServer1 : You are a sysadmin.
+        VERBOSE: SQLServer1 : Show Advanced Options is disabled.
+        VERBOSE: SQLServer1 : Enabled Show Advanced Options.
+        VERBOSE: SQLServer1 : xp_cmdshell is disabled.
+        VERBOSE: SQLServer1 : Enabled xp_cmdshell.
+        VERBOSE: SQLServer1 : Running command: whoami
+        VERBOSE: SQLServer1 : Disabling xp_cmdshell
+        VERBOSE: SQLServer1 : Disabling Show Advanced Options
+        VERBOSE: Closing the runspace pool
+
+        ComputerName   Instance                       CommandResults              
+        ------------   --------                       --------------              
+        SQLServer1     SQLServer1\SQLEXPRESS          nt service\mssql$sqlexpress 
+        SQLServer1     SQLServer1\STANDARDDEV2014     nt authority\system         
+        SQLServer1     SQLServer1                     nt service\mssqlserver      
+
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

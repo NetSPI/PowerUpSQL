@@ -1,6 +1,6 @@
 To use the module, type `Import-Module PowerUpSQL.psm1`
 
-To list functions from the module type `Get-Command -Module PowerUpSQL`
+To list functions from the module, type `Get-Command -Module PowerUpSQL`
 
 ## PowerUpSQL: An Offensive Toolkit for SQL Server
 

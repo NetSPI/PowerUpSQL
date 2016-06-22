@@ -27,7 +27,7 @@ Below are the functions included in this module.  Many are complete, but I've al
 |Get-SQLInstanceFile           |Returns SQL Server instances from a file.  One per line. |Complete|
 |Get-SQLInstanceLocal          |Returns SQL Server instances from the local system based on a registry search.|Complete|
 |Get-SQLInstanceDomain	       |Returns SQL Server instances from LDAP query results. Search is based on MSSQL SPNs and UDP scanning of management servers. Will default to current user's domain, but domain,user,and password can be provided for alternative domains.|Complete|
-|Get-SQLInstanceScanUDP	       |Returns SQL Server instances from UDP scan results.|Complete|
+|Get-SQLInstanceScanUDP	       .|Returns SQL Server instances from UDP scan results.|Complete|
 
 ### Core Functions
 |Function Name                 |Description |Status    |

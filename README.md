@@ -14,12 +14,14 @@ It was designed with six objectives in mind:
 * Support Easy SQL Server Auditing: Invoke-PowerUpSQL audits for common high impact vulnerabilities and weak configurations by default.
 * Support Easy SQL Server Exploitation: Invoke-PowerUpSQL can leverage SQL Server vulnerabilities to obtain sysadmin privileges to illistrate risk.
 
-
 Script Information
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2016
+* Version: 1.0.0.0
+* Version Name: SQL Configuration Offensive Tools and Techniques (SCOTT) Edition
+* Description: PowerUpSQL is a offensive toolkit that supports common attack workflow against SQL Server.
 * License: BSD 3-Clause
-* Required Dependencies: PowerShell v3 (or later)
-* Optional Dependencies: None 
+* Required Dependencies: None
+* Optional Dependencies: None
 
 Below are the functions included in this module.  Many are complete, but I've also outlined the intended roadmap.
 

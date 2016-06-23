@@ -1208,6 +1208,49 @@ Function  Get-SQLServerInfo {
 #  Get-SQLDatabase
 # ----------------------------------
 Function  Get-SQLDatabase {
+<#
+    .SYNOPSIS
+        Returns database information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER NoDefaults
+        Only select non default databases.
+    .PARAMETER HasAccess
+        Only select databases the current user has access to.
+    .PARAMETER SysAdminOnly
+        Only select databases owned by a sysadmin.
+    .EXAMPLE
+        PS C:\> Get-SQLDatabase -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
+
+        ComputerName        : SQLServer1
+        Instance            : SQLServer1\STANDARDDEV2014
+        DatabaseId          : 7
+        DatabaseName        : testdb
+        DatabaseOwner       : sa
+        OwnerIsSysadmin     : 1
+        is_trustworthy_on   : True
+        is_db_chaining_on   : False
+        is_broker_enabled   : True
+        is_encrypted        : False
+        is_read_only        : False
+        create_date         : 4/13/2016 4:27:36 PM
+        recovery_model_desc : FULL
+        FileName            : C:\Program Files\Microsoft SQL Server\MSSQL12.STANDARDDEV2014\MSSQL\DATA\testdb.mdf
+        DbSizeMb            : 3.19
+        has_dbaccess        : 1
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabase -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

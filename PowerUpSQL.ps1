@@ -4,7 +4,7 @@
     Author: Scott Sutherland (@_nullbind), NetSPI - 2016
     Version: 1.0.0.0
     Version Name: SQL Configuration Offensive Tools and Techniques (SCOTT) Edition
-    Description: PowerUpSQL is a offensive toolkit that supports common attack workflow against SQL Server.
+    Description: PowerUpSQL is a offensive toolkit that supports common attack workflows against SQL Server.
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
@@ -1446,7 +1446,36 @@ Function  Get-SQLTable {
 # ----------------------------------
 #  Get-SQLColumn
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLColumn {
+<#
+    .SYNOPSIS
+        Returns column information from target SQL Servers. Supports keyword search.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name filter.
+    .PARAMETER TableName
+        Table name filter. 
+    .PARAMETER ColumnName
+        Column name filter.
+    .PARAMETER ColumnNameSearch
+        Column name filter that support wildcards.
+    .PARAMETER NoDefaults
+        Don't list anything from default databases.
+    .EXAMPLE
+        PS C:\> Get-SQLColumn -Verbose -Instance "SQLServer1"
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLColumn -Verbose    
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -1604,7 +1633,36 @@ Function  Get-SQLColumn {
 # ---------------------------------------
 # Get-SQLColumnSampleData
 # ---------------------------------------
+# Author: Scott Sutherland
 Function Get-SQLColumnSampleData {
+<#
+    .SYNOPSIS
+        Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER $NoOutput
+        Don't output any sample data.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
+    .PARAMETER SampleSize
+        Number of records to sample.
+    .PARAMETER Keywords
+        Comma seperated list of keywords to search for.
+    .PARAMETER $CheckCC
+        Use Luhn formula to check if sample is a valid credit card.
+    .EXAMPLE
+        PS C:\> Get-SQLColumnSampleData -Verbose -Instance "SQLServer1" -Keywords "account,credit,card" -SampleSize 5 -CheckCC
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2619,7 +2677,32 @@ Function  Get-SQLServiceAccount{
 # ----------------------------------
 #  Get-SQLAuditDatabaseSpec
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLAuditDatabaseSpec{
+<#
+    .SYNOPSIS
+        Returns Audit database specifications from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER AuditName
+        Audit name. 
+    .PARAMETER AuditSpecification
+        Audit specification. 
+    .PARAMETER AuditAction
+        Audit action name.
+    .EXAMPLE
+        PS C:\> Get-SQLAuditDatabaseSpec -Verbose -Instance "SQLServer1"
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLAuditDatabaseSpec -Verbose    
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2735,7 +2818,32 @@ Function  Get-SQLAuditDatabaseSpec{
 # ----------------------------------
 #  Get-SQLAuditServerSpec
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLAuditServerSpec{
+<#
+    .SYNOPSIS
+        Returns Audit server specifications from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER AuditName
+        Audit name. 
+    .PARAMETER AuditSpecification
+        Audit specification. 
+    .PARAMETER AuditAction
+        Audit action name.
+    .EXAMPLE
+        PS C:\> Get-SQLAuditServerSpec -Verbose -Instance "SQLServer1"
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLAuditServerSpec -Verbose    
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

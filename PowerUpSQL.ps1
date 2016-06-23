@@ -2155,7 +2155,54 @@ Function  Get-SQLView{
 # ----------------------------------
 #  Get-SQLServerLink
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServerLink{
+<#
+    .SYNOPSIS
+        Returns link servers from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DatabaseLinkName
+        Database link name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerLink -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName           : SQLServer1
+        Instance               : SQLServer1\STANDARDDEV2014
+        DatabaseLinkId         : 0
+        DatabaseLinkName       : SQLServer1\STANDARDDEV2014
+        DatabaseLinkLocation   : Local
+        Product                : SQL Server
+        Provider               : SQLNCLI
+        Catalog                : 
+        Local Login            : Uses Self Credentials
+        RemoteLoginName        : 
+        is_rpc_out_enabled     : True
+        is_data_access_enabled : False
+        modify_date            : 3/13/2016 12:30:33 PM
+
+        ComputerName           : SQLServer1
+        Instance               : SQLServer1\STANDARDDEV2014
+        DatabaseLinkId         : 1
+        DatabaseLinkName       : SQLServer2\SQLEXPRESS
+        DatabaseLinkLocation   : Remote
+        Product                : SQL Server
+        Provider               : SQLNCLI
+        Catalog                : 
+        Local Login            : 
+        RemoteLoginName        : user123
+        is_rpc_out_enabled     : False
+        is_data_access_enabled : True
+        modify_date            : 5/6/2016 10:20:44 AM
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerLink -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

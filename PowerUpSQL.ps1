@@ -1650,8 +1650,6 @@ Function Get-SQLColumnSampleData {
         Connect using Dedicated Admin Connection. 
     .PARAMETER $NoOutput
         Don't output any sample data.
-    .PARAMETER Exploit
-        Exploit vulnerable issues.
     .PARAMETER SampleSize
         Number of records to sample.
     .PARAMETER Keywords
@@ -1659,7 +1657,18 @@ Function Get-SQLColumnSampleData {
     .PARAMETER $CheckCC
         Use Luhn formula to check if sample is a valid credit card.
     .EXAMPLE
-        PS C:\> Get-SQLColumnSampleData -Verbose -Instance "SQLServer1" -Keywords "account,credit,card" -SampleSize 5 -CheckCC
+        PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -CheckCC | ft -AutoSize
+        VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
+        VERBOSE: SQLServer1\STANDARDDEV2014 : CONNECTION SUCCESS
+        VERBOSE: SQLServer1\STANDARDDEV2014 : - Searching for column names that match criteria...
+        VERBOSE: SQLServer1\STANDARDDEV2014 : - Column match: [testdb].[dbo].[tracking].[card]
+        VERBOSE: SQLServer1\STANDARDDEV2014 : - Selecting 5 rows of data sample from column [testdb].[dbo].[tracking].[card].
+        VERBOSE: SQLServer1\STANDARDDEV2014 : COMPLETED SEARCH DATA BY COLUMN
+
+        ComputerName   Instance                   Database Schema Table    Column Sample           RowCount IsCC 
+        ------------   --------                   -------- ------ -----    ------ ------           -------- ---- 
+        SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True 
+        SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   41111111111ASDFD 2        False
     .EXAMPLE
         PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC
 #>
@@ -1689,11 +1698,7 @@ Function Get-SQLColumnSampleData {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Don't output anything.")]
-        [string]$NoOutput,
-        
-        [Parameter(Mandatory=$false,
-        HelpMessage="Exploit vulnerable issues.")]
-        [switch]$Exploit,
+        [string]$NoOutput,       
 
         [Parameter(Mandatory=$false,
         HelpMessage="Number of records to sample.")]

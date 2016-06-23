@@ -1051,7 +1051,44 @@ Function  Invoke-SQLOSCmd {
 # ----------------------------------
 #  Get-SQLServerInfo
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServerInfo {
+<#
+    .SYNOPSIS
+        Returns basic server and user information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerInfo -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName           : SQLServer1
+        InstanceName           : SQLServer1\STANDARDDEV2014
+        DomainName             : Domain
+        ServiceName            : MSSQL$STANDARDDEV2014
+        ServiceAccount         : LocalSystem
+        AuthenticationMode     : Windows and SQL Server Authentication
+        Clustered              : No
+        SQLServerVersionNumber : 12.0.4213.0
+        SQLServerMajorVersion  : 2014
+        SQLServerEdition       : Developer Edition (64-bit)
+        SQLServerServicePack   : SP1
+        OSArchitecture         : X64
+        OsMachineType          : WinNT
+        OSVersionName          : Windows 8.1 Pro
+        OsVersionNumber        : 6.3
+        OriginalLogin          : Domain\MyUser
+        Currentlogin           : Domain\MyUser
+        IsSysadmin             : Yes
+        ActiveSessions         : 1
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerInfo -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -1207,6 +1244,7 @@ Function  Get-SQLServerInfo {
 # ----------------------------------
 #  Get-SQLDatabase
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLDatabase {
 <#
     .SYNOPSIS
@@ -1865,7 +1903,40 @@ Function Get-SQLColumnSampleData {
 # ----------------------------------
 #  Get-SQLDatabaseSchema
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLDatabaseSchema {
+<#
+    .SYNOPSIS
+        Returns schema information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER SchemaName
+        Schema name to filter for. 
+    .PARAMETER NoDefaults
+        Only show information for non default databases.    
+
+    .EXAMPLE
+        PS C:\> Get-SQLDatabaseSchema -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb
+
+        ComputerName : SQLServer1
+        Instance     : SQLServer1\STANDARDDEV2014
+        DatabaseName : testdb
+        SchemaName   : db_accessadmin
+        SchemaOwner  : db_accessadmin
+        [TRUNCATED]
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabaseSchema -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2181,7 +2252,35 @@ Function  Get-SQLServerLink{
 # ----------------------------------
 #  Get-SQLServerCredential
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServerCredential{
+<#
+    .SYNOPSIS
+        Returns credentials from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerCredential -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName        : SQLServer1
+        Instance            : SQLServer1\STANDARDDEV2014
+        credential_id       : 65536
+        CredentialName      : MyUser
+        credential_identity : Domain\MyUser
+        create_date         : 5/5/2016 11:16:12 PM
+        modify_date         : 5/5/2016 11:16:12 PM
+        target_type         : 
+        target_id           : 
+        [TRUNCATED]
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerCredential -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2193,6 +2292,12 @@ Function  Get-SQLServerCredential{
         [string]$Password,
 
         [Parameter(Mandatory=$false,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Credential name.")]
+        [string]$CredentialName,
+
+        [Parameter(Mandatory=$false,
         HelpMessage="Windows credentials.")]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
@@ -2200,13 +2305,7 @@ Function  Get-SQLServerCredential{
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance,
-
-        [Parameter(Mandatory=$false,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Credential name.")]
-        [string]$CredentialName
+        [string]$Instance
     )
 
     Begin
@@ -3099,7 +3198,47 @@ Function  Get-SQLServerPriv {
 # ----------------------------------
 #  Get-SQLDatabasePriv
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLDatabasePriv {
+<#
+    .SYNOPSIS
+        Returns database user privilege information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER NoDefaults
+        Only select non default databases.
+    .PARAMETER PermissionName
+        Permission name to filter for.
+    .PARAMETER PermissionType
+        Permission type name to filter for.
+    .PARAMETER PrincipalName
+        Principal name to filter for.        
+    .EXAMPLE
+        PS C:\> Get-SQLDatabasePriv -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -PermissionName "VIEW DEFINITION"
+
+        ComputerName     : SQLServer1
+        Instance         : SQLServer1\STANDARDDEV2014
+        DatabaseName     : testdb
+        PrincipalName    : createprocuser
+        PrincipalType    : SQL_USER
+        PermissionType   : SCHEMA
+        PermissionName   : VIEW DEFINITION
+        StateDescription : GRANT
+        ObjectType       : SCHEMA
+        ObjectName       : dbo
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabasePriv -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -3122,22 +3261,22 @@ Function  Get-SQLDatabasePriv {
 
         [Parameter(Mandatory=$false,                
         ValueFromPipelineByPropertyName=$true,
-        HelpMessage="SQL Server database name.")]
+        HelpMessage="SQL Server database name to filter for.")]
         [string]$DatabaseName,
         
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Permission name.")]
+        HelpMessage="Permission name to filter for.")]
         [string]$PermissionName,
 
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Permission type.")]
+        HelpMessage="Permission type to filter for.")]
         [string]$PermissionType,
 
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Principal name for grantee.")]
+        HelpMessage="Principal name for grantee to filter for.")]
         [string]$PrincipalName,
 
         [Parameter(Mandatory=$false,
@@ -3251,7 +3390,48 @@ Function  Get-SQLDatabasePriv {
 # ----------------------------------
 #  Get-SQLDatabaseUser
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLDatabaseUser {
+<#
+    .SYNOPSIS
+        Returns database user information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER DatabaseUser
+        Database user to filter for.
+    .PARAMETER PrincipalName
+        Principal name to filter for.
+    .PARAMETER NoDefaults
+        Only show information for non default databases.    
+
+    .EXAMPLE
+        PS C:\> Get-SQLDatabaseUser -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -PrincipalName evil
+
+        ComputerName       : SQLServer1
+        Instance           : SQLServer1\STANDARDDEV2014
+        DatabaseName       : testdb
+        DatabaseUserId     : 5
+        DatabaseUser       : evil
+        PrincipalSid       : 3E26CA9124B4AE42ABF1BBF2523738CA
+        PrincipalName      : evil
+        PrincipalType      : SQL_USER
+        deault_schema_name : dbo
+        create_date        : 04/22/2016 13:00:33
+        is_fixed_role      : False
+        [TRUNCATED]
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabaseUser -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -3651,8 +3831,50 @@ Function  Get-SQLServerRoleMember {
 # ----------------------------------
 #  Get-SQLDatabaseRole
 # ----------------------------------
+# Author: Scott Sutherland
 # Reference: https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx
 Function  Get-SQLDatabaseRole {
+<#
+    .SYNOPSIS
+        Returns database role information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER NoDefaults
+        Only select non default databases.
+    .PARAMETER RolePrincipalName
+        Role principalname to filter for. 
+    .PARAMETER RoleOwner
+        Role owner's name to filter for.    
+
+    .EXAMPLE
+        PS C:\> Get-SQLDatabaseRole -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -RolePrincipalName DB_OWNER
+
+        ComputerName        : SQLServer1
+        Instance            : SQLServer1\STANDARDDEV2014
+        DatabaseName        : testdb
+        RolePrincipalId     : 16384
+        RolePrincipalSid    : 01050000000000090400000000000000000000000000000000400000
+        RolePrincipalName   : db_owner
+        RolePrincipalType   : DATABASE_ROLE
+        OwnerPrincipalId    : 1
+        OwnerPrincipalName  : sa
+        is_fixed_role       : True
+        create_date         : 4/8/2003 9:10:42 AM
+        modify_Date         : 4/13/2009 12:59:14 PM
+        default_schema_name : 
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabaseRole -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -3809,7 +4031,49 @@ Function  Get-SQLDatabaseRole {
 # ----------------------------------
 #  Get-SQLDatabaseRoleMember
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLDatabaseRoleMember {
+<#
+    .SYNOPSIS
+        Returns database role member information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER RolePrincipalName
+        Role principalname to filter for. 
+    .PARAMETER PrincipalName
+        Name of principal or Role to filter for.    
+
+    .EXAMPLE
+        PS C:\> Get-SQLDatabaseRoleMember -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -PrincipalName evil
+
+        ComputerName      : SQLServer1
+        Instance          : SQLServer1\STANDARDDEV2014
+        DatabaseName      : testdb
+        RolePrincipalId   : 16387
+        RolePrincipalName : db_ddladmin
+        PrincipalId       : 5
+        PrincipalName     : evil
+
+        ComputerName      : SQLServer1
+        Instance          : SQLServer1\STANDARDDEV2014
+        DatabaseName      : testdb
+        RolePrincipalId   : 16391
+        RolePrincipalName : db_datawriter
+        PrincipalId       : 5
+        PrincipalName     : evil
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabaseRoleMember -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

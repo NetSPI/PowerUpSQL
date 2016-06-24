@@ -6918,7 +6918,41 @@ Function Invoke-SQLEscalate-Template {
 # ---------------------------------------
 # Invoke-SQLEscalate-CreateProcedure
 # ---------------------------------------
+# Author: Scott Sutherland
 Function Invoke-SQLEscalate-CreateProcedure {
+<#
+    .SYNOPSIS
+        Check if the current login has the CREATE PROCEDURE permission.  Attempt to leverage to obtain sysadmin privileges.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER NoOutput
+        Don't output anything.
+    .PARAMETER Exploit
+        Exploit vulnerable issues
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Invoke-SQLEscalate-CreateProcedure -Username evil -Password evil
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : PERMISSION - CREATE PROCEDURE
+        Description   : The login has privileges to create stored procedures in one or more databases.  This may allow the login to escalate privileges within the database.
+        Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: GRANT CREATE PROCEDURE TO user, and can be removed with a 
+                        command like: REVOKE CREATE PROCEDURE TO user.
+        Severity      : Medium
+        IsVulnerable  : Yes
+        IsExploitable : No
+        Exploited     : No
+        ExploitCmd    : No exploit is currently available that will allow evil to become a sysadmin.
+        Details       : The evil principal has the CREATE PROCEDURE permission in the testdb database.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms187926.aspx?f=255&MSPPError=-2147217396
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7290,7 +7324,41 @@ Function Invoke-SQLEscalate-DbOwnerRole {
 # -----------------------------------
 # Invoke-SQLEscalate-ImpersonateLogin
 # -----------------------------------
+# Author: Scott Sutherland
 Function Invoke-SQLEscalate-ImpersonateLogin {
+<#
+    .SYNOPSIS
+        Check if the current login has the CREATE PROCEDURE permission.  Attempt to leverage to obtain sysadmin privileges.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER NoOutput
+        Don't output anything.
+    .PARAMETER Exploit
+        Exploit vulnerable issues
+    .EXAMPLE
+        PS C:\> Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password evil
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : PERMISSION - IMPERSONATE LOGIN
+        Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
+        Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+                        Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
+        Severity      : High
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : No
+        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        Details       : public can impersonate the sa SYSADMIN login. This test was ran with the evil login.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7385,7 +7453,7 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
         $Exploited     = "No"     
-        $ExploitCmd    = "Impersonate-SqlServerLogin -Instance $Instance -Exploit"
+        $ExploitCmd    = "Invoke-SQLEscalate-ImpersonateLogin -Instance $Instance -Exploit"
         $Details       = ""   
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms181362.aspx"       
         $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016"        

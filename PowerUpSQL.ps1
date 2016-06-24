@@ -6783,6 +6783,8 @@ Function  Get-SQLInstanceFile {
 # ---------------------------------------
 # Template Function
 # ---------------------------------------
+# Author: Scott Sutherland
+# Note: This is just a template for building other escalation functions.
 Function Invoke-SQLEscalate-Template {
     [CmdletBinding()]
     Param(
@@ -6936,7 +6938,7 @@ Function Invoke-SQLEscalate-CreateProcedure {
     .PARAMETER Exploit
         Exploit vulnerable issues
     .EXAMPLE
-        PS C:\> Get-SQLInstanceLocal | Invoke-SQLEscalate-CreateProcedure -Username evil -Password evil
+        PS C:\> Get-SQLInstanceLocal | Invoke-SQLEscalate-CreateProcedure -Username evil -Password Password123!
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -7342,7 +7344,7 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
     .PARAMETER Exploit
         Exploit vulnerable issues
     .EXAMPLE
-        PS C:\> Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password evil
+        PS C:\> Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -7562,7 +7564,45 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
 # ---------------------------------------
 # Invoke-SQLEscalate-SampleDataByColumn
 # ---------------------------------------
+# Author: Scott Sutherland
 Function Invoke-SQLEscalate-SampleDataByColumn {
+<#
+    .SYNOPSIS
+        Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size. 
+        Note: For cleaner data sample output use the Get-SQLColumnSampleData function.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER NoOutput
+        Don't output anything.
+    .PARAMETER Exploit
+        Exploit vulnerable issues
+    .PARAMETER SampleSize
+        Number of records to sample.
+    .PARAMETER Keyword
+        Column name to search for.
+    .EXAMPLE
+        PS C:\> Invoke-SQLEscalate-SampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Keyword card -SampleSize 2 -Exploit
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : Potentially Sensitive Columns Found
+        Description   : Columns were found in non default databases that may contain sensitive information.
+        Remediation   : Ensure that all passwords and senstive data are masked, hashed, or encrypted.
+        Severity      : Informational
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : Yes
+        ExploitCmd    : Invoke-SQLEscalate-SampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        Details       : Data sample from [testdb].[dbo].[tracking].[card] : "4111111111111111" "4111111111111112".
+        Reference     : https://msdn.microsoft.com/en-us/library/ms188348.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7600,8 +7640,8 @@ Function Invoke-SQLEscalate-SampleDataByColumn {
         [int]$SampleSize = 1,
 
         [Parameter(Mandatory=$false,
-        HelpMessage="Comma seperated list of keywords to search for.")]
-        [string]$Keywords = "Password"
+        HelpMessage=" Column name to search for.")]
+        [string]$Keyword = "Password"
     )
 
     Begin
@@ -7658,7 +7698,7 @@ Function Invoke-SQLEscalate-SampleDataByColumn {
         }      
         $Vulnerability = "Potentially Sensitive Columns Found"
         $Description   = "Columns were found in non default databases that may contain sensitive information."
-        $Remediation   = "Ensure that all passwords and senstive data are encrypted or hashed."
+        $Remediation   = "Ensure that all passwords and senstive data are masked, hashed, or encrypted."
         $Severity      = "Informational"
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
@@ -7673,7 +7713,7 @@ Function Invoke-SQLEscalate-SampleDataByColumn {
         # Note: Typically a missing patch or weak configuration
         # -----------------------------------------------------------------  
         Write-Verbose "$Instance : - Searching for column names that match criteria..."    
-        $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keywords -NoDefaults
+        $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keyword -NoDefaults
         if($Columns){
             $IsVulnerable  = "Yes"
         }else{
@@ -8500,8 +8540,65 @@ function Invoke-Parallel {
 #
 #########################################################################
 
+# ----------------------------------
 # Invoke-PowerUpSQL
+# ----------------------------------
+# Author: Scott Sutherland
 Function Invoke-PowerUpSQL {
+<#
+    .SYNOPSIS
+        Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size. 
+        Note: For cleaner data sample output use the Get-SQLColumnSampleData function.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER NoOutput
+        Don't output anything.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
+    .EXAMPLE
+        PS C:\> Invoke-PowerUpSQL -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : PERMISSION - IMPERSONATE LOGIN
+        Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
+        Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+                        Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
+        Severity      : High
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : No
+        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        Details       : evil can impersonate the sa SYSADMIN login. This test was ran with the evil login.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+
+        [TRUNCATED]
+    .EXAMPLE
+        PS C:\> Invoke-PowerUpSQL -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123! -Exploit
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : PERMISSION - IMPERSONATE LOGIN
+        Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
+        Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+                        Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
+        Severity      : High
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : Yes
+        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        Details       : evil can impersonate the sa SYSADMIN login. This test was ran with the evil login.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+
+        [TRUNCATED]
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8520,11 +8617,7 @@ Function Invoke-PowerUpSQL {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance,
-        
-        [Parameter(Mandatory=$false,
-        HelpMessage="SQL Server instance to connection to.")]
-        [string]$Query,
+        [string]$Instance,       
 
         [Parameter(Mandatory=$false,
         HelpMessage="Don't output anything.")]
@@ -8563,10 +8656,9 @@ Function Invoke-PowerUpSQL {
         
         # Load list of vulnerability check functions - Server
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ImpersonateLogin","Server") | Out-Null
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-SampleDataByColumn","Server") | Out-Null
         
         # Load list of vulnerability check functions - Database
-        # Pending
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-SampleDataByColumn","Database") | Out-Null
 
         # Load list of vulnerability check functions - Misc
         # Pending
@@ -8599,7 +8691,7 @@ Function Invoke-PowerUpSQL {
 
                 # Run function
                 if($Exploit){
-                    $TblTemp = Invoke-Expression "$FunctionName -Instance '$Instance' -Username '$Username' -Password '$Password'  -Exploit"
+                    $TblTemp = Invoke-Expression "$FunctionName -Instance '$Instance' -Username '$Username' -Password '$Password' -Exploit"
                 }else{
                     $TblTemp = Invoke-Expression "$FunctionName -Instance '$Instance' -Username '$Username' -Password '$Password'"
                 }

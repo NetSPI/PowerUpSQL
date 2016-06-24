@@ -207,7 +207,7 @@ Example: Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
 |Get-SQLFuzzObjectName | Enumerates objects based on object id using OBJECT_NAME() and only the Public role.|Complete|	
 |Get-SQLFuzzDatabaseName | Enumerates databases based on database id using DB_NAME() and only the Public role.|Complete|
 |Get-SQLFuzzServerLogin | Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.|Complete|
-|Get-SQLFuzzDomainAccount | Enumerates domain accounts based on domain RID using SUSER_SNAME() and only the Public role.|Complete|
+|Get-SQLFuzzDomainAccount | Enumerates domain groups, computer accounts, and user accounts based on domain RID using SUSER_SNAME() and only the Public role.  Note: In a typical domain 10000 or more is recommended for the EndId.|Complete|
 |Get-ComputerNameFromInstance | Parses computer name form a provided instance.|Complete|
 |Get-SQLServiceLocal | Returns local SQL Server services.|Complete|
 |Create-SQLFile-XPDLL | Used to create CPP DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.|Complete|

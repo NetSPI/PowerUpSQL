@@ -38,6 +38,11 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 |Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|Complete|
 |Get-SQLInstanceScanUDP|Returns SQL Server instances from UDP scan results.|Complete|
 
+	Roadmap:
+	
+	Get-SQLInstanceScanTCP - Returns SQL Server instances from TCP scan results.
+	Get-SQLInstanceBroadcast - Returns SQL Server instances from UDP broadcast.
+
 ### Core Functions
 
 These functions are used to test connections, execute SQL Server queries, and execute OS commands.  All other functions use these core functions.  However, they can also be executed independently. 

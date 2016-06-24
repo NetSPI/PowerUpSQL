@@ -81,7 +81,7 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 |Get-SQLServerPriv|Returns SQL Server login privilege information from target SQL Servers.|Complete|
 |Get-SQLServerRole|Returns SQL Server role information from target SQL Servers.|Complete|
 |Get-SQLServerRoleMember|Returns SQL Server role member information from target SQL Servers.|Complete|
-|Get-SQLServiceAccount|RReturns a list of service account names for SQL Servers services by querying the registry with xp_regread.  This can be executed against remote systems.|Complete|
+|Get-SQLServiceAccount|Returns a list of service account names for SQL Servers services by querying the registry with xp_regread.  This can be executed against remote systems.|Complete|
 |Get-SQLSession|Returns active sessions from target SQL Servers.|Complete|
 |Get-SQLStoredProcure|Returns stored procedures from target SQL Servers.|Complete|	
 |Get-SQLSysadminCheck|Check if login is has sysadmin privilege on the target SQL Servers.|Complete|

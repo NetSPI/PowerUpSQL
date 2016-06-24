@@ -108,10 +108,10 @@ Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|
-|Invoke-SQLEscalate-CreateProcedure|Get sysadmin using create procedure privileges.|Complete|
-|Invoke-SQLEscalate-DbOwnerRole|Get sysadmin using dbowner privileges.|Complete|
-|Invoke-SQLEscalate-ImpersonateLogin|Get sysadmin using impersonate login privileges.|Complete|
-|Invoke-SQLEscalate-SampleDataByColumn|Find password and potentially sensitive data.  Support column name keyword search and custom data sample size.|Complete|
+|Invoke-SQLEscalate-CreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|Complete|
+|Invoke-SQLEscalate-DbOwnerRole|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
+|Invoke-SQLEscalate-ImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Complete|
+|Invoke-SQLEscalate-SampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|Complete|
 |Invoke-PowerUpSQL|Run all privilege escalation checks.  There is an options to auto-escalation to sysadmin.|Complete|
 
 	Roadmap:

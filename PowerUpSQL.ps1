@@ -22,6 +22,34 @@
 # Author: Scott Sutherland
 # Reference: https://msdn.microsoft.com/en-us/library/ms188247.aspx
 Function  Get-SQLConnectionObject {
+<#
+    .SYNOPSIS
+        Creates a object for connecting to SQL Server.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .EXAMPLE
+        PS C:\> Get-SQLConnectionObject -Username MySQLUser -Password MySQLPassword
+
+        StatisticsEnabled                : False
+        AccessToken                      : 
+        ConnectionString                 : Server=SQLServer1;Database=Master;User ID=MySQLUser;Password=MySQLPassword;Connection Timeout=1
+        ConnectionTimeout                : 1
+        Database                         : Master
+        DataSource                       : SQLServer1
+        PacketSize                       : 8000
+        ClientConnectionId               : 00000000-0000-0000-0000-000000000000
+        ServerVersion                    : 
+        State                            : Closed
+        WorkstationId                    : SQLServer1
+        Credential                       : 
+        FireInfoMessageEventOnUserErrors : False
+        Site                             : 
+        Container                        : 
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -4982,9 +5010,36 @@ Function  Get-SQLStoredProcure {
 # ----------------------------------
 #  Get-SQLFuzzObjectName
 # ----------------------------------
+# Author: Scott Sutherland
 # Reference: https://raresql.com/2013/01/29/sql-server-all-about-object_id/
 # Reference: https://social.technet.microsoft.com/Forums/forefront/en-US/f73c2115-57f7-4cec-a95b-00c2d8252ace/objectid-recycled-?forum=transactsql
 Function  Get-SQLFuzzObjectName{
+<#
+    .SYNOPSIS
+        Enumerates objects based on object id using OBJECT_NAME() and only the Public role.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER StartId
+        Principal ID to start fuzzing with.
+    .PARAMETER EndId
+        Principal ID to stop fuzzing with.
+    .EXAMPLE
+        PS C:\> Get-SQLFuzzObjectName -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 5
+
+        ComputerName   Instance                       ObjectId ObjectName   
+        ------------   --------                       -------- ----------   
+        SQLServer1     SQLServer1\STANDARDDEV2014     3        sysrscols    
+        SQLServer1     SQLServer1\STANDARDDEV2014     5        sysrowsets   
+        SQLServer1     SQLServer1\STANDARDDEV2014     6        sysclones    
+        SQLServer1     SQLServer1\STANDARDDEV2014     7        sysallocunits
+        SQLServer1     SQLServer1\STANDARDDEV2014     8        sysfiles1
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -5080,7 +5135,34 @@ Function  Get-SQLFuzzObjectName{
 # ----------------------------------
 #  Get-SQLFuzzDatabaseName
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLFuzzDatabaseName{
+<#
+    .SYNOPSIS
+        Enumerates databases based on database id using DB_NAME() and only the Public role.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER StartId
+        Principal ID to start fuzzing with.
+    .PARAMETER EndId
+        Principal ID to stop fuzzing with.
+    .EXAMPLE
+        PS C:\> Get-SQLFuzzDatabaseName -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 5
+
+        ComputerName   Instance                       DatabaseId DatabaseName                
+        ------------   --------                       ---------- ------------                
+        SQLServer1     SQLServer1\STANDARDDEV2014     1          master                      
+        SQLServer1     SQLServer1\STANDARDDEV2014     2          tempdb                      
+        SQLServer1     SQLServer1\STANDARDDEV2014     3          model                       
+        SQLServer1     SQLServer1\STANDARDDEV2014     4          msdb                        
+        SQLServer1     SQLServer1\STANDARDDEV2014     5          ReportServer$STANDARDDEV2014
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -5164,7 +5246,69 @@ Function  Get-SQLFuzzDatabaseName{
 # ----------------------------------
 #  Get-SQLFuzzServerLogin
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLFuzzServerLogin{
+<#
+    .SYNOPSIS
+        Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER StartId
+        Principal ID to start fuzzing with.
+    .PARAMETER EndId
+        Principal ID to stop fuzzing with.
+    .EXAMPLE
+        PS C:\> Get-SQLFuzzServerLogin -Instance SQLServer1\STANDARDDEV2014 -StartId 1 -EndId 500 | Select-Object -First 40
+
+        ComputerName   Instance                       PrincipalId PrincipleName                
+        ------------   --------                       ----------  -------------                                                        
+        SQLServer1     SQLServer1\STANDARDDEV2014     1           sa                                     
+        SQLServer1     SQLServer1\STANDARDDEV2014     2           public                                 
+        SQLServer1     SQLServer1\STANDARDDEV2014     3           sysadmin                               
+        SQLServer1     SQLServer1\STANDARDDEV2014     4           securityadmin                          
+        SQLServer1     SQLServer1\STANDARDDEV2014     5           serveradmin                            
+        SQLServer1     SQLServer1\STANDARDDEV2014     6           setupadmin                             
+        SQLServer1     SQLServer1\STANDARDDEV2014     7           processadmin                           
+        SQLServer1     SQLServer1\STANDARDDEV2014     8           diskadmin                              
+        SQLServer1     SQLServer1\STANDARDDEV2014     9           dbcreator                              
+        SQLServer1     SQLServer1\STANDARDDEV2014     10          bulkadmin                              
+        SQLServer1     SQLServer1\STANDARDDEV2014     101         ##MS_SQLResourceSigningCertificate##   
+        SQLServer1     SQLServer1\STANDARDDEV2014     102         ##MS_SQLReplicationSigningCertificate##
+        SQLServer1     SQLServer1\STANDARDDEV2014     103         ##MS_SQLAuthenticatorCertificate##     
+        SQLServer1     SQLServer1\STANDARDDEV2014     105         ##MS_PolicySigningCertificate##        
+        SQLServer1     SQLServer1\STANDARDDEV2014     106         ##MS_SmoExtendedSigningCertificate##   
+        SQLServer1     SQLServer1\STANDARDDEV2014     121         ##Agent XPs##                          
+        SQLServer1     SQLServer1\STANDARDDEV2014     122         ##SQL Mail XPs##                       
+        SQLServer1     SQLServer1\STANDARDDEV2014     123         ##Database Mail XPs##                  
+        SQLServer1     SQLServer1\STANDARDDEV2014     124         ##SMO and DMO XPs##                    
+        SQLServer1     SQLServer1\STANDARDDEV2014     125         ##Ole Automation Procedures##          
+        SQLServer1     SQLServer1\STANDARDDEV2014     126         ##Web Assistant Procedures##           
+        SQLServer1     SQLServer1\STANDARDDEV2014     127         ##xp_cmdshell##                        
+        SQLServer1     SQLServer1\STANDARDDEV2014     128         ##Ad Hoc Distributed Queries##         
+        SQLServer1     SQLServer1\STANDARDDEV2014     129         ##Replication XPs##                    
+        SQLServer1     SQLServer1\STANDARDDEV2014     257         ##MS_PolicyTsqlExecutionLogin##        
+        SQLServer1     SQLServer1\STANDARDDEV2014     259         Domain\User                     
+        SQLServer1     SQLServer1\STANDARDDEV2014     260         NT SERVICE\SQLWriter                   
+        SQLServer1     SQLServer1\STANDARDDEV2014     261         NT SERVICE\Winmgmt                     
+        SQLServer1     SQLServer1\STANDARDDEV2014     262         NT Service\MSSQL$STANDARDDEV2014       
+        SQLServer1     SQLServer1\STANDARDDEV2014     263         NT AUTHORITY\SYSTEM                    
+        SQLServer1     SQLServer1\STANDARDDEV2014     264         NT SERVICE\SQLAgent$STANDARDDEV2014    
+        SQLServer1     SQLServer1\STANDARDDEV2014     265         NT SERVICE\ReportServer$STANDARDDEV2014
+        SQLServer1     SQLServer1\STANDARDDEV2014     266         ##MS_PolicyEventProcessingLogin##      
+        SQLServer1     SQLServer1\STANDARDDEV2014     267         ##MS_AgentSigningCertificate##         
+        SQLServer1     SQLServer1\STANDARDDEV2014     268         MySQLUser1                               
+        SQLServer1     SQLServer1\STANDARDDEV2014     270         MySQLUser2                              
+        SQLServer1     SQLServer1\STANDARDDEV2014     271         MySQLUser3                             
+        SQLServer1     SQLServer1\STANDARDDEV2014     272         MySysadmin1                                   
+        SQLServer1     SQLServer1\STANDARDDEV2014     273         Domain\User2                          
+        SQLServer1     SQLServer1\STANDARDDEV2014     274         MySysadmin2                                  
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -5248,7 +5392,63 @@ Function  Get-SQLFuzzServerLogin{
 # ----------------------------------
 #  Get-SQLFuzzDomainAccount
 # ----------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLFuzzDomainAccount{
+<#
+    .SYNOPSIS
+        Enumerates domain groups, computer accounts, and user accounts based on domain RID using SUSER_SNAME() and only the Public role.
+        Note: In a typical domain 10000 or more is recommended for the EndId.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER StartId
+        RID to start fuzzing with.
+    .PARAMETER EndId
+        RID to stop fuzzing with.
+    .EXAMPLE
+        PS C:\> Get-SQLFuzzDomainAccount -Instance SQLServer1\STANDARDDEV2014 -Verbose -StartId 500 -EndId 1500
+
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating RID 0x010500000000000515000000A132413243431431326051C0f4010000 - 500 - Domain\Administrator
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating RID 0x010500000000000515000000A132413243431431326051C0f5010000 - 501 - Domain\Guest
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating RID 0x010500000000000515000000A132413243431431326051C0f6010000 - 502 - Domain\krbtgt
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+        
+        [TRUNCATED]
+
+        ComputerName   Instance                       DomainAccount                                 
+        ------------   --------                       -------------                                 
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Administrator                          
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Guest                                  
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\krbtgt                                 
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Guests                          
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Computers                       
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Controllers                     
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Cert Publishers                        
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Schema Admins                          
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Enterprise Admins                      
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Group Policy Creator Owners            
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Read-only Domain Controllers           
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Cloneable Domain Controllers           
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Protected Users                        
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\RAS and IAS Servers                    
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Allowed RODC Password Replication Group
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Denied RODC Password Replication Group 
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\HelpServicesGroup  
+        
+        [TRUNCATED]
+
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyUser                 
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyDAUser
+        SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyEAUser
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -5357,7 +5557,17 @@ Function  Get-SQLFuzzDomainAccount{
 # -------------------------------------------
 # Function: Get-ComputerNameFromInstance
 # ------------------------------------------
+# Author: Scott Sutherland
 Function Get-ComputerNameFromInstance{
+<#
+    .SYNOPSIS
+        Parses computer name from a provided instance. 
+    .PARAMETER Instance
+        SQL Server instance to parse. 
+    .EXAMPLE
+        PS C:\> Get-ComputerNameFromInstance -Instance SQLServer1\STANDARDDEV2014
+        SQLServer1
+#>
     [CmdletBinding()]
     Param(          
         [Parameter(Mandatory=$false,
@@ -5381,29 +5591,36 @@ Function Get-ComputerNameFromInstance{
 # -------------------------------------------
 # Function:  Get-SQLServiceLocal
 # -------------------------------------------
+# Author: Scott Sutherland
 Function  Get-SQLServiceLocal {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$false,
-        ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Domain user to authenticate with domain\user.")]
-        [string]$Username,
+<#
+    .SYNOPSIS
+        Returns local SQL Server services using Get-WmiObject -Class win32_service. This can only be run against the local server. 
+    .EXAMPLE
+        PS C:\> Get-SQLServiceLocal | Format-Table -AutoSize
 
-        [Parameter(Mandatory=$false,
-        ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Domain password to authenticate with domain\user.")]
-        [string]$Password,
-
-        [Parameter(Mandatory=$false,
-        HelpMessage="Credentials to use when connecting to a Domain Controller.")]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
-        [Parameter(Mandatory=$false,
-        HelpMessage="Domain controller for Domain and Site that you want to query against.")]
-        [string]$DomainController
-    )
-
+        ComputerName   ServiceDisplayName                                     ServiceName                              ServicePath                                                
+        ------------   ------------------                                     -----------                              -----------                                                
+        SQLServer1     SQL Server Integration Services 12.0                   MsDtsServer120                           "C:\Program Files\Microsoft SQL Server\120\DTS\Binn\MsDt...
+        SQLServer1     SQL Server Analysis Services (STANDARDDEV2014)         MSOLAP$STANDARDDEV2014                   "C:\Program Files\Microsoft SQL Server\MSAS12.STANDARDDE...
+        SQLServer1     SQL Server (SQLEXPRESS)                                MSSQL$SQLEXPRESS                         "C:\Program Files\Microsoft SQL Server\MSSQL12.SQLEXPRES...
+        SQLServer1     SQL Server (STANDARDDEV2014)                           MSSQL$STANDARDDEV2014                    "C:\Program Files\Microsoft SQL Server\MSSQL12.STANDARDD...
+        SQLServer1     SQL Full-text Filter Daemon Launcher (MSSQLSERVER)     MSSQLFDLauncher                          "C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERV...
+        SQLServer1     SQL Full-text Filter Daemon Launcher (SQLEXPRESS)      MSSQLFDLauncher$SQLEXPRESS               "C:\Program Files\Microsoft SQL Server\MSSQL12.SQLEXPRES...
+        SQLServer1     SQL Full-text Filter Daemon Launcher (STANDARDDEV2014) MSSQLFDLauncher$STANDARDDEV2014          "C:\Program Files\Microsoft SQL Server\MSSQL12.STANDARDD...
+        SQLServer1     SQL Server (MSSQLSERVER)                               MSSQLSERVER                              "C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERV...
+        SQLServer1     SQL Server Analysis Services (MSSQLSERVER)             MSSQLServerOLAPService                   "C:\Program Files\Microsoft SQL Server\MSAS12.MSSQLSERVE...
+        SQLServer1     SQL Server Reporting Services (MSSQLSERVER)            ReportServer                             "C:\Program Files\Microsoft SQL Server\MSRS12.MSSQLSERVE...
+        SQLServer1     SQL Server Reporting Services (SQLEXPRESS)             ReportServer$SQLEXPRESS                  "C:\Program Files\Microsoft SQL Server\MSRS12.SQLEXPRESS...
+        SQLServer1     SQL Server Reporting Services (STANDARDDEV2014)        ReportServer$STANDARDDEV2014             "C:\Program Files\Microsoft SQL Server\MSRS12.STANDARDDE...
+        SQLServer1     SQL Server Distributed Replay Client                   SQL Server Distributed Replay Client     "C:\Program Files (x86)\Microsoft SQL Server\120\Tools\D...
+        SQLServer1     SQL Server Distributed Replay Controller               SQL Server Distributed Replay Controller "C:\Program Files (x86)\Microsoft SQL Server\120\Tools\D...
+        SQLServer1     SQL Server Agent (SQLEXPRESS)                          SQLAgent$SQLEXPRESS                      "C:\Program Files\Microsoft SQL Server\MSSQL12.SQLEXPRES...
+        SQLServer1     SQL Server Agent (STANDARDDEV2014)                     SQLAgent$STANDARDDEV2014                 "C:\Program Files\Microsoft SQL Server\MSSQL12.STANDARDD...
+        SQLServer1     SQL Server Browser                                     SQLBrowser                               "C:\Program Files (x86)\Microsoft SQL Server\90\Shared\s...
+        SQLServer1     SQL Server Agent (MSSQLSERVER)                         SQLSERVERAGENT                           "C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERV...
+        SQLServer1     SQL Server VSS Writer                                  SQLWriter                                "C:\Program Files\Microsoft SQL Server\90\Shared\sqlwrit...
+#>
     Begin
     {
         # Table for output
@@ -5439,7 +5656,6 @@ Function  Get-SQLServiceLocal {
         
         # Status User
         $LocalInstanceCount = $TblLocalInstances.rows.count
-        #Write-Verbose "$LocalInstanceCount local instances where found."
 
         # Return data
         $TblLocalInstances         
@@ -5452,24 +5668,21 @@ Function  Get-SQLServiceLocal {
 # -------------------------------------------
 function Create-SQLFile-XPDLL
 {
-	    <#
-	    .SYNOPSIS
-	    This script can be used to generate a DLL file with an exported function that can be registered as an 
-	    extended stored procedure in SQL Server.  The exported function can be configured to run any 
-	    Windows command.
-
-	    .DESCRIPTION
-	    This script can be used to generate a DLL file with an exported function that can be registered as an 
+<#
+    .SYNOPSIS
+        This script can be used to generate a DLL file with an exported function that can be registered as an 
 	    extended stored procedure in SQL Server.  The exported function can be configured to run any 
 	    Windows command.  This script is intended to be used to test basic SQL Server audit controls around
 	    the sp_addextendedproc and sp_dropextendedproc stored procedures used to register and unregister 
 	    extended stored procedures.
-
-	    .EXAMPLE
-	    Create a DLL with an exported function named "xp_test" that can be consumed by SQL Server that writes
-	    a file to c:\temp\test.txt with the word "test" in it.
-
-	     PS C:\temp> Create-SQLFile-XPDLL -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
+    .PARAMETER ExportName
+        Name of the exported function that will be created.    
+    .PARAMETER Command
+        Operating system command that the exported function will run.   
+    .PARAMETER OutFile
+        Name of the Dll file to write to. 
+    .EXAMPLE
+        PS C:\temp> Create-SQLFile-XPDLL -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
  
 	     Creating DLL c:\temp\test.dll
 	     - Exported function name: xp_test
@@ -5482,24 +5695,20 @@ function Create-SQLFile-XPDLL
 	     - Register xp via local disk: sp_addextendedproc 'xp_test', 'c:\temp\myxp.dll'
 	     - Register xp via UNC path: sp_addextendedproc 'xp_test', '\\servername\pathtofile\myxp.dll'
 	     - Unregister xp: sp_dropextendedproc 'xp_test'
+    .LINK
+        http://en.cppreference.com/w/cpp/utility/program/system
+        http://www.netspi.com
 
-	    .LINK
-	     http://en.cppreference.com/w/cpp/utility/program/system
-	     http://www.netspi.com
+    .NOTES
+        The extended stored procedure template used to create the DLL shell was based on the following stackoverflow post:
+        http://stackoverflow.com/questions/12749210/how-to-create-a-simple-dll-for-a-custom-sql-server-extended-stored-procedure
 
-	    .NOTES
-	    Author: Scott Sutherland - 2016, NetSPI
-	    Version: Create-SQLFile-XPDLL.psm1 v1.0
-	    Comments: 
-	    The extended stored procedure template used to create the DLL shell was based on the following stackoverflow post:
-	    http://stackoverflow.com/questions/12749210/how-to-create-a-simple-dll-for-a-custom-sql-server-extended-stored-procedure
-
-	    Source modified code used to create the DLL can be found at the link below:
+        Modified source code used to create the DLL can be found at the link below:
 	    https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/xp_evil_template.cpp
 	    
 	    The method used to patch the DLL was based on Will Schroeder "Invoke-PatchDll" function found in the PowerUp toolkit:
 	    https://github.com/HarmJ0y/PowerUp
-        #>
+#>
 
         [CmdletBinding()]
         Param(
@@ -5675,9 +5884,51 @@ function Create-SQLFile-XPDLL
 # -------------------------------------------
 # Function: Get-DomainSpn
 # -------------------------------------------
+# Author: Scott Sutherland
 # Reference: http://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx
 function Get-DomainSpn
 {
+<#
+    .SYNOPSIS
+        Used to query domain controllers via LDAP. Supports alternative credentials from non-domain system
+        Note: This will use the default logon server by default.
+    .PARAMETER Username
+        Domain account to authenticate to Active Directory.   
+    .PARAMETER Password
+        Domain password to authenticate to Active Directory. 
+    .PARAMETER Credential
+        Domain credential to authenticate to Active Directory. 
+    .PARAMETER DomainController
+        Domain controller to authenticated to. Requires username/password or credential.
+    .PARAMETER ComputerName
+        Computer name to filter for. 
+    .PARAMETER DomainAccount
+        Domain account to filter for. 
+    .PARAMETER SpnService
+        SPN service code to filter for. 
+    .EXAMPLE
+        PS C:\temp> Get-DomainSpn -SpnService MSSQL | Select-Object -First 2
+
+        UserSid      : 15000005210002431346712321821222048886811922073100
+        User         : SQLServer1$
+        UserCn       : SQLServer1
+        Service      : MSSQLSvc
+        ComputerName : SQLServer1.domain.local
+        Spn          : MSSQLSvc/SQLServer1.domain.local:1433
+        LastLogon    : 6/24/2016 6:56 AM
+        Description  : This is a SQL Server test instance using a local managed service account.
+
+        UserSid      : 15000005210002431346712321821222048886811922073101
+        User         : SQLServiceAccount
+        UserCn       : SQLServiceAccount
+        Service      : MSSQLSvc
+        ComputerName : SQLServer2.domain.local
+        Spn          : MSSQLSvc/SQLServer2.domain.local:NamedInstance
+        LastLogon    : 3/26/2016 3:43 PM
+        Description  : This is a SQL Server test instance using a domain service account.
+    .EXAMPLE
+        PS C:\temp> Get-DomainSpn -DomainController 10.0.0.1  -Username Domain\User -Password Password123!       
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -5809,10 +6060,37 @@ function Get-DomainSpn
 # -------------------------------------------
 # Function: Get-DomainObject
 # -------------------------------------------
-# Based on Get-ADObject function from:
-# https://github.com/PowerShellEmpire/PowerTools/blob/master/PowerView/powerview.ps1
+# Author: Will Schroeder
+# Modifications: Scott Sutherland
 function Get-DomainObject
 {
+<#
+    .SYNOPSIS
+        Used to query domain controllers via LDAP. Supports alternative credentials from non-domain system
+        Note: This will use the default logon server by default.
+    .PARAMETER Username
+        Domain account to authenticate to Active Directory.   
+    .PARAMETER Password
+        Domain password to authenticate to Active Directory. 
+    .PARAMETER Credential
+        Domain credential to authenticate to Active Directory. 
+    .PARAMETER DomainController
+        Domain controller to authenticated to. Requires username/password or credential.
+    .PARAMETER LdapFilter
+        LDAP filter. 
+    .PARAMETER LdapPath
+        Ldap path. 
+    .PARAMETER $Limit 
+        Maximum number of Objects to pull from AD, limit is 1,000.". 
+    .PARAMETER SearchScope 
+        Scope of a search as either a base, one-level, or subtree search, default is subtree.. 
+    .EXAMPLE
+        PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" 
+    .EXAMPLE
+        PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1  -Username Domain\User  -Password Password123!       
+    .Note
+        This was based on Will Schroeder's Get-ADObject function from https://github.com/PowerShellEmpire/PowerTools/blob/master/PowerView/powerview.ps1
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

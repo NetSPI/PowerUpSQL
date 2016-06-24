@@ -7140,6 +7140,7 @@ Function Invoke-SQLEscalate-CreateProcedure {
 # ---------------------------------------
 # Invoke-SQLEscalate-DbOwnerRole
 # ---------------------------------------
+# Author: Scott Sutherland
 Function Invoke-SQLEscalate-DbOwnerRole {
     [CmdletBinding()]
     Param(
@@ -7330,7 +7331,7 @@ Function Invoke-SQLEscalate-DbOwnerRole {
 Function Invoke-SQLEscalate-ImpersonateLogin {
 <#
     .SYNOPSIS
-        Check if the current login has the CREATE PROCEDURE permission.  Attempt to leverage to obtain sysadmin privileges.
+        Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.
     .PARAMETER Username
         SQL Server or domain account to authenticate with.   
     .PARAMETER Password
@@ -7356,6 +7357,23 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
         IsVulnerable  : Yes
         IsExploitable : Yes
         Exploited     : No
+        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        Details       : public can impersonate the sa SYSADMIN login. This test was ran with the evil login.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123! -Exploit
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : PERMISSION - IMPERSONATE LOGIN
+        Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
+        Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+                        Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
+        Severity      : High
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : Yes
         ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
         Details       : public can impersonate the sa SYSADMIN login. This test was ran with the evil login.
         Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
@@ -8547,8 +8565,8 @@ function Invoke-Parallel {
 Function Invoke-PowerUpSQL {
 <#
     .SYNOPSIS
-        Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size. 
-        Note: For cleaner data sample output use the Get-SQLColumnSampleData function.
+        Audit for high impact weak configurations by running all privilege escalation checks.
+        Note:  Use the Exploit flag to attempt to obtain sysadmin privileges.
     .PARAMETER Username
         SQL Server or domain account to authenticate with.   
     .PARAMETER Password

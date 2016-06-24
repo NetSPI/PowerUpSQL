@@ -212,7 +212,7 @@ Example: Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
 |Get-SQLServiceLocal | Returns local SQL Server services.|Complete|
 |Create-SQLFile-XPDLL | Used to create CPP DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.|Complete|
 |Get-DomainSpn | Returns a list of SPNs for the target domain. Supports authentication from non domain systems.|Complete|
-|Get-DomainObject | Used to query domain controllers via LDAP.  Supports alternative credentials form non-domain system.|Complete|
+|Get-DomainObject | Used to query domain controllers via LDAP.  Supports alternative credentials from non-domain system.|Complete|
 	
 	Roadmap:
 

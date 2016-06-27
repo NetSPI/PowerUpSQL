@@ -5887,7 +5887,7 @@ Function  Get-SQLFuzzServerLogin{
         [string]$EndId = 300,
 
         [Parameter(Mandatory=$false,
-        HelpMessage="Try to determine if the principal type is role, SQL login, or Windows account.")]
+        HelpMessage="Try to determine if the principal type is role, SQL login, or Windows account via error analysis of sp_defaultdb.")]
         [switch]$GetPrincipalType,
 
         [Parameter(Mandatory=$false,
@@ -5899,13 +5899,13 @@ Function  Get-SQLFuzzServerLogin{
     {
         # Table for output
         $TblFuzzedLogins = New-Object System.Data.DataTable
-       <#
-        $TblFuzzedLogins.Columns.add("ComputerName")
-        $TblFuzzedLogins.Columns.add("Instance")
-        $TblFuzzedLogins.Columns.add("PrincipalId")
-        $TblFuzzedLogins.Columns.add("PrincipleName")
-        $TblFuzzedLogins.Columns.add("PrincipleType")
-        #>
+        $TblFuzzedLogins.Columns.add("ComputerName") | Out-Null
+        $TblFuzzedLogins.Columns.add("Instance") | Out-Null
+        $TblFuzzedLogins.Columns.add("PrincipalId") | Out-Null
+        $TblFuzzedLogins.Columns.add("PrincipleName") | Out-Null
+        if($GetPrincipalType){
+            $TblFuzzedLogins.Columns.add("PrincipleType") | Out-Null        
+        }
     }
 
     Process
@@ -5946,28 +5946,30 @@ Function  Get-SQLFuzzServerLogin{
                                         
             # Execute Query
             $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-            
+                        
             # check if principal is role, sql login, or windows account
             $PrincipalName = $TblResults.PrincipleName            
             $PrincipalId = $TblResults.PrincipalId
-            $RoleCheckQuery = "EXEC master..sp_defaultdb '$PrincipalName', 'NOTAREALDATABASE1234ABCD'"
-            $RoleCheckResults =  Get-SQLQuery -Instance $Instance -Query $RoleCheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -ReturnError
             
-            # Check the error message for a signature that means the login is real
-            if (($RoleCheckResults -like '*NOTAREALDATABASE*') -or ($RoleCheckResults -like '*alter the login*'))
-            {
-                # 
-                if($PrincipalName -like "*\*"){
-                    $PrincipalType = "Windows Account"
+            if($GetPrincipalType){
+                $RoleCheckQuery = "EXEC master..sp_defaultdb '$PrincipalName', 'NOTAREALDATABASE1234ABCD'"
+                $RoleCheckResults =  Get-SQLQuery -Instance $Instance -Query $RoleCheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -ReturnError
+            
+                # Check the error message for a signature that means the login is real
+                if (($RoleCheckResults -like '*NOTAREALDATABASE*') -or ($RoleCheckResults -like '*alter the login*'))
+                {
+                    # 
+                    if($PrincipalName -like "*\*"){
+                        $PrincipalType = "Windows Account"
+                    }else{
+                        $PrincipalType = "SQL Login"
+                    }
                 }else{
-                    $PrincipalType = "SQL Login"
-                }
-            }else{
-                $PrincipalType = "SQL Server Role"
-            }         
+                    $PrincipalType = "SQL Server Role"
+                }         
+            }
 
-            # Output for user
-            
+            # Output for user                        
             if(-not $SuppressVerbose){
                 if($PrincipalName.length -ge 2){
                     Write-Verbose "$Instance : - Principal ID $_ resolved to: $PrincipalName ($PrincipalType)"
@@ -5977,8 +5979,12 @@ Function  Get-SQLFuzzServerLogin{
             }
         
             # Append results
-            $TblFuzzedLogins = $TblFuzzedLogins + $TblResults   
-            #$TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $p
+            #$TblFuzzedLogins = $TblFuzzedLogins + $TblResults   
+            if($GetPrincipalType){
+                $TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $PrincipalId, $PrincipalName, $PrincipalType) | Out-Null 
+            }else{
+                $TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $PrincipalId, $PrincipalName) | Out-Null 
+            }
         }  
     }
 

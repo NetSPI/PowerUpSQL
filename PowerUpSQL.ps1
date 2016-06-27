@@ -2074,7 +2074,11 @@ Function  Get-SQLDatabaseSchema {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Don't select tables from default databases.")]
-        [switch]$NoDefaults
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -2100,15 +2104,30 @@ Function  Get-SQLDatabaseSchema {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
          # Setup NoDefault filter
         if($NoDefaults){
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
         }else{
 
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
         }
 
         # Get tables for each database
@@ -2117,6 +2136,10 @@ Function  Get-SQLDatabaseSchema {
 
             # Get database name
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Grabbing Schemas from the $DbName database..."
+            }
 
             # Define Query
             $Query = "  USE $DbName;
@@ -2130,7 +2153,7 @@ Function  Get-SQLDatabaseSchema {
                         ORDER BY SCHEMA_NAME"
 
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
 
             # Append results
             $TblSchemas = $TblSchemas + $TblResults

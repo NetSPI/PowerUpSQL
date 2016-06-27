@@ -2405,7 +2405,11 @@ Function  Get-SQLServerLink{
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server link name.")]
-        [string]$DatabaseLinkName
+        [string]$DatabaseLinkName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -2429,6 +2433,21 @@ Function  Get-SQLServerLink{
         # Default connection to local default instance
         if(-not $Instance){
             $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
         }
 
         # Define Query
@@ -2460,7 +2479,7 @@ Function  Get-SQLServerLink{
                     $DatabaseLinkNameFilter"
 
         # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results             
         $TblServerLinks = $TblServerLinks + $TblResults        
@@ -2517,20 +2536,24 @@ Function  Get-SQLServerCredential{
         [string]$Password,
 
         [Parameter(Mandatory=$false,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Credential name.")]
-        [string]$CredentialName,
-
-        [Parameter(Mandatory=$false,
         HelpMessage="Windows credentials.")]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Credential name.")]
+        [string]$CredentialName,      
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -2555,6 +2578,21 @@ Function  Get-SQLServerCredential{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "  USE master;
                     SELECT  '$ComputerName' as [ComputerName],
@@ -2570,7 +2608,7 @@ Function  Get-SQLServerCredential{
                     $CredentialNameFilter"
         
         # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results             
         $TblCredentials = $TblCredentials + $TblResults       
@@ -6302,12 +6340,18 @@ function Get-DomainSpn
         [Parameter(Mandatory=$false,        
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SPN service code.")]
-        [string]$SpnService
+        [string]$SpnService,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
     {
-        Write-Verbose "Getting domain SPNs..."
+        if(-not $SuppressVerbose){
+            Write-Verbose "Getting domain SPNs..."
+        }
 
         # Setup table to store results
         $TableDomainSpn = New-Object System.Data.DataTable
@@ -6388,7 +6432,9 @@ function Get-DomainSpn
         if ($TableDomainSpn.Rows.Count -gt 0)
         {
             $TableDomainSpnCount = $TableDomainSpn.Rows.Count
-            Write-Verbose "$TableDomainSpnCount SPNs found on servers that matched search criteria."
+            if(-not $SuppressVerbose){
+                Write-Verbose "$TableDomainSpnCount SPNs found on servers that matched search criteria."
+            }
             Return $TableDomainSpn 
         }else{
             Write-Verbose "0 SPNs found."
@@ -6679,8 +6725,8 @@ Function  Get-SQLInstanceDomain {
     Process
     {
         # Get list of SPNs for SQL Servers
-        Write-Verbose "Grabbing SQL Server SPNs from domain..."
-        $TblSQLServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -Credential $Credential -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSSQL*' | Where-Object {$_.service -like 'MSSQL*'}                
+        Write-Verbose "Grabbing SPNs from the domain for SQL Servers (MSSQL*)..."
+        $TblSQLServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -Credential $Credential -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSSQL*' -SuppressVerbose | Where-Object {$_.service -like 'MSSQL*'}                
 
         Write-Verbose "Parsing SQL Server instances from SPNs..."
 
@@ -6718,8 +6764,8 @@ Function  Get-SQLInstanceDomain {
         # Enumerate SQL Server instances from management servers
         if($CheckMgmt){
 
-            Write-Verbose "Grabbing SPNs for servers managing SQL Server clusters (MSServerClusterMgmtAPI) from domain..."        
-            $TblMgmtServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -Credential $Credential  -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSServerClusterMgmtAPI' | Where-Object {$_.ComputerName -like "*.*"} | Select-Object ComputerName -Unique | Sort-Object ComputerName 
+            Write-Verbose "Grabbing SPNs from the domain for Servers managing SQL Server clusters (MSServerClusterMgmtAPI)..."        
+            $TblMgmtServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -Credential $Credential  -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSServerClusterMgmtAPI' -SuppressVerbose | Where-Object {$_.ComputerName -like "*.*"} | Select-Object ComputerName -Unique | Sort-Object ComputerName 
 
             Write-Verbose "Performing a UDP scan of management servers to obtain managed SQL Server instances..."
             $TblMgmtSQLServers = $TblMgmtServers | Select-Object ComputerName -Unique | Get-SQLInstanceScanUDP -UDPTimeOut $UDPTimeOut
@@ -6730,6 +6776,7 @@ Function  Get-SQLInstanceDomain {
     {                  
         # Return data        
         if($CheckMgmt){
+            Write-Verbose "Parsing SQL Server instances from the UDP scan..."
             $Tbl1 = $TblMgmtSQLServers | Select-Object ComputerName, Instance | Sort-Object ComputerName, Instance
             $Tbl2 = $TblSQLServerSpns | Select-Object ComputerName, Instance | Sort-Object ComputerName, Instance
             $Tbl3 = $Tbl1 + $Tbl2
@@ -6929,7 +6976,7 @@ function Get-SQLInstanceScanUDP
 
     Process
     {
-        Write-Verbose -Message " - $ComputerName - UDP Scan Start."
+        Write-Verbose " - $ComputerName - UDP Scan Start."
 
         # Verify server name isn't empty
         if ($ComputerName -ne '')
@@ -6998,7 +7045,7 @@ function Get-SQLInstanceScanUDP
             } 
         }       
    
-        Write-Verbose -Message " - $ComputerName - UDP Scan Complete."
+        Write-Verbose " - $ComputerName - UDP Scan Complete."
     }
 
     End

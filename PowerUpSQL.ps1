@@ -3868,7 +3868,11 @@ Function  Get-SQLDatabaseUser {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Do not show database users associated with default databases.")]
-        [Switch]$NoDefaults
+        [Switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -3900,13 +3904,6 @@ Function  Get-SQLDatabaseUser {
         }else{
             $DatabaseUserFilter = ""
         }
-
-        # Setup NoDefault filter
-        if($NoDefaults){
-            $NoDefaultsFilter = " and a.name not in ('master','tempdb','msdb','model')"
-        }else{
-            $NoDefaultsFilter = ""
-        }
     }
 
     Process
@@ -3921,8 +3918,28 @@ Function  Get-SQLDatabaseUser {
             $Instance = $env:COMPUTERNAME
         }
 
+
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Get list of databases
-        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName  
+        if($NoDefaults){
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose  -NoDefaults
+        }else{
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose  
+        }
 
         # Get the privs for each database
         $TblDatabases | 
@@ -3930,6 +3947,10 @@ Function  Get-SQLDatabaseUser {
 
             # Set DatabaseName filter
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Grabbing database users from $DbName."
+            }
 
             # Define Query
             $Query = "  USE $DbName;
@@ -3946,12 +3967,12 @@ Function  Get-SQLDatabaseUser {
 	                            a.is_fixed_role
                         FROM    [sys].[database_principals] a
                         LEFT JOIN [sys].[server_principals] b
-	                            ON a.sid = b.sid WHERE 1=1
+	                            ON a.sid = b.sid WHERE 1=1       
                         $DatabaseUserFilter
                         $PrincipalNameFilter"               
 
             # Execute Query
-            $TblDatabaseUsersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            $TblDatabaseUsersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Update sid formatting for each entry and append results
             $TblDatabaseUsersTemp | 

@@ -491,7 +491,11 @@ Function  Get-SQLQuery {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
-        [switch]$SuppressVerbose
+        [switch]$SuppressVerbose,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Return error message if exists.")]
+        [switch]$ReturnError
     )
 
     Begin
@@ -547,7 +551,12 @@ Function  Get-SQLQuery {
                 
                 # Connection failed - for detail error use  Get-SQLConnectionTest
                 if(-not $SuppressVerbose){
-                    Write-Verbose "$Instance : Connection Failed."
+                    Write-Verbose "$Instance : Connection Failed."                      
+                }
+
+                if($ReturnError){                                                 
+                    $ErrorMessage = $_.Exception.Message          
+                    #Write-Verbose  " Error: $ErrorMessage"                
                 }
             }          
 
@@ -560,7 +569,11 @@ Function  Get-SQLQuery {
     End
     {   
         # Return Results
-        $TblQueryResults          
+        if($ReturnError){                                                 
+            $ErrorMessage
+        }else{
+            $TblQueryResults    
+        }                  
     }
 }
 
@@ -5795,6 +5808,8 @@ Function  Get-SQLFuzzServerLogin{
         Principal ID to start fuzzing with.
     .PARAMETER EndId
         Principal ID to stop fuzzing with.
+    .PARAMETER GetRole
+        Checks if the principal name is a role, SQL login, or Windows account.
     .EXAMPLE
         PS C:\> Get-SQLFuzzServerLogin -Instance SQLServer1\STANDARDDEV2014 -StartId 1 -EndId 500 | Select-Object -First 40
 
@@ -5920,11 +5935,30 @@ Function  Get-SQLFuzzServerLogin{
                                         
             # Execute Query
             $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-
+            
+            # check if principal is role, sql login, or windows account
             $ServerLogin = $TblResults.PrincipleName
+            $RoleCheckQuery = "EXEC master..sp_defaultdb '$ServerLogin', 'NOTAREALDATABASE1234ABCD'"
+            $RoleCheckResults =  Get-SQLQuery -Instance $Instance -Query $RoleCheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -ReturnError
+            
+            # Check the error message for a signature that means the login is real
+            if (($RoleCheckResults -like '*NOTAREALDATABASE*') -or ($RoleCheckResults -like '*alter the login*'))
+            {
+                # 
+                if($ServerLogin -like "*\*"){
+                    $PrincipalType = "Windows Account"
+                }else{
+                    $PrincipalType = "SQL Login"
+                }
+            }else{
+                $PrincipalType = "SQL Server Role"
+            }         
+
+            # Output for user
+            
             if(-not $SuppressVerbose){
                 if($ServerLogin.length -ge 2){
-                    Write-Verbose "$Instance : - Principal ID $_ resolved to: $ServerLogin"
+                    Write-Verbose "$Instance : - Principal ID $_ resolved to: $ServerLogin ($PrincipalType)"
                 }else{
                     Write-Verbose "$Instance : - Principal ID $_ resolved to: "
                 }

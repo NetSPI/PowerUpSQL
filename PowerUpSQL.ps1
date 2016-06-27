@@ -1536,7 +1536,11 @@ Function  Get-SQLTable {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Don't select tables from default databases.")]
-        [switch]$NoDefaults
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -1563,15 +1567,31 @@ Function  Get-SQLTable {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Grabbing tables from databases below:"
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Setup NoDefault filter
         if($NoDefaults){
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
         }else{            
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess            
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose         
         }
 
         # Get tables for each database
@@ -1580,6 +1600,10 @@ Function  Get-SQLTable {
 
             # Get database name
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : - $DbName"                
+            }
 
             # Define Query
             $Query = "  USE $DbName;
@@ -1594,7 +1618,7 @@ Function  Get-SQLTable {
                         ORDER BY TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME"
 
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results 
             $TblTables = $TblTables + $TblResults 
@@ -3113,7 +3137,11 @@ Function  Get-SQLServiceAccount{
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -3134,8 +3162,23 @@ Function  Get-SQLServiceAccount{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Get sysadmin status
-        $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password | Select-Object IsSysadmin -ExpandProperty IsSysadmin
+        $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin
 
         if($IsSysadmin -eq "Yes"){
             $SysadminSetup = "
@@ -3233,7 +3276,7 @@ Function  Get-SQLServiceAccount{
                                 $SysadminQuery"
 
         # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results             
         $TblServiceAccount = $TblServiceAccount + $TblResults        
@@ -5276,7 +5319,11 @@ Function  Get-SQLStoredProcure {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Don't select tables from default databases.")]
-        [switch]$NoDefaults
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5303,15 +5350,31 @@ Function  Get-SQLStoredProcure {
             $Instance = ".\"
         }
             
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Grabbing stored procedures from databases below:"
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Setup NoDefault filter
         if($NoDefaults){
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
         }else{            
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess            
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose           
         } 
 
         # Get role for each database
@@ -5320,6 +5383,10 @@ Function  Get-SQLStoredProcure {
 
             # Get database name
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : - $DbName"
+            }
 
             # Define Query
             $Query = "  use [$DbName]; 
@@ -5338,7 +5405,7 @@ Function  Get-SQLStoredProcure {
                         $ProcedureNameFilter" 
 
             # Execute Query
-            $TblProcsTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            $TblProcsTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblProcs = $TblProcs + $TblProcsTemp

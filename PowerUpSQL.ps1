@@ -5384,7 +5384,11 @@ Function  Get-SQLFuzzDatabaseName{
 
         [Parameter(Mandatory=$false,
         HelpMessage="Principal ID to stop fuzzing on.")]
-        [string]$EndId = 300
+        [string]$EndId = 300,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5403,6 +5407,22 @@ Function  Get-SQLFuzzDatabaseName{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Enumerating database names from database IDs..."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
         ForEach-Object {
@@ -5414,13 +5434,17 @@ Function  Get-SQLFuzzDatabaseName{
                                 DB_NAME($_) as [DatabaseName]"
                                         
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
             
             $DatabaseName = $TblResults.DatabaseName
             if($DatabaseName.length -ge 2){
-                Write-Verbose "$Instance : Enumerating database name for ID $_ - $DatabaseName"
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : - ID $_ - Resolved to: $DatabaseName"
+                }
             }else{
-                Write-Verbose "$Instance : Enumerating database name for ID $_"
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : - ID $_ - Resolved to:"
+                }
             } 
         
             # Append results

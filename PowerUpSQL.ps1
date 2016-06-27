@@ -5681,13 +5681,10 @@ Function  Get-SQLFuzzDomainAccount{
         PS C:\> Get-SQLFuzzDomainAccount -Instance SQLServer1\STANDARDDEV2014 -Verbose -StartId 500 -EndId 1500
 
         VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
-        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating RID 0x010500000000000515000000A132413243431431326051C0f4010000 - 500 - Domain\Administrator
-        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
-        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating RID 0x010500000000000515000000A132413243431431326051C0f5010000 - 501 - Domain\Guest
-        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
-        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating RID 0x010500000000000515000000A132413243431431326051C0f6010000 - 502 - Domain\krbtgt
-        VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
-        
+        VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating Domain accounts from the SQL Server's default domain...
+        VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f4010000 (500) Resolved to: Domain\Administrator        
+        VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f5010000 (501) Resolved to: Domain\Guest        
+        VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f6010000 (502) Resolved to: Domain\krbtgt                
         [TRUNCATED]
 
         ComputerName   Instance                       DomainAccount                                 
@@ -5784,7 +5781,7 @@ Function  Get-SQLFuzzDomainAccount{
         }
 
         # Grab server information
-        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential                    
+        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                  
         $ComputerName = $ServerInfo.ComputerName
         $Instance = $ServerInfo.InstanceName
         $Domain = $ServerInfo.DomainName

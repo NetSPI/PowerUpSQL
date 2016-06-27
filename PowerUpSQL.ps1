@@ -1137,7 +1137,11 @@ Function  Get-SQLServerInfo {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -1163,11 +1167,26 @@ Function  Get-SQLServerInfo {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Get number of active sessions for server
-        $ActiveSessions =   Get-SQLSession -Instance $Instance -Credential $Credential -Username $Username -Password $Password | Where-Object {$_.SessionStatus -eq "running"} | Measure-Object -Line | Select-Object Lines -ExpandProperty Lines
+        $ActiveSessions =   Get-SQLSession -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Where-Object {$_.SessionStatus -eq "running"} | Measure-Object -Line | Select-Object Lines -ExpandProperty Lines
 
         # Get sysadmin status
-        $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password | Select-Object IsSysadmin -ExpandProperty IsSysadmin
+        $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin
 
         if($IsSysadmin -eq "Yes"){
             # Grab additional information if sysadmin
@@ -1255,7 +1274,7 @@ Function  Get-SQLServerInfo {
                             '$IsSysadmin' as [IsSysadmin],
                             '$ActiveSessions' as [ActiveSessions]"
         # Execute Query
-        $TblServerInfoTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblServerInfoTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         
         # Append as needed
         $TblServerInfo = $TblServerInfo + $TblServerInfoTemp
@@ -2774,7 +2793,11 @@ Function  Get-SQLSession{
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="PrincipalName.")]
-        [string]$PrincipalName
+        [string]$PrincipalName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -2811,6 +2834,21 @@ Function  Get-SQLSession{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "  USE master;
                     SELECT  '$ComputerName' as [ComputerName],
@@ -2827,7 +2865,7 @@ Function  Get-SQLSession{
                     $PrincipalNameFilter"
         
         # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential     
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose     
 
         # Update sid formatting for each record
         $TblResults |
@@ -2906,7 +2944,11 @@ Function  Get-SQLSysadminCheck{
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -2933,6 +2975,21 @@ Function  Get-SQLSysadminCheck{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "SELECT    '$ComputerName' as [ComputerName],
                             '$Instance' as [Instance],
@@ -2942,7 +2999,7 @@ Function  Get-SQLSysadminCheck{
 		                     END as IsSysadmin"
         
         # Execute Query
-        $TblSysadminStatusTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+        $TblSysadminStatusTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results             
         $TblSysadminStatus = $TblSysadminStatus + $TblSysadminStatusTemp
@@ -5694,7 +5751,11 @@ Function  Get-SQLFuzzDomainAccount{
 
         [Parameter(Mandatory=$false,
         HelpMessage="Principal ID to stop fuzzing on.")]
-        [string]$EndId = 1000
+        [string]$EndId = 1000,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5704,14 +5765,38 @@ Function  Get-SQLFuzzDomainAccount{
     }
 
     Process
-    {
+    {        
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance){
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Enumerating Domain accounts from the SQL Server's default domain..."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Grab server information
         $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential                    
         $ComputerName = $ServerInfo.ComputerName
         $Instance = $ServerInfo.InstanceName
         $Domain = $ServerInfo.DomainName
         $DomainGroup = "$Domain\Domain Admins"
-        $DomainGroupSid =  Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential 
+        $DomainGroupSid =  Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $DomainGroupSidBytes = $DomainGroupSid | Select-Object domaingroupsid -ExpandProperty domaingroupsid
         $DomainGroupSidString = [System.BitConverter]::ToString($DomainGroupSidBytes).Replace("-","").Substring(0,48)
         
@@ -5749,13 +5834,17 @@ Function  Get-SQLFuzzDomainAccount{
                                 SUSER_SNAME($Rid) as [DomainAccount]"
                                         
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential   
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose  
             
             $DomainAccount = $TblResults.DomainAccount
             if($DomainAccount.length -ge 2){
-                Write-Verbose "$Instance : Enumerating RID $Rid - $_ - $DomainAccount"
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : - RID $Rid ($_) resolved to: $DomainAccount"
+                }
             }else{
-                Write-Verbose "$Instance : Enumerating RID $Rid - $_"
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : - RID $Rid ($_) resolved to: "
+                }
             }
         
             # Append results

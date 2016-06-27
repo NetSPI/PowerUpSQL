@@ -5887,6 +5887,10 @@ Function  Get-SQLFuzzServerLogin{
         [string]$EndId = 300,
 
         [Parameter(Mandatory=$false,
+        HelpMessage="Try to determine if the principal type is role, SQL login, or Windows account.")]
+        [switch]$GetPrincipalType,
+
+        [Parameter(Mandatory=$false,
         HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
         [switch]$SuppressVerbose
     )
@@ -5895,6 +5899,13 @@ Function  Get-SQLFuzzServerLogin{
     {
         # Table for output
         $TblFuzzedLogins = New-Object System.Data.DataTable
+       <#
+        $TblFuzzedLogins.Columns.add("ComputerName")
+        $TblFuzzedLogins.Columns.add("Instance")
+        $TblFuzzedLogins.Columns.add("PrincipalId")
+        $TblFuzzedLogins.Columns.add("PrincipleName")
+        $TblFuzzedLogins.Columns.add("PrincipleType")
+        #>
     }
 
     Process
@@ -5937,15 +5948,16 @@ Function  Get-SQLFuzzServerLogin{
             $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
             
             # check if principal is role, sql login, or windows account
-            $ServerLogin = $TblResults.PrincipleName
-            $RoleCheckQuery = "EXEC master..sp_defaultdb '$ServerLogin', 'NOTAREALDATABASE1234ABCD'"
+            $PrincipalName = $TblResults.PrincipleName            
+            $PrincipalId = $TblResults.PrincipalId
+            $RoleCheckQuery = "EXEC master..sp_defaultdb '$PrincipalName', 'NOTAREALDATABASE1234ABCD'"
             $RoleCheckResults =  Get-SQLQuery -Instance $Instance -Query $RoleCheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -ReturnError
             
             # Check the error message for a signature that means the login is real
             if (($RoleCheckResults -like '*NOTAREALDATABASE*') -or ($RoleCheckResults -like '*alter the login*'))
             {
                 # 
-                if($ServerLogin -like "*\*"){
+                if($PrincipalName -like "*\*"){
                     $PrincipalType = "Windows Account"
                 }else{
                     $PrincipalType = "SQL Login"
@@ -5957,8 +5969,8 @@ Function  Get-SQLFuzzServerLogin{
             # Output for user
             
             if(-not $SuppressVerbose){
-                if($ServerLogin.length -ge 2){
-                    Write-Verbose "$Instance : - Principal ID $_ resolved to: $ServerLogin ($PrincipalType)"
+                if($PrincipalName.length -ge 2){
+                    Write-Verbose "$Instance : - Principal ID $_ resolved to: $PrincipalName ($PrincipalType)"
                 }else{
                     Write-Verbose "$Instance : - Principal ID $_ resolved to: "
                 }
@@ -5966,6 +5978,7 @@ Function  Get-SQLFuzzServerLogin{
         
             # Append results
             $TblFuzzedLogins = $TblFuzzedLogins + $TblResults   
+            #$TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $p
         }  
     }
 

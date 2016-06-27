@@ -5022,7 +5022,11 @@ Function  Get-SQLTriggerDdl {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Trigger name.")]
-        [string]$TriggerName
+        [string]$TriggerName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5050,6 +5054,21 @@ Function  Get-SQLTriggerDdl {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = " SELECT 	'$ComputerName' as [ComputerName],
                             '$Instance' as [Instance],
@@ -5067,7 +5086,7 @@ Function  Get-SQLTriggerDdl {
                    $TriggerNameFilter" 
 
         # Execute Query
-        $TblDdlTriggersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblDdlTriggersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results
         $TblDdlTriggers = $TblDdlTriggers  + $TblDdlTriggersTemp  
@@ -5170,8 +5189,11 @@ Function  Get-SQLTriggerDml {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Trigger name.")]
-        [string]$TriggerName
+        [string]$TriggerName,
 
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5198,9 +5220,25 @@ Function  Get-SQLTriggerDml {
         if(-not $Instance){
             $Instance = $env:COMPUTERNAME
         }
+
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Grabbing DML triggers from the databases below:."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
             
         # Get list of databases
-        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName  
+        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
 
         # Get role for each database
         $TblDatabases |
@@ -5208,6 +5246,10 @@ Function  Get-SQLTriggerDml {
 
             # Get database name
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){                
+                Write-Verbose "$Instance : - $DbName"
+            }
 
             # Define Query
             $Query = "  use [$DbName]; 
@@ -5230,7 +5272,7 @@ Function  Get-SQLTriggerDml {
                         $TriggerNameFilter" 
 
             # Execute Query
-            $TblDmlTriggersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            $TblDmlTriggersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblDmlTriggers = $TblDmlTriggers + $TblDmlTriggersTemp

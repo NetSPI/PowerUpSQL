@@ -4590,7 +4590,15 @@ Function  Get-SQLDatabaseRoleMember {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL login or Windows account name.")]
-        [string]$PrincipalName
+        [string]$PrincipalName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Only select non default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -4625,8 +4633,27 @@ Function  Get-SQLDatabaseRoleMember {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Get list of databases
-        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName 
+        if($NoDefaults){
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -NoDefaults -SuppressVerbose
+        }else{
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
+        }
 
         # Get roles for each database
         $TblDatabases |
@@ -4634,6 +4661,10 @@ Function  Get-SQLDatabaseRoleMember {
 
             # Get database name
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Getting role members for the $DbName database..."
+            }
 
             # Define Query
             $Query = "  USE $DbName;
@@ -4650,7 +4681,7 @@ Function  Get-SQLDatabaseRoleMember {
                         $PrincipalNameFilter" 
 
             # Execute Query
-            $TblDatabaseRoleMembersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            $TblDatabaseRoleMembersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblDatabaseRoleMembers = $TblDatabaseRoleMembers + $TblDatabaseRoleMembersTemp

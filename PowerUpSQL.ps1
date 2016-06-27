@@ -5311,7 +5311,11 @@ Function  Get-SQLFuzzObjectName{
 
         [Parameter(Mandatory=$false,
         HelpMessage="Principal ID to stop fuzzing on.")]
-        [string]$EndId = 300
+        [string]$EndId = 300,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5342,6 +5346,22 @@ Function  Get-SQLFuzzObjectName{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Enumerating objects from object IDs..."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
         ForEach-Object {
@@ -5353,13 +5373,15 @@ Function  Get-SQLFuzzObjectName{
                                 OBJECT_NAME($_) as [ObjectName]"
                                         
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential 
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             $ObjectName = $TblResults.ObjectName
-            if($ObjectName.length -ge 2){
-                 Write-Verbose "$Instance : Enumerating object name for ID $_ - $ObjectName"
-            }else{
-                 Write-Verbose "$Instance : Enumerating object name for ID $_"
+            if( -not $SuppressVerbose){
+                if($ObjectName.length -ge 2){
+                     Write-Verbose "$Instance : - Object ID $_ resolved to: $ObjectName"
+                }else{
+                     Write-Verbose "$Instance : - Object ID $_ resolved to: "
+                }
             }
         
             # Append results
@@ -5604,7 +5626,11 @@ Function  Get-SQLFuzzServerLogin{
 
         [Parameter(Mandatory=$false,
         HelpMessage="Principal ID to stop fuzzing on.")]
-        [string]$EndId = 300
+        [string]$EndId = 300,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -5623,6 +5649,22 @@ Function  Get-SQLFuzzServerLogin{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+                Write-Verbose "$Instance : Enumerating principal names from principal IDs.."                
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
         ForEach-Object {            
@@ -5634,13 +5676,15 @@ Function  Get-SQLFuzzServerLogin{
                                 SUSER_NAME($_) as [PrincipleName]"
                                         
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential 
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             $ServerLogin = $TblResults.PrincipleName
-            if($ServerLogin.length -ge 2){
-                Write-Verbose "$Instance : Enumerating Principal for ID $_ - $ServerLogin"
-            }else{
-                Write-Verbose "$Instance : Enumerating Principal for ID $_"
+            if(-not $SuppressVerbose){
+                if($ServerLogin.length -ge 2){
+                    Write-Verbose "$Instance : - Principal ID $_ resolved to: $ServerLogin"
+                }else{
+                    Write-Verbose "$Instance : - Principal ID $_ resolved to: "
+                }
             }
         
             # Append results

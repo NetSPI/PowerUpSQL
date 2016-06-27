@@ -3,7 +3,7 @@
     File: PowerUpSQL.ps1
     Author: Scott Sutherland (@_nullbind), NetSPI - 2016
     Version: 1.0.0.0
-    Description: PowerUpSQL is a PowerShell toolkit that supports common attack workflows against SQL Server.
+    Description: PowerUpSQL is a PowerShell toolkit that supports common SQL Server attack workflows.
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
@@ -4363,6 +4363,10 @@ Function  Get-SQLDatabaseRole {
         [string]$RoleOwner,
 
         [Parameter(Mandatory=$false,
+        HelpMessage="Only select non default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
         HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
         [switch]$SuppressVerbose
     )
@@ -4397,13 +4401,11 @@ Function  Get-SQLDatabaseRole {
             $RolePrincipalNameFilter = " AND name like '$RolePrincipalName'"
         }else{
             $RolePrincipalNameFilter = ""
-        }            
+        }                    
     }
 
     Process
     {        
-        # Note: Tables queried by this function typically require sysadmin or DBO privileges.
-
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -4412,8 +4414,27 @@ Function  Get-SQLDatabaseRole {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Get list of databases
-        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
+        if($NoDefaults){
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose -NoDefaults
+        }else{
+                $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
+        }
 
         # Get role for each database
         $TblDatabases |
@@ -4421,6 +4442,10 @@ Function  Get-SQLDatabaseRole {
 
             # Get database name
             $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Getting roles from the $DbName database."
+            }   
 
             # Define Query
             $Query = "  USE $DbName;
@@ -4443,13 +4468,7 @@ Function  Get-SQLDatabaseRole {
                         $RoleOwnerFilter" 
 
             # Execute Query
-            if(-not $SuppressVerbose){
-                Write-Verbose "$Instance : Grabbing roles from the $DbName database..."
-                $TblDatabaseRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
-            }else{
-                $TblDatabaseRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-            }
-
+            $TblDatabaseRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose            
 
             # Update sid formatting for each entry and append results
             $TblDatabaseRolesTemp | 
@@ -4483,9 +4502,7 @@ Function  Get-SQLDatabaseRole {
     }
 
     End
-    {  
-        Write-Verbose "$Instance : END Get-SQLDatabaseRole"
-
+    {         
         # Return data
         $TblDatabaseRoles         
     }

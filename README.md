@@ -2,6 +2,8 @@ To use the module, type `Import-Module PowerUpSQL.psm1`
 
 To list functions from the module, type `Get-Command -Module PowerUpSQL`
 
+To run as an alternative domain user, use the runas command. Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
+
 ## PowerUpSQL: A PowerShell Toolkit for Attacking SQL Server
 
 The PowerUpSQL module includes functions to support common attack workflows against SQL Server. However, I've also included many functions that could be used by administrators for SQL Server inventory and other auditing tasks.

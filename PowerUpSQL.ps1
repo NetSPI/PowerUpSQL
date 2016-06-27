@@ -2679,7 +2679,11 @@ Function  Get-SQLServerLogin{
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Principal name to filter for.")]
-        [string]$PrincipalName
+        [string]$PrincipalName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -2715,6 +2719,21 @@ Function  Get-SQLServerLogin{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "  USE master;
                     SELECT  '$ComputerName' as [ComputerName],
@@ -2729,7 +2748,7 @@ Function  Get-SQLServerLogin{
                     $PrincipalNameFilter"
         
         # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Update sid formatting for each record
         $TblResults |
@@ -3608,7 +3627,11 @@ Function  Get-SQLServerPriv {
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Permission name.")]
-        [string]$PermissionName
+        [string]$PermissionName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -3636,6 +3659,21 @@ Function  Get-SQLServerPriv {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "  SELECT  '$ComputerName' as [ComputerName],
                             '$Instance' as [Instance],
@@ -3659,7 +3697,7 @@ Function  Get-SQLServerPriv {
                     ORDER BY GranteeName,PermissionName;"
 
         # Execute Query
-        $TblServerPrivsTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblServerPrivsTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append data as needed
         $TblServerPrivs = $TblServerPrivs + $TblServerPrivsTemp
@@ -4171,7 +4209,11 @@ Function  Get-SQLServerRole {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Role owner's name.")]
-        [string]$RoleOwner
+        [string]$RoleOwner,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -4219,6 +4261,21 @@ Function  Get-SQLServerRole {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "SELECT   '$ComputerName' as [ComputerName],
                            '$Instance' as [Instance],
@@ -4238,7 +4295,7 @@ Function  Get-SQLServerRole {
                   $RoleOwnerFilter"   
 
         # Execute Query
-        $TblServerRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblServerRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         
         # Update sid formatting for each entry
         $TblServerRolesTemp | 
@@ -4352,7 +4409,11 @@ Function  Get-SQLServerRoleMember {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL login or Windows account name.")]
-        [string]$PrincipalName
+        [string]$PrincipalName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -4376,15 +4437,28 @@ Function  Get-SQLServerRoleMember {
     }
 
     Process
-    { 
-        # Note: Tables queried by this function typically require sysadmin privileges to get all rows
-
+    {         
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
         # Default connection to local default instance
         if(-not $Instance){
             $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
         }
 
         # Define Query
@@ -4398,7 +4472,7 @@ Function  Get-SQLServerRoleMember {
                     $RoleOwnerFilter"
 
         # Execute Query
-        $TblServerRoleMembersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+        $TblServerRoleMembersTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append as needed
         $TblServerRoleMembers = $TblServerRoleMembers + $TblServerRoleMembersTemp

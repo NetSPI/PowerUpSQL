@@ -3,8 +3,7 @@
     File: PowerUpSQL.ps1
     Author: Scott Sutherland (@_nullbind), NetSPI - 2016
     Version: 1.0.0.0
-    Version Name: SQL Configuration Offensive Tools and Techniques (SCOTT) Edition
-    Description: PowerUpSQL is a offensive toolkit that supports common attack workflows against SQL Server.
+    Description: PowerUpSQL is a PowerShell toolkit that supports common attack workflows against SQL Server.
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
@@ -1354,7 +1353,11 @@ Function  Get-SQLDatabase {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Only select databases owned by a sysadmin.")]
-        [switch]$SysAdminOnly
+        [switch]$SysAdminOnly,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -1428,7 +1431,11 @@ Function  Get-SQLDatabase {
                     ORDER BY a.database_id"
 
         # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                      
+        if($SuppressVerbose){
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                      
+        }else{
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential 
+        }
 
         # Append results for pipeline items
         $TblDatabases = $TblDatabases + $TblResults                        
@@ -3140,7 +3147,13 @@ Function  Get-SQLAuditDatabaseSpec{
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Audit action name.")]
-        [string]$AuditAction
+        [string]$AuditAction,
+
+        
+        
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -3181,6 +3194,23 @@ Function  Get-SQLAuditDatabaseSpec{
         if(-not $Instance){
             $Instance = $env:COMPUTERNAME
         }
+
+       
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+        
                        
         # Define Query
         $Query = "  SELECT  '$ComputerName' as [ComputerName],
@@ -3204,8 +3234,8 @@ Function  Get-SQLAuditDatabaseSpec{
                     $SpecNameFilter
                     $ActionNameFilter"
 
-        # Execute Query
-        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+        # Execute Query        
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
 
         # Append results             
         $TblAuditDatabaseSpec = $TblAuditDatabaseSpec + $TblResults      
@@ -3281,7 +3311,11 @@ Function  Get-SQLAuditServerSpec{
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Audit action name.")]
-        [string]$AuditAction
+        [string]$AuditAction,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -3323,6 +3357,21 @@ Function  Get-SQLAuditServerSpec{
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
         # Define Query
         $Query = "  SELECT  '$ComputerName' as [ComputerName],
                             '$Instance' as [Instance],
@@ -3345,7 +3394,7 @@ Function  Get-SQLAuditServerSpec{
                     $ActionNameFilter"
 
             # Execute Query
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
 
             # Append results             
             $TblAuditServerSpec  = $TblAuditServerSpec  + $TblResults       
@@ -3568,7 +3617,11 @@ Function  Get-SQLDatabasePriv {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Don't select permissions for default databases.")]
-        [switch]$NoDefaults
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -3614,11 +3667,11 @@ Function  Get-SQLDatabasePriv {
         if($NoDefaults){
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
         }else{            
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess            
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose         
         }  
 
         # Get the privs for each database
@@ -3658,7 +3711,11 @@ Function  Get-SQLDatabasePriv {
                         $PrincipalNameFilter"               
 
             # Execute Query
-            $TblDatabaseTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            if(-not $SuppressVerbose){
+                Write-Verbose "$Instance : Grabbing permissions for the $DbName database..."
+            }
+
+            $TblDatabaseTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblDatabasePrivs = $TblDatabasePrivs + $TblDatabaseTemp
@@ -4271,11 +4328,15 @@ Function  Get-SQLDatabaseRole {
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Role owner's name.")]
-        [string]$RoleOwner
+        [string]$RoleOwner,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
-    {
+    {                
         # Setup table for output
         $TblDatabaseRoles = New-Object System.Data.DataTable
         $TblDatabaseRoles.Columns.Add("ComputerName") | Out-Null
@@ -4320,7 +4381,7 @@ Function  Get-SQLDatabaseRole {
         }
 
         # Get list of databases
-        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName
+        $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
 
         # Get role for each database
         $TblDatabases |
@@ -4350,7 +4411,13 @@ Function  Get-SQLDatabaseRole {
                         $RoleOwnerFilter" 
 
             # Execute Query
-            $TblDatabaseRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            if(-not $SuppressVerbose){
+                Write-Verbose "$Instance : Grabbing roles from the $DbName database..."
+                $TblDatabaseRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+            }else{
+                $TblDatabaseRolesTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+            }
+
 
             # Update sid formatting for each entry and append results
             $TblDatabaseRolesTemp | 
@@ -4385,6 +4452,8 @@ Function  Get-SQLDatabaseRole {
 
     End
     {  
+        Write-Verbose "$Instance : END Get-SQLDatabaseRole"
+
         # Return data
         $TblDatabaseRoles         
     }
@@ -5101,7 +5170,7 @@ Function  Get-SQLFuzzObjectName{
 
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
-        foreach {
+        ForEach-Object {
 
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
@@ -5212,7 +5281,7 @@ Function  Get-SQLFuzzDatabaseName{
 
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
-        foreach {
+        ForEach-Object {
 
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
@@ -5358,7 +5427,7 @@ Function  Get-SQLFuzzServerLogin{
 
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
-        foreach {            
+        ForEach-Object {            
 
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
@@ -5495,12 +5564,12 @@ Function  Get-SQLFuzzDomainAccount{
         $Domain = $ServerInfo.DomainName
         $DomainGroup = "$Domain\Domain Admins"
         $DomainGroupSid =  Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential 
-        $DomainGroupSidBytes = $DomainGroupSid | select domaingroupsid -ExpandProperty domaingroupsid
+        $DomainGroupSidBytes = $DomainGroupSid | Select-Object domaingroupsid -ExpandProperty domaingroupsid
         $DomainGroupSidString = [System.BitConverter]::ToString($DomainGroupSidBytes).Replace("-","").Substring(0,48)
         
         # Fuzz from StartId to EndId
         $StartId..$EndId | 
-        foreach {
+        ForEach-Object {
 
             # Convert to Principal ID to hex
             $PrincipalIDHex = '{0:x}' -f $_
@@ -5516,7 +5585,7 @@ Function  Get-SQLFuzzDomainAccount{
 
             # Reverse the order of the hex   
             $GroupsOfTwo = $PrincipalIDHexFix -split '(..)' | ? { $_ }
-            $GroupsOfTwoR = $GroupsOfTwo | sort -Descending
+            $GroupsOfTwoR = $GroupsOfTwo | Sort-Object -Descending
             $PrincipalIDHexFix2 = $GroupsOfTwoR -join ''
 
             # Pad to 8 bytes
@@ -5549,7 +5618,7 @@ Function  Get-SQLFuzzDomainAccount{
     End
     {  
         # Return data
-        $TblFuzzedAccounts | select ComputerName,Instance,DomainAccount -Unique | Where-Object {$_.DomainAccount -notlike ''}
+        $TblFuzzedAccounts | Select-Object ComputerName,Instance,DomainAccount -Unique | Where-Object {$_.DomainAccount -notlike ''}
     }
 }
 
@@ -5636,7 +5705,7 @@ Function  Get-SQLServiceLocal {
     Process
     {       
        # Grab SQL Server services based on file path
-       $SqlServices = Get-WmiObject -Class win32_service | where {$_.pathname -like "*Microsoft SQL Server*"} | Select-Object DisplayName,PathName,Name,StartName,State,SystemName
+       $SqlServices = Get-WmiObject -Class win32_service | Where-Object {$_.pathname -like "*Microsoft SQL Server*"} | Select-Object DisplayName,PathName,Name,StartName,State,SystemName
        
        # Add recrds to SQL Server instance table        
        $SqlServices |

@@ -1674,7 +1674,11 @@ Function  Get-SQLColumn {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Don't select tables from default databases.")]
-        [switch]$NoDefaults
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -1734,15 +1738,30 @@ Function  Get-SQLColumn {
             $Instance = $env:COMPUTERNAME
         }
 
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
+
          # Setup NoDefault filter
         if($NoDefaults){
             
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
         }else{
 
             # Get list of databases
-            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess
+            $TblDatabases =  Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
         }
 
         # Get tables for each database
@@ -1824,7 +1843,7 @@ Function Get-SQLColumnSampleData {
         SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True 
         SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   41111111111ASDFD 2        False
     .EXAMPLE
-        PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC
+        PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -ValidateCC
 #>
     [CmdletBinding()]
     Param(
@@ -1864,7 +1883,11 @@ Function Get-SQLColumnSampleData {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Use Luhn formula to check if sample is a valid credit card.")]
-        [switch]$CheckCC 
+        [switch]$ValidateCC,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin
@@ -1895,21 +1918,24 @@ Function Get-SQLColumnSampleData {
             $Instance = $env:COMPUTERNAME
         }
 
-        # Status User
-        Write-Verbose "$Instance : START SEARCH DATA BY COLUMN" 
-
         # Test connection to server
         $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
-        if(-not $TestConnection){               
-            Write-Verbose "$Instance : CONNECTION FAILED"
-            Write-Verbose "$Instance : COMPLETED SEARCH DATA BY COLUMN"           
+        if(-not $TestConnection){   
+            
+            if( -not $SuppressVerbose){            
+                Write-Verbose "$Instance : CONNECTION FAILED" 
+            }                     
             Return
         }else{
-            Write-Verbose "$Instance : CONNECTION SUCCESS"
-            Write-Verbose "$Instance : - Searching for column names that match criteria..." 
+
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : START SEARCH DATA BY COLUMN" 
+                Write-Verbose "$Instance : - Connection Success."
+                Write-Verbose "$Instance : - Searching for column names that match criteria..." 
+            }
             
             # Search for columns   
-            $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keywords -NoDefaults 
+            $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
         }           
         
         # Check if columns were found
@@ -1928,10 +1954,11 @@ Function Get-SQLColumnSampleData {
                 $Query = "USE $DatabaseName; SELECT TOP $SampleSize [$ColumnName] FROM $AffectedTable WHERE [$ColumnName] is not null"
                 $QueryRowCount = "USE $DatabaseName; SELECT count(CAST([$ColumnName] as VARCHAR(1))) as NumRows FROM $AffectedTable WHERE [$ColumnName] is not null"
 
-                Write-Verbose "$Instance : - Column match: $AffectedColumn"               
+                if( -not $SuppressVerbose){
 
-                # Add sample data
-                Write-Verbose "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
+                    Write-Verbose "$Instance : - Column match: $AffectedColumn"                               
+                    Write-Verbose "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
+                }
 
                 # Query for data
                 $RowCount = Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object NumRows -ExpandProperty NumRows
@@ -1956,11 +1983,16 @@ Function Get-SQLColumnSampleData {
                 }
            }                                          
         }else{
-            Write-Verbose "$Instance : - No columns were found that matched the search."
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : - No columns were found that matched the search."
+            }
         } 
                 
         # Status User
-        Write-Verbose "$Instance : COMPLETED SEARCH DATA BY COLUMN" 
+        if( -not $SuppressVerbose){
+            Write-Verbose "$Instance : END SEARCH DATA BY COLUMN" 
+        }
     }
 
     End

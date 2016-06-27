@@ -1152,13 +1152,6 @@ Function  Get-SQLServerInfo {
 
     Process
     {
-
-        # Test connection to server
-        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
-        if(-not $TestConnection){                     
-            Return
-        }
-
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 

@@ -7655,10 +7655,11 @@ Function Invoke-SQLEscalate-ServerLink {
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
         $Exploited     = "No"
-               if($Username){
-            $ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Username $Username -Password $Password -Exploit"
+        $ExploitCmd    = "There is not exploit available at this time."
+        if($Username){
+            #$ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Username $Username -Password $Password -Exploit"
         }else{
-            $ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Exploit"
+            #$ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Exploit"
         }
         $Details       = ""   
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms190479.aspx"       
@@ -7674,13 +7675,14 @@ Function Invoke-SQLEscalate-ServerLink {
 
         # Update vulnerable status
         if($LinkedServers){
-            $IsVulnerable  = "Yes" 
 
+            $IsVulnerable  = "Yes"             
             $LinkedServers | 
             ForEach-Object{
                 $Details =
                 $LinkName = $LinkedServers.DatabaseLinkName
                 $LinkUser = $LinkedServers.RemoteLoginName
+                $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
         
                 Write-Verbose "$Instance : - The link '$LinkName' was found configured with the '$LinkUser' login."
                 $Details = "The SQL Server link '$LinkName' was found configured with the '$LinkUser' login."

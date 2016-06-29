@@ -8420,7 +8420,7 @@ Function Invoke-SQLEscalate-DbDdlAdmin {
         $CurrentPrincpalList|
         ForEach-Object {
             
-            # Check if login or role has the DB_OWNER roles in any databases
+            # Check if login or role has the DB_DDLADMIN roles in any databases
             $DBDDLADMIN = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -RolePrincipalName DB_DDLADMIN -PrincipalName $_ -SuppressVerbose
 
             # -----------------------------------------------------------------     
@@ -8431,7 +8431,7 @@ Function Invoke-SQLEscalate-DbDdlAdmin {
             # Check for db ownerships  
             if($DBDDLADMIN){
 
-                # Add an entry for each database where the user has the db_owner role
+                # Add an entry for each database where the user has the DB_DDLADMIN role
                 $DBDDLADMIN|
                 ForEach-Object{
                     $DatabaseTarget = $_.DatabaseName

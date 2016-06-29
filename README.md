@@ -132,7 +132,6 @@ Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 	Invoke-SQLEscalate-SQLi-ImpersonateDatabaseUser - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
 	Invoke-SQLEscalate-SQLi-ImpersonateSignedSp - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
 	Invoke-SQLEscalate-CreateStartUpSP
-	Invoke-SQLEscalate-CreateServerLink
 	Invoke-SQLEscalate-CrawlServerLink
 	Invoke-SQLEscalate-CreateAssembly -CLR -Binary -C
 	Invoke-SQLEscalate-CreateTriggerDDL
@@ -140,7 +139,6 @@ Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 	Invoke-SQLEscalate-CreateTriggerDML
 	Invoke-SQLEscalate-StealServiceToken
 	Invoke-SQLEscalate-ControlServer
-	Invoke-SQLEscalate-DDLAdmin
 	Invoke-SqlInjectUncPath - https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/Get-SQLServiceAccountPwHash.ps1
 	Create-SqlStoredProcedure - db_owner, db_ddladmin, db_securityadmin, or db_accessadmin
 	Invoke-SqlCmdExecXpCmdshell
@@ -150,6 +148,7 @@ Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 	Invoke-SQLEscalate-PrivAlterServerLogin
 	Invoke-SQLEscalate-PrivAlterServerRole
 	Invoke-SQLEscalate-PrivExternalAssembly
+	Invoke-SQLEscalate-PrivAlterAssembly	
 	Invoke-SQLEscalate-PrivAdministerBulkOps
 	Invoke-SQLEscalate-PrivControlServer
 	Invoke-SQLEscalate-DictionaryAttackOnline

@@ -7724,6 +7724,159 @@ Function Invoke-SQLEscalate-ServerLink {
 
 
 # ---------------------------------------
+# Invoke-SQLEscalate-TrustedDatabase
+# ---------------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLEscalate-TrustedDatabase{
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,       
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Don't output anything.")]
+        [string]$NoOutput,
+        
+        [Parameter(Mandatory=$false,
+        HelpMessage="Exploit vulnerable issues.")]
+        [switch]$Exploit
+    )
+
+    Begin
+    {                 
+        # Table for output
+        $TblData = New-Object System.Data.DataTable 
+        $TblData.Columns.Add("ComputerName") | Out-Null
+        $TblData.Columns.Add("Instance") | Out-Null
+        $TblData.Columns.Add("Vulnerability") | Out-Null
+        $TblData.Columns.Add("Description") | Out-Null
+        $TblData.Columns.Add("Remediation") | Out-Null
+        $TblData.Columns.Add("Severity") | Out-Null
+        $TblData.Columns.Add("IsVulnerable") | Out-Null
+        $TblData.Columns.Add("IsExploitable") | Out-Null
+        $TblData.Columns.Add("Exploited") | Out-Null
+        $TblData.Columns.Add("ExploitCmd") | Out-Null
+        $TblData.Columns.Add("Details") | Out-Null    
+        $TblData.Columns.Add("Reference") | Out-Null   
+        $TblData.Columns.Add("Author") | Out-Null   
+    }
+
+    Process
+    {   
+        # Status User
+        Write-Verbose "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Trusted Database" 
+
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){   
+            
+            # Status user
+            Write-Verbose "$Instance : CONNECTION FAILED."
+            Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database."           
+            Return
+        }else{
+            Write-Verbose "$Instance : CONNECTION SUCCESS."
+        }
+
+        # Grab server information
+        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------     
+        # Set function meta data for report output
+        # --------------------------------------------  
+        if($Exploit){
+            $TestMode  = "Exploit"
+        }else{
+            $TestMode  = "Audit"
+        }         
+        $Vulnerability = "Excessive Privilege - Trusted Database"
+        $Description   = "One or more database is configured as trustworthy.  Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on the server."
+        $Remediation   = "Configured the affected database so the 'is_trustworthy_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE MyAppsDb SET TRUSTWORTHY ON' is used to set a database as trustworthy.  A query similar to 'ALTER DATABASE MyAppDb SET TRUSTWORTHY OFF' can be use to unset it."
+        $Severity      = "Low" 
+        $IsVulnerable  = "No"
+        $IsExploitable = "No" 
+        $Exploited     = "No"
+        $ExploitCmd    = "There is not exploit available at this time."
+        $Details       = ""   
+        $Reference     = "https://msdn.microsoft.com/en-us/library/ms187861.aspx"       
+        $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
+        
+        # -----------------------------------------------------------------     
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------     
+
+        # Select links configured with static credentials
+        $TrustedDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.DatabaseName -ne 'msdb' -and $_.is_trustworthy_on -eq "True"}
+
+        # Update vulnerable status
+        if($TrustedDatabases){
+
+            $IsVulnerable  = "Yes"             
+            $TrustedDatabases | 
+            ForEach-Object{                
+                $DatabaseName = $TrustedDatabases.DatabaseName                
+        
+                Write-Verbose "$Instance : - The database $DatabaseName was found configured as trustworthy."
+                $Details = "The database $DatabaseName was found configured as trustworthy."
+                $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                       
+            }
+        }else{
+            Write-Verbose "$Instance : - No non-default trusted databases were found."
+        }
+
+        # -----------------------------------------------------------------     
+        # Check for exploit dependancies 
+        # Note: Typically secondary configs required for dba/os execution
+        # -----------------------------------------------------------------
+        # $IsExploitable = "No" or $IsExploitable = "Yes"
+        # Check if the link is alive and verify connection + check if sysadmin
+
+
+        # -----------------------------------------------------------------    
+        # Exploit Vulnerability
+        # Note: Add the current user to sysadmin fixed server role
+        # -----------------------------------------------------------------        
+        # $Exploited = "No" or $Exploited     = "Yes" 
+        # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
+        # Also, recommend link crawler module
+                       
+                   
+        # Status User
+        Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database" 
+    }
+
+    End
+    {   
+        # Return data  
+        if ( -not $NoOutput){            
+            Return $TblData       
+        }
+    }
+}
+
+
+# ---------------------------------------
 # Invoke-SQLEscalate-CreateProcedure
 # ---------------------------------------
 # Author: Scott Sutherland

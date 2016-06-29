@@ -2522,7 +2522,7 @@ Function  Get-SQLServerLink{
                             a.product as [Product],
                             a.provider as [Provider],
                             a.catalog as [Catalog],
-                            'Local Login ' = CASE b.uses_self_credential
+                            'LocalLogin' = CASE b.uses_self_credential
                             WHEN 1 THEN 'Uses Self Credentials'
 	                            ELSE c.name
                             END,
@@ -7563,6 +7563,165 @@ Function Invoke-SQLEscalate-Template {
 
 
 # ---------------------------------------
+# Invoke-SQLEscalate-ServerLink 
+# ---------------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLEscalate-ServerLink {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,       
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Don't output anything.")]
+        [string]$NoOutput,
+        
+        [Parameter(Mandatory=$false,
+        HelpMessage="Exploit vulnerable issues.")]
+        [switch]$Exploit
+    )
+
+    Begin
+    {                 
+        # Table for output
+        $TblData = New-Object System.Data.DataTable 
+        $TblData.Columns.Add("ComputerName") | Out-Null
+        $TblData.Columns.Add("Instance") | Out-Null
+        $TblData.Columns.Add("Vulnerability") | Out-Null
+        $TblData.Columns.Add("Description") | Out-Null
+        $TblData.Columns.Add("Remediation") | Out-Null
+        $TblData.Columns.Add("Severity") | Out-Null
+        $TblData.Columns.Add("IsVulnerable") | Out-Null
+        $TblData.Columns.Add("IsExploitable") | Out-Null
+        $TblData.Columns.Add("Exploited") | Out-Null
+        $TblData.Columns.Add("ExploitCmd") | Out-Null
+        $TblData.Columns.Add("Details") | Out-Null    
+        $TblData.Columns.Add("Reference") | Out-Null   
+        $TblData.Columns.Add("Author") | Out-Null   
+    }
+
+    Process
+    {   
+        # Status User
+        Write-Verbose "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Server Link" 
+
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){   
+            
+            # Status user
+            Write-Verbose "$Instance : CONNECTION FAILED."
+            Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Server Link."           
+            Return
+        }else{
+            Write-Verbose "$Instance : CONNECTION SUCCESS."
+        }
+
+        # Grab server information
+        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------     
+        # Set function meta data for report output
+        # --------------------------------------------  
+        if($Exploit){
+            $TestMode  = "Exploit"
+        }else{
+            $TestMode  = "Audit"
+        }         
+        $Vulnerability = "Excessive Privilege - Linked Server"
+        $Description   = "One or more linked servers is preconfigured with alternative credentials which could allow a least privilege login to escalate their privileges on a remote server."
+        $Remediation   = "Configure SQL Server links to connect to remote servers using the login's current security context."
+        $Severity      = "Medium" 
+        $IsVulnerable  = "No"
+        $IsExploitable = "No" 
+        $Exploited     = "No"
+               if($Username){
+            $ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Username $Username -Password $Password -Exploit"
+        }else{
+            $ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Exploit"
+        }
+        $Details       = ""   
+        $Reference     = "https://msdn.microsoft.com/en-us/library/ms190479.aspx"       
+        $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
+        
+        # -----------------------------------------------------------------     
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------     
+
+        # Select links configured with static credentials
+        $LinkedServers = Get-SQLServerLink -Verbose -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.LocalLogin -ne 'Uses Self Credentials'}
+
+        # Update vulnerable status
+        if($LinkedServers){
+            $IsVulnerable  = "Yes" 
+
+            $LinkedServers | 
+            ForEach-Object{
+                $Details =
+                $LinkName = $LinkedServers.DatabaseLinkName
+                $LinkUser = $LinkedServers.RemoteLoginName
+        
+                Write-Verbose "$Instance : - The link '$LinkName' was found configured with the '$LinkUser' login."
+                $Details = "The SQL Server link '$LinkName' was found configured with the '$LinkUser' login."
+                $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                       
+            }
+        }else{
+            Write-Verbose "$Instance : - No exploitable SQL Server links were found."
+        }
+
+        # -----------------------------------------------------------------     
+        # Check for exploit dependancies 
+        # Note: Typically secondary configs required for dba/os execution
+        # -----------------------------------------------------------------
+        # $IsExploitable = "No" or $IsExploitable = "Yes"
+        # Check if the link is alive and verify connection + check if sysadmin
+
+
+        # -----------------------------------------------------------------    
+        # Exploit Vulnerability
+        # Note: Add the current user to sysadmin fixed server role
+        # -----------------------------------------------------------------        
+        # $Exploited = "No" or $Exploited     = "Yes" 
+        # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
+        # Also, recommend link crawler module
+                       
+                   
+        # Status User
+        Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Server Link" 
+    }
+
+    End
+    {   
+        # Return data  
+        if ( -not $NoOutput){            
+            Return $TblData       
+        }
+    }
+}
+
+
+# ---------------------------------------
 # Invoke-SQLEscalate-CreateProcedure
 # ---------------------------------------
 # Author: Scott Sutherland
@@ -7901,7 +8060,7 @@ Function Invoke-SQLEscalate-DbOwnerRole {
         ForEach-Object {
             
             # Check if login or role has the DB_OWNER roles in any databases
-            $DBOWNER = Get-SQLDatabaseRoleMember -Instance $Instance -RolePrincipalName DB_OWNER -PrincipalName $_ -SuppressVerbose
+            $DBOWNER = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -RolePrincipalName DB_OWNER -PrincipalName $_ -SuppressVerbose
 
             # -----------------------------------------------------------------     
             # Check for exploit dependancies 
@@ -8107,7 +8266,7 @@ Function Invoke-SQLEscalate-DbDdlAdmin {
         ForEach-Object {
             
             # Check if login or role has the DB_OWNER roles in any databases
-            $DBDDLADMIN = Get-SQLDatabaseRoleMember -Instance $Instance -RolePrincipalName DB_DDLADMIN -PrincipalName $_ -SuppressVerbose
+            $DBDDLADMIN = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -RolePrincipalName DB_DDLADMIN -PrincipalName $_ -SuppressVerbose
 
             # -----------------------------------------------------------------     
             # Check for exploit dependancies 

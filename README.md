@@ -121,8 +121,9 @@ Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 |Invoke-SQLEscalate-DbOwnerRole|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
 |Invoke-SQLEscalate-DbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
 |Invoke-SQLEscalate-ImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLEscalate-ServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Complete|
 |Invoke-SQLEscalate-SampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|Complete|
+|Invoke-SQLEscalate-ServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Complete|
+|Invoke-SQLEscalate-TrustedDatabase|Check if any database have been flagged as trusted.|Complete|
 |Invoke-PowerUpSQL|Run all privilege escalation checks.  There is an options to auto-escalation to sysadmin.|Complete|
 
 	Roadmap:

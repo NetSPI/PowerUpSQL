@@ -8159,8 +8159,8 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         [string]$PassFile,
 
         [Parameter(Mandatory=$false,
-        HelpMessage="Use the user's password as the password.")]
-        [switch]$UserAsPass,
+        HelpMessage="User is tested as pass by default. This setting disables it.")]
+        [switch]$NoUserAsPass,
 
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
@@ -8372,7 +8372,7 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         }
 
         # Test user as pass if set
-        if($UserAsPass){
+        if(-not $NoUserAsPass){
             $LoginList | Select-Object -Unique | 
             ForEach-Object {
                 $TargetLogin = $_               
@@ -10192,7 +10192,7 @@ Function Invoke-PowerUpSQL {
         # Load list of vulnerability check functions - Server / database
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ImpersonateLogin","Server") | Out-Null
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbDdlAdmin","Server") | Out-Null   
-        #$TblVulnFunc.Rows.Add("Invoke-SQLEscalate-WeakLoginPw","Server") | Out-Null 
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-WeakLoginPw","Server") | Out-Null 
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbOwnerRole","Server") | Out-Null           
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ServerLink","Server") | Out-Null
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-TrustedDatabase","Server") | Out-Null

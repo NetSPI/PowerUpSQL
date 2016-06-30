@@ -118,13 +118,11 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 	Get-SQLQueryHistory - Returns recent query history from target SQL Servers.	
 	Get-SQLHiddenSystemObject - Returns hidden system objects from target SQL Servers.	 
 	
-### Privilege Escalation Functions
+### Audit Functions
 
-These functions are used for obtaining sysadmin privileges from various levels of access in SQL Server.  Invoke-PowerUpSQL can be used to run all privileges escalation functions against provided SQL Server instances.
+These functions are used for identifying weak configurations that can lead to unauthorized access.  Invoke-SQLAudit can be used to run all of them at once.
 
-Example: Get-SQLInstanceLocal | Invoke-SQLEscalate-ImpersonateLogin -Verbose
-
-Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
+Example: Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|

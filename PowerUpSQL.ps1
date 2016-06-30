@@ -5348,10 +5348,10 @@ Function  Get-SQLTriggerDml {
 
 
 # ----------------------------------
-#  Get-SQLStoredProcure
+#  Get-SQLStoredProcedure
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLStoredProcure {
+Function  Get-SQLStoredProcedure {
 <#
     .SYNOPSIS
         Returns stored procedures from target SQL Servers.
@@ -10270,10 +10270,6 @@ Function Invoke-SQLEscalatePriv {
         SQL Server credential. 
     .PARAMETER Instance
         SQL Server instance to connection to. 
-    .PARAMETER NoOutput
-        Don't output anything.
-    .PARAMETER Exploit
-        Exploit vulnerable issues.
     .EXAMPLE
         PS C:\> Invoke-SQLEscalatePriv -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
 #>
@@ -10335,12 +10331,317 @@ Function Invoke-SQLEscalatePriv {
     }
         
     End
-    {
-        # Return full results table
-        if ( -not $NoOutput){            
-            Return $TblData
-        }   
+    { 
     }
 }
 
+# ----------------------------------
+# Invoke-SQLDumpInfo
+# ----------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLDumpInfo{
+<#
+    .SYNOPSIS
+        This function can be used to attempt to obtain sysadmin privileges via identify vulnerabilities.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Invoke-SQLDumpInfo -Verbose
+    .EXAMPLE
+        PS C:\> Invoke-SQLDumpInfo -Verobse -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Folder to write output to.")]
+        [string]$OutFolder,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Write output to xml files.")]
+        [switch]$xml,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Write output to csv files.")]
+        [switch]$csv
+    )
+
+    Begin
+    {
+        # Setup output directory
+        if($OutFolder){            
+            $OutFolderCmd = "echo test > $OutFolder\test.txt"           
+        }else{
+            $OutFolder = "."
+            $OutFolderCmd = "echo test > $OutFolder\test.txt"             
+        }
+
+        # Create output folder
+        $CheckAccess = (Invoke-Expression $OutFolderCmd) 2>&1
+        if($CheckAccess -like "*denied."){
+            Write-Host "Access denied to output directory."
+            Return  
+        }else{
+            Write-Verbose "Verified write access to output directory."
+            $RemoveCmd = "del $outfolder\test.txt"
+            Invoke-Expression $RemoveCmd
+        }  
+    }
+
+    Process
+    {              
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){
+            Return
+        }
+
+        # Default connection to local default instance
+        if(-not $Instance){
+            $Instance = $env:COMPUTERNAME
+        }       
+        
+        Write-Verbose "$Instance - START Dumping information for server and non-default databases..."
+        $OutPutInstance = $Instance.Replace("\","-").Replace(",","-")
+                
+        # Getting Databases
+        Write-Verbose "$Instance - Getting non-default databases..."
+        $Results = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Databases.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Databases.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+             
+        # Getting DatabaseUsers
+        Write-Verbose "$Instance - Getting database users for databases..."        
+        $Results = Get-SQLDatabaseUser -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_Users.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_Users.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+                               
+        # Getting DatabasePrivs
+        Write-Verbose "$Instance - Getting privileges for databases..."
+        $Results = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_privileges.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_privileges.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+        
+        # Getting DatabaseRoles
+        Write-Verbose "$Instance - Getting database roles..."
+        $Results = Get-SQLDatabaseRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_roles.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_roles.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+        
+        # Getting DatabaseRoleMembers
+        Write-Verbose "$Instance - Getting database role members..."
+        $Results = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_role_members.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_role_members.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+
+        # Getting DatabaseTables
+        Write-Verbose "$Instance - Getting database schemas..."
+        $Results = Get-SQLDatabaseSchema -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_schemas.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_schemas.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }        
+
+        # Getting DatabaseTables
+        Write-Verbose "$Instance - Getting database tables..."
+        $Results = Get-SQLTable -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_tables.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_tables.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+        
+        # Getting DatabaseViews
+        Write-Verbose "$Instance - Getting database views..."
+        $Results = Get-SQLView -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_views.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_views.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
+        
+        # Getting ServerLogins
+        Write-Verbose "$Instance - Getting ServerLogins..."
+        $Results = Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_logins.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_logins.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }         
+        
+        # Getting ServerPrivs
+        Write-Verbose "$Instance - Getting ServerPrivs..."
+        $Results = Get-SQLServerPriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_privileges.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_privileges.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }    
+        
+        # Getting ServerRoles
+        Write-Verbose "$Instance - Getting ServerRoles..."
+        $Results = Get-SQLServerRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_roles.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_roles.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }    
+        
+        # Getting ServerRolemembers
+        Write-Verbose "$Instance - Getting ServerRolemembers..."
+        $Results = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_rolemembers.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_rolemembers.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }    
+        
+        # Getting ServerLinks
+        Write-Verbose "$Instance - Getting ServerLinks..."
+        $Results = Get-SQLServerLink -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_links.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_links.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }    
+        
+        # Getting ServerCredentials
+        Write-Verbose "$Instance - Getting ServerCredentials..."
+        $Results = Get-SQLServerCredential -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_credentials.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_credentials.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }    
+        
+        # Getting ServiceAccounts
+        Write-Verbose "$Instance - Getting ServiceAccounts..."
+        $Results = Get-SQLServiceAccount -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Service_accounts.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Service_accounts.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }    
+        
+        # Getting StoredProcedures
+        Write-Verbose "$Instance - Getting StoredProcedures..."
+        $Results = Get-SQLStoredProcedure -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_stored_procedure.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_stored_procedure.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }             
+        
+        # Getting TriggersDML
+        Write-Verbose "$Instance - Getting TriggersDML..."
+        $Results = Get-SQLTriggerDml -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_dml.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_dml.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }     
+        
+        # Getting TriggersDDL
+        Write-Verbose "$Instance - Getting TriggersDDL..."
+        $Results = Get-SQLTriggerDdl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_ddl.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_ddl.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }     
+        
+        # Getting VersionInformation
+        Write-Verbose "$Instance - Getting VersionInformation..."
+        $Results = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_dml.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_dml.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }     
+
+        Write-Verbose "$Instance - COMPLETE"
+       
+    }
+        
+    End
+    {  
+    }
+}
 #endregion

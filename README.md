@@ -47,6 +47,17 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 	Get-SQLInstanceScanTCP - Returns SQL Server instances from TCP scan results.
 	Get-SQLInstanceBroadcast - Returns SQL Server instances from UDP broadcast.
 
+### Primary Attack Functions
+
+These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to escalation privileges to sysadmin.
+
+|Function Name                 |Description |Status    |
+|:-----------------------------|:-----------|:---------|
+|Get-SQLDump|This can be used to dump SQL Server and database information to csv or xml files.  This can be handy for doing a quick inventory of databases, logins, privileges etc.|Complete|
+|Get-SQLAudit|This can be used to review the SQL Server and databases for common configuration weaknesses and provide a vulnerability report along with recommendations for each item.|Complete|
+|Get-SQLEscalatePriv|This can be used to obtain sysadmin privileges via the identify weak configurations.  Think of it like get-system, but for SQL Server.|Complete|
+
+
 ### Core Functions
 
 These functions are used to test connections, execute SQL Server queries, and execute OS commands.  All other functions use these core functions.  However, they can also be executed independently. 
@@ -125,7 +136,6 @@ Example: Get-SQLInstanceLocal | Invoke-PowerUpSQL -Verbose
 |Invoke-SQLEscalate-ServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Complete|
 |Invoke-SQLEscalate-WeakLoginPw|This can be used for online dictionary attacks. It also support auto-discovery of SQL Logins for testing if you already have a least privilege account.|Complete|
 |Invoke-SQLEscalate-TrustedDatabase|Check if any database have been flagged as trusted.|Complete|
-|Invoke-PowerUpSQL|Run all privilege escalation checks.  There is an options to auto-escalation to sysadmin.|Complete|
 
 	Roadmap:
 	

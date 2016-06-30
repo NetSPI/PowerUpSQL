@@ -7709,8 +7709,8 @@ Function Invoke-SQLEscalate-ServerLink {
                 $LinkUser = $LinkedServers.RemoteLoginName
                 $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
         
-                Write-Verbose "$Instance : - The link '$LinkName' was found configured with the '$LinkUser' login."
-                $Details = "The SQL Server link '$LinkName' was found configured with the '$LinkUser' login."
+                Write-Verbose "$Instance : - The $LinkName linked server was found configured with the $LinkUser login."
+                $Details = "The SQL Server link $LinkName was found configured with the $LinkUser login."
                 $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                       
             }
         }else{
@@ -8110,6 +8110,241 @@ Function Invoke-SQLEscalate-CreateProcedure {
                                                     
         # Status User
         Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE" 
+    }
+
+    End
+    {   
+        # Return data  
+        if ( -not $NoOutput){            
+            Return $TblData       
+        }
+    }
+}
+
+
+# ---------------------------------------
+# Invoke-SQLEscalate-WeakLoginPw
+# ---------------------------------------
+# add seperate login fields to support fuzz
+# Author: Scott Sutherland
+Function Invoke-SQLEscalate-WeakLoginPw{
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server login to attempt to login with.")]
+        [string]$Username = "sa",
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Path to list of users to use.  One per line.")]
+        [string]$UserFile,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server password to attempt to login with.")]
+        [string]$Password = "Password",
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Path to list of passwords to use.  One per line.")]
+        [string]$PassFile,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Use the user's password as the password.")]
+        [switch]$UserAsPass,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance, 
+        
+       [Parameter(Mandatory=$false,
+        HelpMessage="Enumerates login as least privilege user.")]
+        [switch]$FuzzLogins,
+        
+       [Parameter(Mandatory=$false,
+        HelpMessage="Start id for fuzzing login IDs Used with FuzzLogins.")]
+        [int]$StartId = 1,
+        
+       [Parameter(Mandatory=$false,
+        HelpMessage="End id for fuzzing login IDs Used with FuzzLogins.")]
+        [int]$EndId = 500,                                   
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Don't output anything.")]
+        [switch]$NoOutput,
+        
+        [Parameter(Mandatory=$false,
+        HelpMessage="Exploit vulnerable issues.")]
+        [switch]$Exploit
+    )
+
+    Begin
+    {                 
+        # Table for output
+        $TblData = New-Object System.Data.DataTable 
+        $TblData.Columns.Add("ComputerName") | Out-Null
+        $TblData.Columns.Add("Instance") | Out-Null
+        $TblData.Columns.Add("Vulnerability") | Out-Null
+        $TblData.Columns.Add("Description") | Out-Null
+        $TblData.Columns.Add("Remediation") | Out-Null
+        $TblData.Columns.Add("Severity") | Out-Null
+        $TblData.Columns.Add("IsVulnerable") | Out-Null
+        $TblData.Columns.Add("IsExploitable") | Out-Null
+        $TblData.Columns.Add("Exploited") | Out-Null
+        $TblData.Columns.Add("ExploitCmd") | Out-Null
+        $TblData.Columns.Add("Details") | Out-Null    
+        $TblData.Columns.Add("Reference") | Out-Null   
+        $TblData.Columns.Add("Author") | Out-Null   
+    }
+
+    Process
+    {   
+        # Status User
+        Write-Verbose "$Instance : START VULNERABILITY CHECK: Weak Login Password" 
+
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){   
+            
+            # Status user
+            Write-Verbose "$Instance : CONNECTION FAILED."
+            Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Weak Login Password."           
+            Return
+        }else{
+            Write-Verbose "$Instance : CONNECTION SUCCESS."
+        }
+
+        # Grab server information
+        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------     
+        # Set function meta data for report output
+        # --------------------------------------------  
+        if($Exploit){
+            $TestMode  = "Exploit"
+        }else{
+            $TestMode  = "Audit"
+        }         
+        $Vulnerability = "Weak Login Password"
+        $Description   = "One or more SQL Server logins is configured with a weak password.  This may provide unauthorized access to resources the affected logins have access to."
+        $Remediation   = "Ensure all SQL Server logins are required to use a strong password. Considered inheriting the OS password policy."
+        $Severity      = "High" 
+        $IsVulnerable  = "No"
+        $IsExploitable = "No" 
+        $Exploited     = "No"
+        $ExploitCmd    = "Use the affected credentials to log into the SQL Server."
+        $Details       = ""   
+        $Reference     = "https://msdn.microsoft.com/en-us/library/ms161959.aspx"       
+        $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
+        
+        # -----------------------------------------------------------------     
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------     
+        $LoginList = @()
+        $PasswordList = @()
+
+        # Get logins for testing - file
+        if($UserFile){
+
+            Write-Verbose "Grabbing logins from file..."
+            Get-Content -Path $UserFile | 
+            ForEach-Object {
+                $LoginList += $_
+            }
+        }
+
+        # Get logins for testing - variable
+        if($Username){
+
+            Write-Verbose "Grabbing supplied user..."
+            $LoginList += $Username
+        }
+        
+        # Get logins for testing - fuzzed
+        if($FuzzLogins){
+            
+            Write-Verbose "Fuzzing principal IDs $StartId to $EndId..."
+            Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose | 
+            Where-Object { $_.PrincipleType -eq "SQL Login"} | 
+            Select-Object PrincipleName -ExpandProperty PrincipleName | 
+            ForEach-Object{ $PasswordList += $_ }
+        }
+
+        # Check for users or return - count array
+
+        # Get passwords for testing - file
+        if($PassFile){
+            Write-Verbose "Getting password from file..."
+            Get-Content -Path $PassFile | 
+            ForEach-Object {
+                $PasswordList += $_
+            }
+        }
+
+        # Get passwords for testing - variable
+        if($Password){
+            Write-Verbose "Getting provided password..."
+            $PasswordList += $Password
+        }
+
+        # Get passwords for testing - user as pass
+        if($UserAsPass){
+            Write-Verbose "Getting users as passwords..."
+            $LoginList | Select-Object -Unique | ForEach-Object { $PasswordList += $_ } 
+        }
+
+        # Iternate through logins
+        $LoginList | Select-Object -Unique | 
+        ForEach-Object {
+            
+            $TargetLogin = $_
+            $PasswordList | Select-Object -Unique |
+            ForEach-Object{
+
+                $TargetPassword = $_
+
+                
+                $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetPassword -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+                if($TestPass){
+                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin Password = $TargetPassword" 
+
+                    # Add record                    
+                    $Details = "The $TargetLogin is configured with the password $TargetPassword."
+                    $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                     
+                }else{
+                    Write-Verbose "$Instance - Failed Login: User = $TargetLogin Password = $TargetPassword"
+                }
+                
+                 
+            }
+        }
+
+
+        # -----------------------------------------------------------------     
+        # Check for exploit dependancies 
+        # Note: Typically secondary configs required for dba/os execution
+        # -----------------------------------------------------------------
+        # $IsExploitable = "No" or $IsExploitable = "Yes"
+        # Check if the link is alive and verify connection + check if sysadmin
+
+
+        # -----------------------------------------------------------------    
+        # Exploit Vulnerability
+        # Note: Add the current user to sysadmin fixed server role
+        # -----------------------------------------------------------------        
+        # $Exploited = "No" or $Exploited     = "Yes"   - check if login is a sysadmin                     
+                   
+        # Status User
+        Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Weak Login Password" 
     }
 
     End
@@ -9894,11 +10129,12 @@ Function Invoke-PowerUpSQL {
         # Load list of vulnerability check functions - Server / database
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ImpersonateLogin","Server") | Out-Null
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbDdlAdmin","Server") | Out-Null   
+        #$TblVulnFunc.Rows.Add("Invoke-SQLEscalate-WeakLoginPw","Server") | Out-Null 
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbOwnerRole","Server") | Out-Null           
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ServerLink","Server") | Out-Null
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-TrustedDatabase","Server") | Out-Null
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-CreateProcedure","Server") | Out-Null
-        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-SampleDataByColumn","Database") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-SampleDataByColumn","Database") | Out-Null               
 
         Write-Verbose "RUNNING VULNERABILITY CHECKS."
     }

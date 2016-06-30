@@ -10514,6 +10514,17 @@ Function Invoke-SQLDumpInfo{
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_views.csv"
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }
+
+        # Getting DatabaseTables
+        Write-Verbose "$Instance - Getting database columns..."
+        $Results = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_columns.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Database_columns.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }
         
         # Getting ServerLogins
         Write-Verbose "$Instance - Getting ServerLogins..."
@@ -10644,4 +10655,5 @@ Function Invoke-SQLDumpInfo{
     {  
     }
 }
+
 #endregion

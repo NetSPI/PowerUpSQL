@@ -8174,15 +8174,15 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         [string]$Instance, 
         
        [Parameter(Mandatory=$false,
-        HelpMessage="Enumerates login as least privilege user.")]
-        [switch]$FuzzLogins,
+        HelpMessage="Don't attempt to enumerate logins from the server.")]
+        [switch]$NoUserEnum,
         
        [Parameter(Mandatory=$false,
-        HelpMessage="Start id for fuzzing login IDs Used with FuzzLogins.")]
+        HelpMessage="Start id for fuzzing login IDs.")]
         [int]$StartId = 1,
         
        [Parameter(Mandatory=$false,
-        HelpMessage="End id for fuzzing login IDs Used with FuzzLogins.")]
+        HelpMessage="End id for fuzzing login IDss.")]
         [int]$EndId = 500,                                   
 
         [Parameter(Mandatory=$false,
@@ -8282,13 +8282,38 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         }
         
         # Get logins for testing - fuzzed
-        if($FuzzLogins){
+        if(-not $NoUserEnum){
             
-            Write-Verbose "$Instance - Fuzzing principal IDs $StartId to $EndId..."
-            Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose | 
-            Where-Object { $_.PrincipleType -eq "SQL Login"} | 
-            Select-Object PrincipleName -ExpandProperty PrincipleName | 
-            ForEach-Object{ $LoginList += $_ }
+            # Test connection to instance
+            $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+            if($TestConnection){                               
+
+                # Check if sysadmin
+                $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                if($IsSysadmin -eq "Yes"){
+
+                    # Query for logins
+                    Write-Verbose "$Instance - Getting list of logins..."
+                    Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | 
+                    Where-Object {$_.PrincipalType -eq "SQL_LOGIN"} |
+                    Select-Object PrincipalName -ExpandProperty PrincipalName | 
+                    ForEach-Object{ $LoginList += $_ } 
+                }else{
+                    
+                    # Fuzz logins                
+                    Write-Verbose "$Instance - Fuzzing principal IDs $StartId to $EndId..."
+                    Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose | 
+                    Where-Object { $_.PrincipleType -eq "SQL Login"} | 
+                    Select-Object PrincipleName -ExpandProperty PrincipleName | 
+                    ForEach-Object{ $LoginList += $_ }  
+                }              
+            }else{
+            
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance - Connection Failed - Could not authenticate with provided credentials."
+                }
+                return
+            }                        
         }
 
         # Check for users or return - count array        

@@ -49,7 +49,7 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
 ### Primary Attack Functions
 
-These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to escalation privileges to sysadmin.
+These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to obtain sysadmin privileges.
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|

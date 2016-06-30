@@ -9891,14 +9891,14 @@ Function Invoke-PowerUpSQL {
 
         Write-Verbose "LOADING VULNERABILITY CHECKS."
         
-        # Load list of vulnerability check functions - Server
+        # Load list of vulnerability check functions - Server / database
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ImpersonateLogin","Server") | Out-Null
-        
-        # Load list of vulnerability check functions - Database
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbDdlAdmin","Server") | Out-Null   
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-DbOwnerRole","Server") | Out-Null           
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-ServerLink","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-TrustedDatabase","Server") | Out-Null
+        $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-CreateProcedure","Server") | Out-Null
         $TblVulnFunc.Rows.Add("Invoke-SQLEscalate-SampleDataByColumn","Database") | Out-Null
-
-        # Load list of vulnerability check functions - Misc
-        # Pending
 
         Write-Verbose "RUNNING VULNERABILITY CHECKS."
     }

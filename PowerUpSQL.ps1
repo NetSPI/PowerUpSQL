@@ -8132,8 +8132,13 @@ Function Invoke-SQLEscalate-WeakLoginPw{
     Param(
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
-        HelpMessage="SQL Server login to attempt to login with.")]
-        [string]$Username = "sa",
+        HelpMessage="Known SQL Server login to fuzz logins with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Username to test.")]
+        [string]$TestUsername = "sa",
 
         [Parameter(Mandatory=$false,
         HelpMessage="Path to list of users to use.  One per line.")]
@@ -8141,8 +8146,13 @@ Function Invoke-SQLEscalate-WeakLoginPw{
 
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Known SQL Server password to fuzz logins with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server password to attempt to login with.")]
-        [string]$Password = "Password",
+        [string]$TestPassword = "Password",
 
         [Parameter(Mandatory=$false,
         HelpMessage="Path to list of passwords to use.  One per line.")]
@@ -8249,13 +8259,15 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
         # -----------------------------------------------------------------     
+        
+        # Create empty user / password lists
         $LoginList = @()
         $PasswordList = @()
 
         # Get logins for testing - file
         if($UserFile){
 
-            Write-Verbose "Grabbing logins from file..."
+            Write-Verbose "$Instance - Getting logins from file..."
             Get-Content -Path $UserFile | 
             ForEach-Object {
                 $LoginList += $_
@@ -8263,27 +8275,31 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         }
 
         # Get logins for testing - variable
-        if($Username){
+        if($TestUsername){
 
-            Write-Verbose "Grabbing supplied user..."
-            $LoginList += $Username
+            Write-Verbose "$Instance - Getting supplied login..."
+            $LoginList += $TestUsername
         }
         
         # Get logins for testing - fuzzed
         if($FuzzLogins){
             
-            Write-Verbose "Fuzzing principal IDs $StartId to $EndId..."
+            Write-Verbose "$Instance - Fuzzing principal IDs $StartId to $EndId..."
             Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose | 
             Where-Object { $_.PrincipleType -eq "SQL Login"} | 
             Select-Object PrincipleName -ExpandProperty PrincipleName | 
-            ForEach-Object{ $PasswordList += $_ }
+            ForEach-Object{ $LoginList += $_ }
         }
 
-        # Check for users or return - count array
+        # Check for users or return - count array        
+        if($LoginList.count -eq 0 -and (-not $FuzzLogins)){
+            Write-Verbose "$Instance - No logins have been provided."
+            return
+        }
 
         # Get passwords for testing - file
         if($PassFile){
-            Write-Verbose "Getting password from file..."
+            Write-Verbose "$Instance - Getting password from file..."
             Get-Content -Path $PassFile | 
             ForEach-Object {
                 $PasswordList += $_
@@ -8291,18 +8307,19 @@ Function Invoke-SQLEscalate-WeakLoginPw{
         }
 
         # Get passwords for testing - variable
-        if($Password){
-            Write-Verbose "Getting provided password..."
-            $PasswordList += $Password
+        if($TestPassword){
+            Write-Verbose "$Instance - Getting supplied password..."
+            $PasswordList += $TestPassword
         }
 
-        # Get passwords for testing - user as pass
-        if($UserAsPass){
-            Write-Verbose "Getting users as passwords..."
-            $LoginList | Select-Object -Unique | ForEach-Object { $PasswordList += $_ } 
+        # Check for provided passwords         
+        if($PasswordList.count -eq 0 -and (-not $UserAsPass)){
+            Write-Verbose "$Instance - No password have been provided."
+            return
         }
 
         # Iternate through logins
+        Write-Verbose "$Instance - Performing dictionary attack..."
         $LoginList | Select-Object -Unique | 
         ForEach-Object {
             
@@ -8311,7 +8328,6 @@ Function Invoke-SQLEscalate-WeakLoginPw{
             ForEach-Object{
 
                 $TargetPassword = $_
-
                 
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetPassword -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
                 if($TestPass){
@@ -8319,12 +8335,34 @@ Function Invoke-SQLEscalate-WeakLoginPw{
 
                     # Add record                    
                     $Details = "The $TargetLogin is configured with the password $TargetPassword."
+                    $IsVulnerable = "Yes"
+                    $IsExploitable = "Yes"
                     $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                     
                 }else{
                     Write-Verbose "$Instance - Failed Login: User = $TargetLogin Password = $TargetPassword"
                 }
                 
                  
+            }
+        }
+
+        # Test user as pass if set
+        if($UserAsPass){
+            $LoginList | Select-Object -Unique | 
+            ForEach-Object {
+                $TargetLogin = $_               
+                $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetLogin -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+                if($TestPass){
+                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin Password = $TargetLogin" 
+
+                    # Add record                    
+                    $Details = "The $TargetLogin is configured with the password $TargetLogin."
+                    $IsVulnerable = "Yes"
+                    $IsExploitable = "Yes"
+                    $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                     
+                }else{
+                    Write-Verbose "$Instance - Failed Login: User = $TargetLogin Password = $TargetLogin"
+                }
             }
         }
 
@@ -8351,7 +8389,7 @@ Function Invoke-SQLEscalate-WeakLoginPw{
     {   
         # Return data  
         if ( -not $NoOutput){            
-            Return $TblData       
+            Return $TblData | Sort-Object computername,instance,details      
         }
     }
 }

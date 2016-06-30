@@ -126,45 +126,46 @@ Example: Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|
-|Invoke-SQLEscalate-CreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLEscalate-DbOwnerRole|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLEscalate-DbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLEscalate-ImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLEscalate-SampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|Complete|
-|Invoke-SQLEscalate-ServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Complete|
-|Invoke-SQLEscalate-WeakLoginPw|This can be used for online dictionary attacks. It also support auto-discovery of SQL Logins for testing if you already have a least privilege account.|Complete|
-|Invoke-SQLEscalate-TrustedDatabase|Check if any database have been flagged as trusted.|Complete|
+|Invoke-SQLAuditPrivCreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|Complete|
+|Invoke-SQLAuditPrivImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Complete|
+|Invoke-SQLAuditPrivServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Complete|
+|Invoke-SQLAuditPrivTrustworthy|Check if any database have been flagged as trusted.|Complete|
+|Invoke-SQLAuditRoleDbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|In Progress|
+|Invoke-SQLAuditRoleDbOwner|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
+|Invoke-SQLAuditSampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|Complete|
+|Invoke-SQLAuditWeakLoginPw|This can be used for online dictionary attacks. It also support auto-discovery of SQL Logins for testing if you already have a least privilege account.|Complete|
+
 
 	Roadmap:
 	
-	Invoke-SQLEscalate-AgentJob 
-	Invoke-SQLEscalate-SQLi-ImpersonateLogin - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
-	Invoke-SQLEscalate-SQLi-ImpersonateDatabaseUser - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
-	Invoke-SQLEscalate-SQLi-ImpersonateSignedSp - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
-	Invoke-SQLEscalate-CreateStartUpSP
-	Invoke-SQLEscalate-CrawlServerLink
-	Invoke-SQLEscalate-CreateAssembly -CLR -Binary -C
-	Invoke-SQLEscalate-CreateTriggerDDL
-	Invoke-SQLEscalate-CreateTriggerLOGON
-	Invoke-SQLEscalate-CreateTriggerDML
-	Invoke-SQLEscalate-StealServiceToken
-	Invoke-SQLEscalate-ControlServer
-	Invoke-SqlInjectUncPath - https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/Get-SQLServiceAccountPwHash.ps1
-	Create-SqlStoredProcedure - db_owner, db_ddladmin, db_securityadmin, or db_accessadmin
-	Invoke-SqlCmdExecXpCmdshell
-	Create-SqlStoredProcedureStartUp
-	Create-SqlAgentJob
-	Invoke-SQLEscalate-CrawlOwnershipChain
-	Invoke-SQLEscalate-PrivAlterServerLogin
-	Invoke-SQLEscalate-PrivAlterServerRole
-	Invoke-SQLEscalate-PrivExternalAssembly
-	Invoke-SQLEscalate-PrivAlterAssembly	
-	Invoke-SQLEscalate-PrivAdministerBulkOps
-	Invoke-SQLEscalate-PrivControlServer
-	Invoke-SQLEscalate-DictionaryAttackOnline
-	Invoke-SQLEscalate-DictionaryAttackOffline
-	Invoke-SQLEscalate-ImpersonateDatabaseUser
+	Create-SqlAuditPrivCreateStartUpProc
+	Invoke-SQLAuditCrawlOwnershipChain	
+	Invoke-SQLAuditCrawlServerLink
+	Invoke-SQLAuditDictionaryAttackOffline
+	Invoke-SQLAuditDictionaryAttackOnline
+	Invoke-SQLAuditImpersonateDatabaseUser
+	Invoke-SQLAuditPrivAdministerBulkOps
+	Invoke-SQLAuditPrivAgentJob 
+	Invoke-SQLAuditPrivAlterAssembly	
+	Invoke-SQLAuditPrivAlterServerLogin
+	Invoke-SQLAuditPrivAlterServerRole
+	Invoke-SQLAuditPrivControlServer
+	Invoke-SQLAuditPrivControlServer
+	Invoke-SQLAuditPrivCreateAssembly -CLR -Binary -C
+	Invoke-SQLAuditPrivCreateStartUpSP
+	Invoke-SQLAuditPrivCreateTriggerDDL
+	Invoke-SQLAuditPrivCreateTriggerDML
+	Invoke-SQLAuditPrivCreateTriggerLOGON
+	Invoke-SQLAuditPrivExternalAssembly
+	Invoke-SqlAuditPrivInjectUncPath - https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/Get-SQLServiceAccountPwHash.ps1
+	Invoke-SqlAuditPrivXpCmdshell
+	Invoke-SQLAuditRoledbAccessAdmin	
+	Invoke-SQLAuditRoledbSecurityAdmin
+	Invoke-SQLAuditSQLi-ImpersonateDatabaseUser - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
+	Invoke-SQLAuditSQLi-ImpersonateLogin - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
+	Invoke-SQLAuditSQLi-ImpersonateSignedSp - https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation/
 	Invoke-SQLOSAdmintoSysadmin - https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/Invoke-SqlServerServiceImpersonation-Cmd.ps1
+
 
 ### Persistence Functions
 

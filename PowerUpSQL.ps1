@@ -10036,9 +10036,11 @@ function Invoke-Parallel {
                         }
 
                         #log the results if a log file was indicated
+                        <#
                         if($logFile -and $log){
                             ($log | ConvertTo-Csv -Delimiter ";" -NoTypeInformation)[1] | out-file $LogFile -append
                         }
+                        #>
                     }
 
                     #Clean out unused runspace jobs
@@ -10204,13 +10206,14 @@ function Invoke-Parallel {
                 [System.Collections.ArrayList]$allObjects = @()
             }
 
+            <#
             #Set up log file if specified
             if( $LogFile ){
                 New-Item -ItemType file -path $logFile -force | Out-Null
                 ("" | Select Date, Action, Runtime, Status, Details | ConvertTo-Csv -NoTypeInformation -Delimiter ";")[0] | Out-File $LogFile
             }
 
-            #write initial log entry
+            #write initial log entry           
             $log = "" | Select Date, Action, Runtime, Status, Details
                 $log.Date = Get-Date
                 $log.Action = "Batch processing started"
@@ -10220,7 +10223,7 @@ function Invoke-Parallel {
                 if($logFile) {
                     ($log | convertto-csv -Delimiter ";" -NoTypeInformation)[1] | Out-File $LogFile -Append
                 }
-
+            #>
 			$timedOutTasks = $false
 
         #endregion INIT

@@ -2578,6 +2578,204 @@ Function  Get-SQLServerLink{
 
 
 # ----------------------------------
+#  Get-SQLServerConfiguration
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLServerConfiguration{
+<#
+    .SYNOPSIS
+        Returns configuration information from the server using sp_configure.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Get-SQLServerConfiguration -Instance SQLServer1\STANDARDDEV2014 
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerConfiguration -Verbose
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Name of configuration setting.")]
+        [string]$SettingName,      
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Nubmer of hosts to query at one time.")]
+        [int]$Threads = 5,   
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
+    )
+ Begin
+    {
+        # Setup data table for output
+        $TblCommands = New-Object System.Data.DataTable
+        $TblResults = New-Object System.Data.DataTable
+        $TblResults.Columns.Add("ComputerName") | Out-Null
+        $TblResults.Columns.Add("Instance") | Out-Null
+        $TblResults.Columns.Add("Name") | Out-Null
+        $TblResults.Columns.Add("Minimum") | Out-Null
+        $TblResults.Columns.Add("Maximum") | Out-Null
+        $TblResults.Columns.Add("config_value") | Out-Null
+        $TblResults.Columns.Add("run_value") | Out-Null
+        
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object System.Data.DataTable
+
+        # Ensure provide instance is processed
+        if($Instance){
+            $PipelineItems = $PipelineItems + $Instance
+        }
+    }
+
+    Process
+    {      
+      # Create list of pipeline items
+      $PipelineItems = $PipelineItems + $_         
+    }
+
+    End
+    {   
+	    # Define code to be multi-threaded
+        $MyScriptBlock = {                        
+                        
+            $Instance = $_.Instance
+            
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance){
+                $Instance = $env:COMPUTERNAME
+            }
+
+            # Setup DAC string
+            if($DAC){
+
+                # Create connection object
+                $Connection =  Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+            }else{
+                # Create connection object
+                $Connection =  Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+            }
+
+            # Attempt connection
+            try{
+                # Open connection
+                $Connection.Open()                                              
+
+                if(-not $SuppressVerbose){
+                    Write-Verbose "$Instance : Connection Success."           
+                }
+               
+                # Switch to track advanced options
+                $DisableShowAdvancedOptions = 0
+
+                 # Get show advance status
+                $IsShowAdvancedEnabled =  Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object config_value -ExpandProperty config_value
+      
+                # Get sysadmin status
+                $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin                              
+
+                # Enable show advanced options if needed
+                if ($IsShowAdvancedEnabled -eq 1){
+                    Write-Verbose "$Instance : Show Advanced Options is already enabled."
+                }else{
+                    Write-Verbose "$Instance : Show Advanced Options is disabled."                    
+
+                    if($IsSysadmin -eq "Yes"){
+                        
+                        Write-Verbose "$Instance : Your a sysadmin, trying to enabled it."                         
+
+                        # Try to enable Show Advanced Options
+                        Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+                        # Check if configuration change worked
+                        $IsShowAdvancedEnabled2 =  Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object config_value -ExpandProperty config_value
+
+                         if ($IsShowAdvancedEnabled2 -eq 1){
+                            $DisableShowAdvancedOptions = 1
+                            Write-Verbose "$Instance : Enabled Show Advanced Options."
+                         }else{
+                            Write-Verbose "$Instance : Enabling Show Advanced Options failed. Aborting."
+                         }
+                    }
+                }
+                
+                # Run sp_confgiure
+                Get-SQLQuery -Instance $Instance -Query "sp_configure" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |                
+                ForEach-Object {
+                    $SettingName = $_.name
+                    $SettingMin = $_.minimum
+                    $SettingMax = $_.maximum
+                    $SettingConf_value = $_.config_value
+                    $SettingRun_value = $_.run_value
+
+                    $TblResults.Rows.Add($ComputerName, $Instance, $SettingName, $SettingMin, $SettingMax, $SettingConf_value, $SettingRun_value) | Out-Null
+
+                }
+
+                # Restore Show Advanced Options state if needed                
+                if($DisableShowAdvancedOptions -eq 1 -and $IsSysadmin -eq "Yes"){
+                    
+                    Write-Verbose "$Instance : Disabling Show Advanced Options"
+                    $Configurations = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                }
+
+                # Close connection
+                $Connection.Close()
+
+                # Dispose connection
+                $Connection.Dispose() 
+
+            }catch{
+
+                # Connection failed       
+                                 
+                if(-not $SuppressVerbose){
+                    $ErrorMessage = $_.Exception.Message
+                    Write-Verbose "$Instance : Connection Failed."
+                    #Write-Verbose  " Error: $ErrorMessage"
+                }
+            }                      		
+        }         
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+
+        return $TblResults
+    }
+}
+
+
+# ----------------------------------
 #  Get-SQLServerCredential
 # ----------------------------------
 # Author: Scott Sutherland

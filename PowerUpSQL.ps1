@@ -2616,12 +2616,7 @@ Function  Get-SQLServerConfiguration{
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server instance to connection to.")]
-        [string]$Instance,
-
-        [Parameter(Mandatory=$false,
-        ValueFromPipelineByPropertyName=$true,
-        HelpMessage="Name of configuration setting.")]
-        [string]$SettingName,      
+        [string]$Instance,    
 
         [Parameter(Mandatory=$false,
         ValueFromPipelineByPropertyName=$true,
@@ -2706,13 +2701,21 @@ Function  Get-SQLServerConfiguration{
 
                 # Enable show advanced options if needed
                 if ($IsShowAdvancedEnabled -eq 1){
-                    Write-Verbose "$Instance : Show Advanced Options is already enabled."
+
+                    if(-not $SuppressVerbose){
+                        Write-Verbose "$Instance : Show Advanced Options is already enabled."
+                    }
                 }else{
-                    Write-Verbose "$Instance : Show Advanced Options is disabled."                    
+
+                    if(-not $SuppressVerbose){
+                        Write-Verbose "$Instance : Show Advanced Options is disabled."                    
+                    }
 
                     if($IsSysadmin -eq "Yes"){
                         
-                        Write-Verbose "$Instance : Your a sysadmin, trying to enabled it."                         
+                        if(-not $SuppressVerbose){
+                            Write-Verbose "$Instance : Your a sysadmin, trying to enabled it."                         
+                        }
 
                         # Try to enable Show Advanced Options
                         Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -2722,9 +2725,13 @@ Function  Get-SQLServerConfiguration{
 
                          if ($IsShowAdvancedEnabled2 -eq 1){
                             $DisableShowAdvancedOptions = 1
-                            Write-Verbose "$Instance : Enabled Show Advanced Options."
+                            if(-not $SuppressVerbose){
+                                Write-Verbose "$Instance : Enabled Show Advanced Options."
+                            }
                          }else{
-                            Write-Verbose "$Instance : Enabling Show Advanced Options failed. Aborting."
+                            if(-not $SuppressVerbose){
+                                Write-Verbose "$Instance : Enabling Show Advanced Options failed. Aborting."
+                            }
                          }
                     }
                 }
@@ -2744,8 +2751,9 @@ Function  Get-SQLServerConfiguration{
 
                 # Restore Show Advanced Options state if needed                
                 if($DisableShowAdvancedOptions -eq 1 -and $IsSysadmin -eq "Yes"){
-                    
-                    Write-Verbose "$Instance : Disabling Show Advanced Options"
+                    if(-not $SuppressVerbose){
+                        Write-Verbose "$Instance : Disabling Show Advanced Options"
+                    }
                     $Configurations = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
                 }
 
@@ -2757,8 +2765,7 @@ Function  Get-SQLServerConfiguration{
 
             }catch{
 
-                # Connection failed       
-                                 
+                # Connection failed                                        
                 if(-not $SuppressVerbose){
                     $ErrorMessage = $_.Exception.Message
                     Write-Verbose "$Instance : Connection Failed."
@@ -10781,7 +10788,7 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }
 
-        # Getting DatabaseTables
+        # Getting Database Tables
         Write-Verbose "$Instance - Getting database columns..."
         $Results = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
         if($xml){
@@ -10792,7 +10799,7 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }
         
-        # Getting ServerLogins
+        # Getting Server Logins
         Write-Verbose "$Instance - Getting ServerLogins..."
         $Results = Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
         if($xml){
@@ -10801,10 +10808,21 @@ Function Invoke-SQLDumpInfo{
         }else{
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_logins.csv"
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }         
+        }   
         
-        # Getting ServerPrivs
-        Write-Verbose "$Instance - Getting ServerPrivs..."
+        # Getting Server Logins
+        Write-Verbose "$Instance - Getting server configuration settings..."
+        $Results = Get-SQLServerConfiguration -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        if($xml){
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_Configuration.xml"
+            $Results | Export-Clixml $OutPutPath 
+        }else{
+            $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_Configuration.csv"
+            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+        }                   
+        
+        # Getting Server Privs
+        Write-Verbose "$Instance - Getting server privileges..."
         $Results = Get-SQLServerPriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_privileges.xml"
@@ -10814,8 +10832,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }    
         
-        # Getting ServerRoles
-        Write-Verbose "$Instance - Getting ServerRoles..."
+        # Getting Server Roles
+        Write-Verbose "$Instance - Getting server roles..."
         $Results = Get-SQLServerRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_roles.xml"
@@ -10825,8 +10843,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }    
         
-        # Getting ServerRolemembers
-        Write-Verbose "$Instance - Getting ServerRolemembers..."
+        # Getting Server Role Members
+        Write-Verbose "$Instance - Getting server role members..."
         $Results = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_rolemembers.xml"
@@ -10836,8 +10854,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }    
         
-        # Getting ServerLinks
-        Write-Verbose "$Instance - Getting ServerLinks..."
+        # Getting Server Links
+        Write-Verbose "$Instance - Getting server links..."
         $Results = Get-SQLServerLink -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_links.xml"
@@ -10847,8 +10865,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }    
         
-        # Getting ServerCredentials
-        Write-Verbose "$Instance - Getting ServerCredentials..."
+        # Getting Server Credentials
+        Write-Verbose "$Instance - Getting server credentials..."
         $Results = Get-SQLServerCredential -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_credentials.xml"
@@ -10858,8 +10876,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }    
         
-        # Getting ServiceAccounts
-        Write-Verbose "$Instance - Getting ServiceAccounts..."
+        # Getting Service Accounts
+        Write-Verbose "$Instance - Getting SQL Server service accounts..."
         $Results = Get-SQLServiceAccount -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Service_accounts.xml"
@@ -10869,8 +10887,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }    
         
-        # Getting StoredProcedures
-        Write-Verbose "$Instance - Getting StoredProcedures..."
+        # Getting Stored Procedures
+        Write-Verbose "$Instance - Getting stored procedures..."
         $Results = Get-SQLStoredProcedure -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_stored_procedure.xml"
@@ -10880,8 +10898,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }             
         
-        # Getting TriggersDML
-        Write-Verbose "$Instance - Getting TriggersDML..."
+        # Getting Triggers DML
+        Write-Verbose "$Instance - Getting DML triggers..."
         $Results = Get-SQLTriggerDml -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_dml.xml"
@@ -10891,8 +10909,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }     
         
-        # Getting TriggersDDL
-        Write-Verbose "$Instance - Getting TriggersDDL..."
+        # Getting Triggers DDL
+        Write-Verbose "$Instance - Getting DDL triggers..."
         $Results = Get-SQLTriggerDdl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_ddl.xml"
@@ -10902,8 +10920,8 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }     
         
-        # Getting VersionInformation
-        Write-Verbose "$Instance - Getting VersionInformation..."
+        # Getting Version Information
+        Write-Verbose "$Instance - Getting server version information..."
         $Results = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
         if($xml){
             $OutPutPath = "$OutFolder\$OutPutInstance"+"_Server_triggers_dml.xml"
@@ -10913,8 +10931,7 @@ Function Invoke-SQLDumpInfo{
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }     
 
-        Write-Verbose "$Instance - COMPLETE"
-       
+        Write-Verbose "$Instance - COMPLETE"       
     }
         
     End

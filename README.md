@@ -13,9 +13,9 @@ The PowerUpSQL module includes functions to support common attack workflows agai
 It was designed with six objectives in mind:
 * Scalability: Auto-discovery of sql server instances, pipeline support, and multi-threading on core functions is supported so commands can be executed against many SQL Servers quickly.
 * Portability: Default .net libraries are used and there are no dependancies on SQLPS or the SMO libraries. Also, functions are designed so they can run independantly.
-* Flexibility: Most of the PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.
+* Flexibility: PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.
 * Easy Server Discovery: Blindly identify local, domain, and non-domain SQL Server instances on scale using discovery functions.
-* Easy Server Auditing: Invoke-SQLAuudit audits for common high impact vulnerabilities and weak configurations.
+* Easy Server Auditing: Invoke-SQLAudit audits for common high impact vulnerabilities and weak configurations.  Also, Invoke-SQLDumpInfo can be used to quickly inventory database, privileges, and other information.
 * Easy Server Exploitation: Invoke-SQLEscalatePriv uses identify vulnerabilities to obtain sysadmin privileges.
 
 Script Information

@@ -7797,6 +7797,37 @@ Function Invoke-SQLAuditTemplate {
 # ---------------------------------------
 # Author: Scott Sutherland
 Function Invoke-SQLAuditPrivServerLink {
+<#
+    .SYNOPSIS
+        Check if any SQL Server links are configured with remote credentials.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to.
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditPrivServerLink -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : Excessive Privilege - Linked Server
+        Description   : One or more linked servers is preconfigured with alternative credentials which could allow a least privilege login to escalate their privileges on a remote 
+                server.
+        Remediation   : Configure SQL Server links to connect to remote servers using the login's current security context.
+        Severity      : Medium
+        IsVulnerable  : Yes
+        IsExploitable : No
+        Exploited     : No
+        ExploitCmd    : Example query: SELECT * FROM OPENQUERY([Server01\SQLEXPRESS],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')
+        Details       : The SQL Server link Server01\SQLEXPRESS was found configured with the test login.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms190479.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivServerLink -Verbose -NoDefaults
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -7958,6 +7989,40 @@ Function Invoke-SQLAuditPrivServerLink {
 # ---------------------------------------
 # Author: Scott Sutherland
 Function Invoke-SQLAuditPrivTrustworthy{
+<#
+    .SYNOPSIS
+        Check if any databases have been configured as trustworthy.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditPrivTrustworthy -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : Excessive Privilege - Trustworthy Database
+        Description   : One or more database is configured as trustworthy.  The TRUSTWORTHY database property is used to indicate whether the instance of SQL Server trusts the database 
+                        and the contents within it.  Including potentially malicious assemblies with an EXTERNAL_ACCESS or UNSAFE permission setting. Also, potentially malicious modules 
+                        that are defined to execute as high privileged users. Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on 
+                        the server.
+        Remediation   : Configured the affected database so the 'is_trustworthy_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE MyAppsDb SET TRUSTWORTHY ON' is used to 
+                        set a database as trustworthy.  A query similar to 'ALTER DATABASE MyAppDb SET TRUSTWORTHY OFF' can be use to unset it.
+        Severity      : Low
+        IsVulnerable  : Yes
+        IsExploitable : No
+        Exploited     : No
+        ExploitCmd    : There is not exploit available at this time.
+        Details       : The database testdb was found configured as trustworthy.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms187861.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivTrustworthy -Verbose -NoDefaults
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8917,6 +8982,38 @@ Function Invoke-SQLAuditRoleDbOwner {
 # ---------------------------------------
 # Author: Scott Sutherland
 Function Invoke-SQLAuditRoleDbDdlAdmin {
+<#
+    .SYNOPSIS
+        Check if the current user has the db_ddladmin role in any databases.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditRoleDbDdlAdmin -Instance SQLServer1\STANDARDDEV2014 -username myuser -password mypassword
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : DATABASE ROLE - DB_DDLADMIN
+        Description   : The login has the DB_DDLADMIN role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted 
+                        and owned by a sysadmin, or if a custom assembly can be loaded.
+                        Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_DDLADMIN', 'MyDbUser', and can be removed 
+                        with a command like:  EXEC sp_droprolemember 'DB_DDLADMIN', 'MyDbUser'
+        Severity      : Medium
+        IsVulnerable  : Yes
+        IsExploitable : No
+        Exploited     : No
+        ExploitCmd    : No exploit command is available at this time, but a custom assesmbly could be used.
+        Details       : myuser has the DB_DDLADMIN role in the testdb database.
+        Reference     : https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbDdlAdmin -Verbose -NoDefaults
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,

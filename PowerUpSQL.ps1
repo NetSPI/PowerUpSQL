@@ -8176,6 +8176,205 @@ Function Invoke-SQLAuditPrivTrustworthy{
 
 
 # ---------------------------------------
+# Invoke-SQLAuditPrivDbChaining
+# ---------------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLAuditPrivDbChaining{
+<#
+    .SYNOPSIS
+        Check if data ownership chaining is enabled at the server or databases levels.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to.
+    .PARAMETER NoDefaults
+        Don't return information for default databases.
+    .PARAMETER NoOutput
+        Don't return output.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.         
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditPrivDbChaining -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName  : NETSPI-283-SSU
+        Instance      : NETSPI-283-SSU\STANDARDDEV2014
+        Vulnerability : Excessive Privilege - Database Ownership Chaining
+        Description   : Ownership chaining was found enabled at the server or database level.  Enabling ownership chaining can lead to unauthorized access to database resources.
+        Remediation   : Configured the affected database so the 'is_db_chaining_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING ON' is used 
+                        enable chaining.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING OFF;' can be used to disable chaining.
+        Severity      : Low
+        IsVulnerable  : Yes
+        IsExploitable : No
+        Exploited     : No
+        ExploitCmd    : There is not exploit available at this time.
+        Details       : The database testdb was found configured with ownership chaining enabled.
+        Reference     : https://technet.microsoft.com/en-us/library/ms188676(v=sql.105).aspx,https://msdn.microsoft.com/en-us/library/bb669059(v=vs.110).aspx 
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivDbChaining -Verbose 
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,       
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Only select non default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Don't output anything.")]
+        [switch]$NoOutput,
+        
+        [Parameter(Mandatory=$false,
+        HelpMessage="Exploit vulnerable issues.")]
+        [switch]$Exploit
+    )
+
+    Begin
+    {                 
+        # Table for output
+        $TblData = New-Object System.Data.DataTable 
+        $TblData.Columns.Add("ComputerName") | Out-Null
+        $TblData.Columns.Add("Instance") | Out-Null
+        $TblData.Columns.Add("Vulnerability") | Out-Null
+        $TblData.Columns.Add("Description") | Out-Null
+        $TblData.Columns.Add("Remediation") | Out-Null
+        $TblData.Columns.Add("Severity") | Out-Null
+        $TblData.Columns.Add("IsVulnerable") | Out-Null
+        $TblData.Columns.Add("IsExploitable") | Out-Null
+        $TblData.Columns.Add("Exploited") | Out-Null
+        $TblData.Columns.Add("ExploitCmd") | Out-Null
+        $TblData.Columns.Add("Details") | Out-Null    
+        $TblData.Columns.Add("Reference") | Out-Null   
+        $TblData.Columns.Add("Author") | Out-Null   
+    }
+
+    Process
+    {   
+        # Status User
+        Write-Verbose "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining" 
+
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){   
+            
+            # Status user
+            Write-Verbose "$Instance : CONNECTION FAILED."
+            Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining."           
+            Return
+        }else{
+            Write-Verbose "$Instance : CONNECTION SUCCESS."
+        }
+
+        # Grab server information
+        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------     
+        # Set function meta data for report output
+        # --------------------------------------------  
+        if($Exploit){
+            $TestMode  = "Exploit"
+        }else{
+            $TestMode  = "Audit"
+        }         
+        $Vulnerability = "Excessive Privilege - Database Ownership Chaining"
+        $Description   = "Ownership chaining was found enabled at the server or database level.  Enabling ownership chaining can lead to unauthorized access to database resources."
+        $Remediation   = "Configured the affected database so the 'is_db_chaining_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING ON' is used enable chaining.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING OFF;' can be used to disable chaining."
+        $Severity      = "Low" 
+        $IsVulnerable  = "No"
+        $IsExploitable = "No" 
+        $Exploited     = "No"
+        $ExploitCmd    = "There is not exploit available at this time."
+        $Details       = ""   
+        $Reference     = "https://technet.microsoft.com/en-us/library/ms188676(v=sql.105).aspx,https://msdn.microsoft.com/en-us/library/bb669059(v=vs.110).aspx "       
+        $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
+        
+        # -----------------------------------------------------------------     
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------     
+
+        # Select links configured with static credentials
+        
+        if($NoDefaults){
+            $ChainDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -NoDefaults -SuppressVerbose | Where-Object {$_.is_db_chaining_on -eq "True"}
+        }else{
+            $ChainDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.is_db_chaining_on -eq "True"}
+        }
+
+        # Update vulnerable status
+        if($ChainDatabases){
+
+            $IsVulnerable  = "Yes"             
+            $ChainDatabases | 
+            ForEach-Object{                
+                $DatabaseName = $_.DatabaseName                
+        
+                Write-Verbose "$Instance : - The database $DatabaseName was found configured as trustworthy."
+                $Details = "The database $DatabaseName was found configured with ownership chaining enabled."
+                $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                       
+            }
+        }else{
+            Write-Verbose "$Instance : - No non-default databases were found with ownership chaining enabled."
+        }
+
+        # -----------------------------------------------------------------     
+        # Check for exploit dependancies 
+        # Note: Typically secondary configs required for dba/os execution
+        # -----------------------------------------------------------------
+        # $IsExploitable = "No" or $IsExploitable = "Yes"
+        # Check if the link is alive and verify connection + check if sysadmin
+
+
+        # -----------------------------------------------------------------    
+        # Exploit Vulnerability
+        # Note: Add the current user to sysadmin fixed server role
+        # -----------------------------------------------------------------        
+        # $Exploited = "No" or $Exploited     = "Yes" 
+        # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
+        # Also, recommend link crawler module
+                       
+                   
+        # Status User
+        Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining" 
+    }
+
+    End
+    {   
+        # Return data  
+        if ( -not $NoOutput){            
+            Return $TblData       
+        }
+    }
+}
+
+
+# ---------------------------------------
 # Invoke-SQLAuditPrivCreateProcedure
 # ---------------------------------------
 # Author: Scott Sutherland

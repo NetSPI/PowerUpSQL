@@ -34,8 +34,8 @@ These functions can be used for enumerating SQL Server instances.  Discovered in
 
 Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
-|Function Name|Description |Status    |
-|:--------------------------------|:-----------|:---------|
+|Function Name|Description |
+|:--------------------------------|:-----------|
 |Get-SQLInstanceFile|Returns SQL Server instances from a file.  One per line.| 
 |Get-SQLInstanceLocal|Returns SQL Server instances from the local system based on a registry search.|
 |Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|
@@ -50,8 +50,8 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
 These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to obtain sysadmin privileges.
 
-|Function Name                 |Description |Status    |
-|:-----------------------------|:-----------|:---------|
+|Function Name                 |Description |
+|:-----------------------------|:-----------|
 |Get-SQLDumpInfo|This can be used to dump SQL Server and database information to csv or xml files.  This can be handy for doing a quick inventory of databases, logins, privileges etc.|
 |Get-SQLAudit|This can be used to review the SQL Server and databases for common configuration weaknesses and provide a vulnerability report along with recommendations for each item.|
 |Get-SQLEscalatePriv|This can be used to obtain sysadmin privileges via the identify weak configurations.  Think of it like get-system, but for SQL Server.|
@@ -65,8 +65,8 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLConnectionTestThreaded -Verbose
 
 Example: Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -Command "whoami"
 
-|Function Name                 |Description |Status    |
-|:-----------------------------|:-----------|:---------|
+|Function Name                 |Description |
+|:-----------------------------|:-----------|
 |Get-SQLConnectionTest|Tests if the current Windows account or provided SQL Server login can log into an SQL Server.
 |Get-SQLConnectionTestThreaded|Tests if the current Windows account or provided SQL Server login can log into an SQL Server and supports threading.|
 |Get-SQLQuery|Executes a query on target SQL servers.|
@@ -81,8 +81,8 @@ Example: Get-SQLInstanceLocal | Get-SQLDatabase -Verbose -NoDefaults
 
 Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC 
 
-|Function Name                 |Description |Status    |
-|:-----------------------------|:-----------|:---------|
+|Function Name                 |Description |
+|:-----------------------------|:-----------|
 |Get-SQLAuditDatabaseSpec|Returns Audit database specifications from target SQL Servers.|
 |Get-SQLAuditServerSpec|Returns Audit server specifications from target SQL Servers.|
 |Get-SQLColumn|Returns column information from target SQL Servers. Supports keyword search.|
@@ -221,18 +221,18 @@ These are essentially helper functions.  Some of them are used by other PowerUpS
 
 Example: Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
 
-|Function Name                 |Description |Status    |
-|:-----------------------------|:-----------|:---------|
-|Get-SQLConnectionObject | Creates a object for connecting to SQL Server.|Complete|
-|Get-SQLFuzzObjectName | Enumerates objects based on object id using OBJECT_NAME() and only the Public role.|Complete|	
-|Get-SQLFuzzDatabaseName | Enumerates databases based on database id using DB_NAME() and only the Public role.|Complete|
-|Get-SQLFuzzServerLogin | Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.|Complete|
-|Get-SQLFuzzDomainAccount | Enumerates domain groups, computer accounts, and user accounts based on domain RID using SUSER_SNAME() and only the Public role.  Note: In a typical domain 10000 or more is recommended for the EndId.|Complete|
-|Get-ComputerNameFromInstance | Parses computer name from a provided instance.|Complete|
-|Get-SQLServiceLocal | Returns local SQL Server services.|Complete|
-|Create-SQLFile-XPDLL | Used to create CPP DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.|Complete|
-|Get-DomainSpn | Returns a list of SPNs for the target domain. Supports authentication from non domain systems.|Complete|
-|Get-DomainObject | Used to query domain controllers via LDAP.  Supports alternative credentials from non-domain system.|Complete|
+|Function Name                 |Description |
+|:-----------------------------|:-----------|
+|Get-SQLConnectionObject | Creates a object for connecting to SQL Server.|
+|Get-SQLFuzzObjectName | Enumerates objects based on object id using OBJECT_NAME() and only the Public role.|	
+|Get-SQLFuzzDatabaseName | Enumerates databases based on database id using DB_NAME() and only the Public role.|
+|Get-SQLFuzzServerLogin | Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.|
+|Get-SQLFuzzDomainAccount | Enumerates domain groups, computer accounts, and user accounts based on domain RID using SUSER_SNAME() and only the Public role.  Note: In a typical domain 10000 or more is recommended for the EndId.|
+|Get-ComputerNameFromInstance | Parses computer name from a provided instance.|
+|Get-SQLServiceLocal | Returns local SQL Server services.|
+|Create-SQLFile-XPDLL | Used to create CPP DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.|
+|Get-DomainSpn | Returns a list of SPNs for the target domain. Supports authentication from non domain systems.|
+|Get-DomainObject | Used to query domain controllers via LDAP.  Supports alternative credentials from non-domain system.|
 	
 	Roadmap:
 
@@ -269,7 +269,7 @@ Example: Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
 
 These are functions developed by third parties.  Most of them have been modified slightly.
 
-|Function Name                 |Description |Status    |
-|:-----------------------------|:-----------|:---------|
-|Invoke-Parallel|Modified version of RamblingCookieMonster's (Warren F) function that supports importing functions from the current session.|Complete|
-|Test-IsLuhnValid|Valdidate a number based on the Luhn Algorithm.  Function written by ØYVIND KALLSTAD.|Complete|
+|Function Name                 |Description |
+|:-----------------------------|:-----------|
+|Invoke-Parallel|Modified version of RamblingCookieMonster's (Warren F) function that supports importing functions from the current session.|
+|Test-IsLuhnValid|Valdidate a number based on the Luhn Algorithm.  Function written by ØYVIND KALLSTAD.|

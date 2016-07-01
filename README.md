@@ -93,6 +93,7 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 |Get-SQLDatabaseRoleMember|Returns database role member information from target SQL Servers.|
 |Get-SQLDatabaseSchema|Returns schema information from target SQL Servers. |	
 |Get-SQLDatabaseUser|Returns database user information from target SQL Servers.|
+|Get-SQLServerConfiguration|Returns configuration settings from sp_configure.  Output includes advanced options if the connecting user is a sysadmin.|
 |Get-SQLServerCredential|Returns credentials from target SQL Servers.|
 |Get-SQLServerInfo|Returns basic server and user information from target SQL Servers.|
 |Get-SQLServerLink|Returns link servers from target SQL Servers.|

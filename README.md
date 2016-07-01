@@ -21,7 +21,6 @@ It was designed with six objectives in mind:
 Script Information
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 * Version: 1.0.0.0
-* Version Name: SQL Configuration Offensive Tools and Techniques (SCOTT) Edition
 * Description: PowerUpSQL is a offensive toolkit that supports common attack workflow against SQL Server.
 * License: BSD 3-Clause
 * Required Dependencies: None

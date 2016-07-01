@@ -994,7 +994,7 @@ Function  Invoke-SQLOSCmd {
                 $DisableXpCmdshell = 0
 
                 # Get sysadmin status
-                $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
+                $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin               
       
                 # Check if xp_cmdshell is enabled
                 if($IsSysadmin -eq "Yes"){

@@ -36,10 +36,10 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
 |Function Name|Description |Status    |
 |:--------------------------------|:-----------|:---------|
-|Get-SQLInstanceFile|Returns SQL Server instances from a file.  One per line. |Complete|
-|Get-SQLInstanceLocal|Returns SQL Server instances from the local system based on a registry search.|Complete|
-|Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|Complete|
-|Get-SQLInstanceScanUDP|Returns SQL Server instances from UDP scan results.|Complete|
+|Get-SQLInstanceFile|Returns SQL Server instances from a file.  One per line.| 
+|Get-SQLInstanceLocal|Returns SQL Server instances from the local system based on a registry search.|
+|Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|
+|Get-SQLInstanceScanUDP|Returns SQL Server instances from UDP scan results.|
 
 	Roadmap:
 	
@@ -52,9 +52,9 @@ These are the functions used to quickly dump databse information, audit for comm
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|
-|Get-SQLDumpInfo|This can be used to dump SQL Server and database information to csv or xml files.  This can be handy for doing a quick inventory of databases, logins, privileges etc.|Complete|
-|Get-SQLAudit|This can be used to review the SQL Server and databases for common configuration weaknesses and provide a vulnerability report along with recommendations for each item.|Complete|
-|Get-SQLEscalatePriv|This can be used to obtain sysadmin privileges via the identify weak configurations.  Think of it like get-system, but for SQL Server.|Complete|
+|Get-SQLDumpInfo|This can be used to dump SQL Server and database information to csv or xml files.  This can be handy for doing a quick inventory of databases, logins, privileges etc.|
+|Get-SQLAudit|This can be used to review the SQL Server and databases for common configuration weaknesses and provide a vulnerability report along with recommendations for each item.|
+|Get-SQLEscalatePriv|This can be used to obtain sysadmin privileges via the identify weak configurations.  Think of it like get-system, but for SQL Server.|
 
 
 ### Core Functions
@@ -67,11 +67,11 @@ Example: Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|
-|Get-SQLConnectionTest|Tests if the current Windows account or provided SQL Server login can log into an SQL Server.|Complete|
-|Get-SQLConnectionTestThreaded|Tests if the current Windows account or provided SQL Server login can log into an SQL Server and supports threading.|Complete|
-|Get-SQLQuery|Executes a query on target SQL servers.|Complete|
-|Get-SQLQueryThreaded|Executes a query on target SQL servers and supports threading.|Complete|
-|Invoke-SQLOSCmd|Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.|Complete|
+|Get-SQLConnectionTest|Tests if the current Windows account or provided SQL Server login can log into an SQL Server.
+|Get-SQLConnectionTestThreaded|Tests if the current Windows account or provided SQL Server login can log into an SQL Server and supports threading.|
+|Get-SQLQuery|Executes a query on target SQL servers.|
+|Get-SQLQueryThreaded|Executes a query on target SQL servers and supports threading.|
+|Invoke-SQLOSCmd|Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.|
 	
 ### Common Functions
 
@@ -83,31 +83,31 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 
 |Function Name                 |Description |Status    |
 |:-----------------------------|:-----------|:---------|
-|Get-SQLAuditDatabaseSpec|Returns Audit database specifications from target SQL Servers.|Complete|
-|Get-SQLAuditServerSpec|Returns Audit server specifications from target SQL Servers.|Complete|
-|Get-SQLColumn|Returns column information from target SQL Servers. Supports keyword search.|Complete|
-|Get-SQLColumnSampleData|Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.|Complete|
-|Get-SQLDatabase|Returns database information from target SQL Servers.|Complete|
-|Get-SQLDatabasePriv|Returns database user privilege information from target SQL Servers.|Complete|
-|Get-SQLDatabaseRole|Returns database role information from target SQL Servers.|Complete|
-|Get-SQLDatabaseRoleMember|Returns database role member information from target SQL Servers.|Complete|
-|Get-SQLDatabaseSchema|Returns schema information from target SQL Servers. |Complete|	
-|Get-SQLDatabaseUser|Returns database user information from target SQL Servers.|Complete|
-|Get-SQLServerCredential|Returns credentials from target SQL Servers.|Complete|
-|Get-SQLServerInfo|Returns basic server and user information from target SQL Servers.|Complete|
-|Get-SQLServerLink|Returns link servers from target SQL Servers.|Complete|
-|Get-SQLServerLogin|Returns logins from target SQL Servers.|Complete|
-|Get-SQLServerPriv|Returns SQL Server login privilege information from target SQL Servers.|Complete|
-|Get-SQLServerRole|Returns SQL Server role information from target SQL Servers.|Complete|
-|Get-SQLServerRoleMember|Returns SQL Server role member information from target SQL Servers.|Complete|
-|Get-SQLServiceAccount|Returns a list of service account names for SQL Servers services by querying the registry with xp_regread.  This can be executed against remote systems.|Complete|
-|Get-SQLSession|Returns active sessions from target SQL Servers.|Complete|
-|Get-SQLStoredProcure|Returns stored procedures from target SQL Servers.|Complete|	
-|Get-SQLSysadminCheck|Check if login is has sysadmin privilege on the target SQL Servers.|Complete|
-|Get-SQLTable|Returns table information from target SQL Servers.|Complete|
-|Get-SQLTriggerDdl|Returns DDL trigger information from target SQL Servers.  This includes logon triggers.|Complete|
-|Get-SQLTriggerDml|Returns DML trigger information from target SQL Servers.|Complete|
-|Get-SQLView|Returns view information from target SQL Servers.|Complete|
+|Get-SQLAuditDatabaseSpec|Returns Audit database specifications from target SQL Servers.|
+|Get-SQLAuditServerSpec|Returns Audit server specifications from target SQL Servers.|
+|Get-SQLColumn|Returns column information from target SQL Servers. Supports keyword search.|
+|Get-SQLColumnSampleData|Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.|
+|Get-SQLDatabase|Returns database information from target SQL Servers.|
+|Get-SQLDatabasePriv|Returns database user privilege information from target SQL Servers.|
+|Get-SQLDatabaseRole|Returns database role information from target SQL Servers.|
+|Get-SQLDatabaseRoleMember|Returns database role member information from target SQL Servers.|
+|Get-SQLDatabaseSchema|Returns schema information from target SQL Servers. |	
+|Get-SQLDatabaseUser|Returns database user information from target SQL Servers.|
+|Get-SQLServerCredential|Returns credentials from target SQL Servers.|
+|Get-SQLServerInfo|Returns basic server and user information from target SQL Servers.|
+|Get-SQLServerLink|Returns link servers from target SQL Servers.|
+|Get-SQLServerLogin|Returns logins from target SQL Servers.|
+|Get-SQLServerPriv|Returns SQL Server login privilege information from target SQL Servers.|
+|Get-SQLServerRole|Returns SQL Server role information from target SQL Servers.|
+|Get-SQLServerRoleMember|Returns SQL Server role member information from target SQL Servers.|
+|Get-SQLServiceAccount|Returns a list of service account names for SQL Servers services by querying the registry with xp_regread.  This can be executed against remote systems.|
+|Get-SQLSession|Returns active sessions from target SQL Servers.|
+|Get-SQLStoredProcure|Returns stored procedures from target SQL Servers.|	
+|Get-SQLSysadminCheck|Check if login is has sysadmin privilege on the target SQL Servers.|
+|Get-SQLTable|Returns table information from target SQL Servers.|
+|Get-SQLTriggerDdl|Returns DDL trigger information from target SQL Servers.  This includes logon triggers.|
+|Get-SQLTriggerDml|Returns DML trigger information from target SQL Servers.|
+|Get-SQLView|Returns view information from target SQL Servers.|
 
 	Roadmap:
 	
@@ -123,16 +123,16 @@ These functions are used for identifying weak configurations that can lead to un
 
 Example: Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
 
-|Function Name                 |Description |Status    |
+|Function Name                 |Description |Provide Sysadmin   |
 |:-----------------------------|:-----------|:---------|
-|Invoke-SQLAuditPrivCreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLAuditPrivImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLAuditPrivServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Complete|
-|Invoke-SQLAuditPrivTrustworthy|Check if any database have been flagged as trusted.|Complete|
-|Invoke-SQLAuditRoleDbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|In Progress|
-|Invoke-SQLAuditRoleDbOwner|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Complete|
-|Invoke-SQLAuditSampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|Complete|
-|Invoke-SQLAuditWeakLoginPw|This can be used for online dictionary attacks. It also support auto-discovery of SQL Logins for testing if you already have a least privilege account.|Complete|
+|Invoke-SQLAuditPrivCreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|No|
+|Invoke-SQLAuditPrivImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Yes|
+|Invoke-SQLAuditPrivServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Yes|
+|Invoke-SQLAuditPrivTrustworthy|Check if any database have been flagged as trusted.|No|
+|Invoke-SQLAuditRoleDbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|No|
+|Invoke-SQLAuditRoleDbOwner|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Yes|
+|Invoke-SQLAuditSampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|No|
+|Invoke-SQLAuditWeakLoginPw|This can be used for online dictionary attacks. It also support auto-discovery of SQL Logins for testing if you already have a least privilege account.|Yes|
 
 
 	Roadmap:

@@ -10748,7 +10748,7 @@ Function Invoke-SQLEscalatePriv {
     .PARAMETER Instance
         SQL Server instance to connection to. 
     .EXAMPLE
-        PS C:\> Invoke-SQLEscalatePriv -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
+        PS C:\> Invoke-SQLEscalatePriv -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
 #>
     [CmdletBinding()]
     Param(
@@ -10819,7 +10819,7 @@ Function Invoke-SQLEscalatePriv {
 Function Invoke-SQLDumpInfo{
 <#
     .SYNOPSIS
-        This function can be used to attempt to obtain sysadmin privileges via identify vulnerabilities.
+        This function can be used to attempt to obtain sysadmin privileges via identify vulnerabilities.  It supports both csv and xml output.
     .PARAMETER Username
         SQL Server or domain account to authenticate with.   
     .PARAMETER Password
@@ -10828,10 +10828,14 @@ Function Invoke-SQLDumpInfo{
         SQL Server credential. 
     .PARAMETER Instance
         SQL Server instance to connection to. 
+    .PARAMETER XML
+        Generate xml output instead of csv. 
+    .PARAMETER OutFolder
+        Output to a specific path instead of the current directory. 
     .EXAMPLE
         PS C:\> Get-SQLInstanceLocal | Invoke-SQLDumpInfo -Verbose
     .EXAMPLE
-        PS C:\> Invoke-SQLDumpInfo -Verobse -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
+        PS C:\> Invoke-SQLDumpInfo -Verobse -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
 #>
     [CmdletBinding()]
     Param(

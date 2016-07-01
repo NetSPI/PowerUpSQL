@@ -7808,6 +7808,8 @@ Function Invoke-SQLAuditPrivServerLink {
         SQL Server credential. 
     .PARAMETER Instance
         SQL Server instance to connection to.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
     .EXAMPLE
         PS C:\> Invoke-SQLAuditPrivServerLink -Instance SQLServer1\STANDARDDEV2014 
 
@@ -7826,7 +7828,7 @@ Function Invoke-SQLAuditPrivServerLink {
         Reference     : https://msdn.microsoft.com/en-us/library/ms190479.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
     .EXAMPLE
-        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivServerLink -Verbose -NoDefaults
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivServerLink -Verbose 
 #>
     [CmdletBinding()]
     Param(
@@ -7999,7 +8001,9 @@ Function Invoke-SQLAuditPrivTrustworthy{
     .PARAMETER Credential
         SQL Server credential. 
     .PARAMETER Instance
-        SQL Server instance to connection to. 
+        SQL Server instance to connection to.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.         
     .EXAMPLE
         PS C:\> Invoke-SQLAuditPrivTrustworthy -Instance SQLServer1\STANDARDDEV2014 
 
@@ -8021,7 +8025,7 @@ Function Invoke-SQLAuditPrivTrustworthy{
         Reference     : https://msdn.microsoft.com/en-us/library/ms187861.aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
     .EXAMPLE
-        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivTrustworthy -Verbose -NoDefaults
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivTrustworthy -Verbose 
 #>
     [CmdletBinding()]
     Param(
@@ -8397,6 +8401,68 @@ Function Invoke-SQLAuditPrivCreateProcedure {
 # ---------------------------------------
 # Author: Scott Sutherland
 Function Invoke-SQLAuditWeakLoginPw{
+<#
+    .SYNOPSIS
+        Check if the current login has the db_owner role in any databases.
+    .PARAMETER Username
+        Known SQL Server login to obtain a list of logins with for testing. 
+    .PARAMETER TestUsername
+        SQL Server or domain account to authenticate with.
+    .PARAMETER UserFile
+        Path to list of users to use.  One per line.                     
+    .PARAMETER Password
+        Known SQL Server login password to obtain a list of logins with for testing. 
+    .PARAMETER TestPassword
+        Password to test provided or discovered logins with. 
+    .PARAMETER PassFile
+        Path to list of password to use.  One per line. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER NoUserAsPass
+        Don't try to login using the login name as the password. 
+    .PARAMETER NoUserEnum
+        Don't try to enumerate logins to test. 
+    .PARAMETER StartId
+        Start id for fuzzing login IDs when authenticating as a least privilege login. 
+    .PARAMETER EndId
+        End id for fuzzing login IDs when authenticating as a least privilege login. 
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Invoke-SQLAuditWeakLoginPw -Username myuser -Password mypassword
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : Weak Login Password
+        Description   : One or more SQL Server logins is configured with a weak password.  This may provide unauthorized access to resources the affected logins have access to.
+        Remediation   : Ensure all SQL Server logins are required to use a strong password. Considered inheriting the OS password policy.
+        Severity      : High
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : No
+        ExploitCmd    : Use the affected credentials to log into the SQL Server, or rerun this command with -Exploit.
+        Details       : The testuser (Not Sysadmin) is configured with the password testuser.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms161959.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\Express
+        Vulnerability : Weak Login Password
+        Description   : One or more SQL Server logins is configured with a weak password.  This may provide unauthorized access to resources the affected logins have access to.
+        Remediation   : Ensure all SQL Server logins are required to use a strong password. Considered inheriting the OS password policy.
+        Severity      : High
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : No
+        ExploitCmd    : Use the affected credentials to log into the SQL Server, or rerun this command with -Exploit.
+        Details       : The testadmin (Sysadmin) is configured with the password testadmin.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms161959.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditWeakLoginPw -Verbose -Instance SQLServer1\STANDARDDEV2014 
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8520,7 +8586,7 @@ Function Invoke-SQLAuditWeakLoginPw{
         $IsVulnerable  = "No"
         $IsExploitable = "No" 
         $Exploited     = "No"
-        $ExploitCmd    = "Use the affected credentials to log into the SQL Server."
+        $ExploitCmd    = "Use the affected credentials to log into the SQL Server, or rerun this command with -Exploit."
         $Details       = ""   
         $Reference     = "https://msdn.microsoft.com/en-us/library/ms161959.aspx"       
         $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
@@ -8635,7 +8701,7 @@ Function Invoke-SQLAuditWeakLoginPw{
                         $SysadminStatus = "Not Sysadmin"
                     }
 
-                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetPassword" 
+                    Write-Verbose "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetPassword"                     
 
                     if($Exploit){
                                                 
@@ -8763,6 +8829,40 @@ Function Invoke-SQLAuditWeakLoginPw{
 # ---------------------------------------
 # Author: Scott Sutherland
 Function Invoke-SQLAuditRoleDbOwner {
+<#
+    .SYNOPSIS
+        Check if the current login has the db_owner role in any databases.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditRoleDbOwner -Instance SQLServer1\STANDARDDEV2014 -Username myuser -Password mypassword
+
+        ComputerName  : SQLServer1
+        Instance      : SQLServer1\STANDARDDEV2014
+        Vulnerability : DATABASE ROLE - DB_OWNER
+        Description   : The login has the DB_OWER role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and 
+                        owned by a sysadmin.
+        Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_OWNER', 'MyDbUser', and can be removed with 
+                        a command like:  EXEC sp_droprolemember 'DB_OWNER', 'MyDbUser'
+        Severity      : Medium
+        IsVulnerable  : Yes
+        IsExploitable : Yes
+        Exploited     : No
+        ExploitCmd    : Invoke-SQLAuditRoleDbOwner -Instance SQLServer1\STANDARDDEV2014 -Username myuser -Password mypassword -Exploit
+        Details       : myuser has the DB_OWNER role in the testdb database.
+        Reference     : https://msdn.microsoft.com/en-us/library/ms189121.aspx,https://msdn.microsoft.com/en-us/library/ms187861.aspx
+        Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbOwner -Verbose 
+#>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
@@ -8993,6 +9093,8 @@ Function Invoke-SQLAuditRoleDbDdlAdmin {
         SQL Server credential. 
     .PARAMETER Instance
         SQL Server instance to connection to. 
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
     .EXAMPLE
         PS C:\> Invoke-SQLAuditRoleDbDdlAdmin -Instance SQLServer1\STANDARDDEV2014 -username myuser -password mypassword
 
@@ -9012,7 +9114,7 @@ Function Invoke-SQLAuditRoleDbDdlAdmin {
         Reference     : https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx
         Author        : Scott Sutherland (@_nullbind), NetSPI 2016
     .EXAMPLE
-        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbDdlAdmin -Verbose -NoDefaults
+        PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbDdlAdmin -Verbose 
 #>
     [CmdletBinding()]
     Param(
@@ -9491,6 +9593,8 @@ Function Invoke-SQLAuditSampleDataByColumn {
         Number of records to sample.
     .PARAMETER Keyword
         Column name to search for.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.
     .EXAMPLE
         PS C:\> Invoke-SQLAuditSampleDataByColumn -Instance SQLServer1\STANDARDDEV2014 -Keyword card -SampleSize 2 -Exploit
 

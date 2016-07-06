@@ -7452,7 +7452,11 @@ function Get-SQLInstanceScanUDP
         [Parameter(Mandatory=$false,        
         ValueFromPipelineByPropertyName=$true,
         HelpMessage="Timeout in seconds. Longer timeout = more accurate.")]
-        [int]$UDPTimeOut = 2
+        [int]$UDPTimeOut = 2,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
     )
 
     Begin 
@@ -7470,7 +7474,9 @@ function Get-SQLInstanceScanUDP
 
     Process
     {
-        Write-Verbose " - $ComputerName - UDP Scan Start."
+        if(-not $SuppressVerbose){
+            Write-Verbose " - $ComputerName - UDP Scan Start."
+        }
 
         # Verify server name isn't empty
         if ($ComputerName -ne '')
@@ -7511,6 +7517,12 @@ function Get-SQLInstanceScanUDP
                     {
                         if(![string]::IsNullOrEmpty($values.'tcp'))
                         {
+                            
+                            if(-not $SuppressVerbose){
+                                $DiscoveredInstance =  "$ComputerName\"+$values.'instancename'
+                                Write-Verbose "$ComputerName - Found: $DiscoveredInstance"
+                            }
+
                             # Add SQL Server instance info to results table
                             $TableResults.rows.Add(
                                 [string]$ComputerName,
@@ -7538,8 +7550,9 @@ function Get-SQLInstanceScanUDP
                 # $UDPClient.Close()
             } 
         }       
-   
-        Write-Verbose " - $ComputerName - UDP Scan Complete."
+        if(-not $SuppressVerbose){
+            Write-Verbose " - $ComputerName - UDP Scan Complete."
+        }
     }
 
     End
@@ -7665,9 +7678,7 @@ function Get-SQLInstanceScanUDPThreaded
 	    # Define code to be multi-threaded
         $MyScriptBlock = {              
         
-            $ComputerName = $_.ComputerName
-                              
-            Write-Verbose " - $ComputerName - UDP Scan Start."
+            $ComputerName = $_.ComputerName                              
 
             # Verify server name isn't empty
             if ($ComputerName -ne '')
@@ -7708,6 +7719,12 @@ function Get-SQLInstanceScanUDPThreaded
                         {
                             if(![string]::IsNullOrEmpty($values.'tcp'))
                             {
+                                
+                                if(-not $SuppressVerbose){
+                                    $DiscoveredInstance =  "$ComputerName\"+$values.'instancename'
+                                    Write-Verbose "$ComputerName - Found: $DiscoveredInstance"
+                                }
+
                                 # Add SQL Server instance info to results table
                                 $TableResults.rows.Add(
                                     [string]$ComputerName,
@@ -7733,10 +7750,12 @@ function Get-SQLInstanceScanUDPThreaded
 
                     # Close connection
                     # $UDPClient.Close()
+                    if(-not $SuppressVerbose){
+                        $DiscoveredInstance =  "$ComputerName\"+$values.'instancename'
+                        Write-Verbose "$ComputerName"
+                    }
                 } 
-            }       
-   
-            Write-Verbose " - $ComputerName - UDP Scan Complete."                                                                         		
+            }                                                                            		
         }         
 
         # Run scriptblock using multi-threading

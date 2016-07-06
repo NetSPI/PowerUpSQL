@@ -41,6 +41,7 @@ These functions can be used for enumerating SQL Server instances.  Discovered in
 |Get-SQLInstanceLocal|Returns SQL Server instances from the local system based on a registry search.|
 |Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|
 |Get-SQLInstanceScanUDP|Returns SQL Server instances from UDP scan results.|
+|Get-SQLInstanceScanUDPThreaded|Returns SQL Server instances from UDP scan results and supports threading.|
 
 **Examples:**
 	

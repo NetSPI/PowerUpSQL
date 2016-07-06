@@ -52,7 +52,9 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to obtain sysadmin privileges.
 
 Example - All Domain Instances: Get-SQLInstanceDomain -Verbose | Invoke-SQLDumpInfo -Verbose
+
 Example - All Local Instances: Get-SQLInstanceLocal -Verbose | Invoke-SQLAudit -Verbose
+
 Example - Single Instance: Invoke-SQLEscalatePriv -Verbose -Instance "SQLSERVER1\MyInstance"
 
 |Function Name                 |Description |

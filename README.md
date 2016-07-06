@@ -144,6 +144,7 @@ These functions are used for identifying weak configurations that can lead to un
 |Invoke-SQLAuditPrivCreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|No|
 |Invoke-SQLAuditPrivImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Yes|
 |Invoke-SQLAuditPrivServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Yes|
+Invoke-SQLAuditPrivDbChaining|Check if database ownership chaining is enabled at the server or databases levels.|No|
 |Invoke-SQLAuditPrivTrustworthy|Check if any database have been flagged as trusted.|No|
 |Invoke-SQLAuditRoleDbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|No|
 |Invoke-SQLAuditRoleDbOwner|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Yes|

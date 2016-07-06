@@ -2043,7 +2043,7 @@ Function Get-SQLColumnSampleData {
                 $RowCount = Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object NumRows -ExpandProperty NumRows
                 Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose | Select-Object -ExpandProperty $ColumnName |
                 ForEach-Object{                                                                                                              
-                    if($CheckCC){
+                    if($ValidateCC){
 
                         # Check if value is CC
                         $Value = 0                                                   
@@ -2269,7 +2269,7 @@ Function Get-SQLColumnSampleDataThreaded {
                     $RowCount = Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object NumRows -ExpandProperty NumRows
                     Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose | Select-Object -ExpandProperty $ColumnName |
                     ForEach-Object{                                                                                                              
-                        if($CheckCC){
+                        if($ValidateCC){
 
                             # Check if value is CC
                             $Value = 0                                                   

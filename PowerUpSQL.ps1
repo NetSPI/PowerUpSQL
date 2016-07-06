@@ -1906,10 +1906,10 @@ Function Get-SQLColumnSampleData {
         Number of records to sample.
     .PARAMETER Keywords
         Comma seperated list of keywords to search for.
-    .PARAMETER $CheckCC
+    .PARAMETER ValidateCC
         Use Luhn formula to check if sample is a valid credit card.
     .EXAMPLE
-        PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -CheckCC | ft -AutoSize
+        PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC| ft -AutoSize
         VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
         VERBOSE: SQLServer1\STANDARDDEV2014 : CONNECTION SUCCESS
         VERBOSE: SQLServer1\STANDARDDEV2014 : - Searching for column names that match criteria...
@@ -1982,7 +1982,7 @@ Function Get-SQLColumnSampleData {
         $TblData.Columns.Add("Sample") | Out-Null   
         $TblData.Columns.Add("RowCount") | Out-Null    
 
-        if($CheckCC){
+        if($ValidateCC){
             $TblData.Columns.Add("IsCC") | Out-Null      
         }
     }
@@ -2108,10 +2108,10 @@ Function Get-SQLColumnSampleDataThreaded {
         Number of records to sample.
     .PARAMETER Keywords
         Comma seperated list of keywords to search for.
-    .PARAMETER $CheckCC
+    .PARAMETER ValidateCC
         Use Luhn formula to check if sample is a valid credit card.
     .EXAMPLE
-        PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -CheckCC | ft -AutoSize
+        PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC | ft -AutoSize
         VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
         VERBOSE: SQLServer1\STANDARDDEV2014 : CONNECTION SUCCESS
         VERBOSE: SQLServer1\STANDARDDEV2014 : - Searching for column names that match criteria...
@@ -2188,7 +2188,7 @@ Function Get-SQLColumnSampleDataThreaded {
         $TblData.Columns.Add("Sample") | Out-Null   
         $TblData.Columns.Add("RowCount") | Out-Null    
 
-        if($CheckCC){
+        if($ValidateCC){
             $TblData.Columns.Add("IsCC") | Out-Null      
         }
 

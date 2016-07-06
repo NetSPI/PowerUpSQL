@@ -2,6 +2,8 @@ To use the module, type `Import-Module PowerUpSQL.psm1`
 
 To list functions from the module, type `Get-Command -Module PowerUpSQL`
 
+To list help for a function, type `Get-Help FunctionName`
+
 To run as an alternative domain user, use the runas command to launch PowerShell first.
 
 Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
@@ -11,8 +13,8 @@ Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 The PowerUpSQL module includes functions to support common attack workflows against SQL Server. However, I've also included many functions that could be used by administrators for SQL Server inventory and other auditing tasks.
 
 It was designed with six objectives in mind:
-* Scalability: Auto-discovery of sql server instances, pipeline support, and multi-threading on core functions is supported so commands can be executed against many SQL Servers quickly.
-* Portability: Default .net libraries are used and there are no dependancies on SQLPS or the SMO libraries. Also, functions are designed so they can run independantly.
+* Scalability: Auto-discovery of SQL Server instances, pipeline support, and multi-threading on core functions is supported so commands can be executed against many SQL Servers quickly.
+* Portability: Default .net libraries are used and there are no dependencies on SQLPS or the SMO libraries. Also, functions are designed so they can run independently.
 * Flexibility: PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.
 * Easy Server Discovery: Blindly identify local, domain, and non-domain SQL Server instances on scale using discovery functions.
 * Easy Server Auditing: Invoke-SQLAudit audits for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
@@ -27,13 +29,11 @@ Script Information
 * Required Dependencies: None
 * Optional Dependencies: None
 
-Below are the functions included in this module.  Many of them are complete, but I've also outlined the intended evelopment roadmap. High levle roadmap Goals include adding roadmapped modules, adding multi-threading to all common functions, and  testing against SQL Server version 2000 to 2014.
+Below are the functions included in this module.  I've provided a list of the ones completed so far, but I've also outlined the intended development roadmap. High level roadmap Goals include adding functions, adding multi-threading to all common functions, and testing against SQL Server version 2000 to 2014.  At the moment most of the testing was done on versions 2008-2014.
 
 ### Discovery Functions 
 
 These functions can be used for enumerating SQL Server instances.  Discovered instances can then be piped into other PowerUpSQL functions.
-
-Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
 |Function Name|Description |
 |:--------------------------------|:-----------|
@@ -42,7 +42,15 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 |Get-SQLInstanceDomain|Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  The function will default to the current user's domain and logon server, but an alternative domain controller can be provided. UDP scanning of management servers is optional.|
 |Get-SQLInstanceScanUDP|Returns SQL Server instances from UDP scan results.|
 
-	Roadmap:
+**Examples:**
+	
+	Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
+	Get-SQLInstanceLocal -Verbose | Get-SQLServerInfo -Verbose
+	Get-SQLServerInfo -Verbose -Instance "SQLSERVER1\MYINSTANCE"
+	Get-SQLServerInfo -Verbose -Instance "SQLSERVER1\MYINSTANCE" -Username MyUser -Password MyPassword
+	Get-SQLServerInfo -Verbose -Instance "SQLSERVER1\MYINSTANCE" -Credential MyUser
+	
+**Roadmap:**
 	
 	Get-SQLInstanceScanTCP - Returns SQL Server instances from TCP scan results.
 	Get-SQLInstanceBroadcast - Returns SQL Server instances from UDP broadcast.
@@ -51,26 +59,22 @@ Example: Get-SQLInstanceDomain -Verbose | Get-SQLServerInfo -Verbose
 
 These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to obtain sysadmin privileges.
 
-Example - All Domain Instances: Get-SQLInstanceDomain -Verbose | Invoke-SQLDumpInfo -Verbose
-
-Example - All Local Instances: Get-SQLInstanceLocal -Verbose | Invoke-SQLAudit -Verbose
-
-Example - Single Instance: Invoke-SQLEscalatePriv -Verbose -Instance "SQLSERVER1\MyInstance"
-
 |Function Name                 |Description |
 |:-----------------------------|:-----------|
 |Invoke-SQLDumpInfo|This can be used to dump SQL Server and database information to csv or xml files.  This can be handy for doing a quick inventory of databases, logins, privileges etc.|
 |Invoke-SQLAudit|This can be used to review the SQL Server and databases for common configuration weaknesses and provide a vulnerability report along with recommendations for each item.|
 |Invoke-SQLEscalatePriv|This can be used to obtain sysadmin privileges via the identify weak configurations.  Think of it like get-system, but for SQL Server.|
 
+**Examples:**
+
+	Get-SQLInstanceDomain -Verbose | Invoke-SQLDumpInfo -Verbose
+	Get-SQLInstanceLocal -Verbose | Invoke-SQLAudit -Verbose
+	Invoke-SQLEscalatePriv -Verbose -Instance "SQLSERVER1\MyInstance" -Username MyUser -Password MyPassword
+
 
 ### Core Functions
 
 These functions are used to test connections, execute SQL Server queries, and execute OS commands.  All other functions use these core functions.  However, they can also be executed independently. 
-
-Example: Get-SQLInstanceDomain -Verbose | Get-SQLConnectionTestThreaded -Verbose -Threads 20 
-
-Example: Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -Command "whoami"
 
 |Function Name                 |Description |
 |:-----------------------------|:-----------|
@@ -79,14 +83,15 @@ Example: Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -
 |Get-SQLQuery|Executes a query on target SQL servers.|
 |Get-SQLQueryThreaded|Executes a query on target SQL servers and supports threading.|
 |Invoke-SQLOSCmd|Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.|
+
+**Examples:**
+
+	Get-SQLInstanceDomain -Verbose | Get-SQLConnectionTestThreaded -Verbose -Threads 20 
+	Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -Command "whoami"
 	
 ### Common Functions
 
 These functions are used for common information gathering tasks.  Similar to core functions, the common functions can be executed as standalone functions, but are also used other functions in the PowerUpSQL module.
-
-Example: Get-SQLInstanceLocal | Get-SQLDatabase -Verbose -NoDefaults
-
-Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC 
 
 |Function Name                 |Description |
 |:-----------------------------|:-----------|
@@ -117,7 +122,12 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 |Get-SQLTriggerDml|Returns DML trigger information from target SQL Servers.|
 |Get-SQLView|Returns view information from target SQL Servers.|
 
-	Roadmap:
+**Examples:**
+
+	Get-SQLInstanceLocal | Get-SQLDatabase -Verbose -NoDefaults
+	Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC 
+
+**Roadmap:**
 	
 	Get-SQLProxyAccount - Returns proxy accounts from target SQL Servers.
 	Get-SQLTempObject - Returns temp objects from target SQL Servers.	
@@ -128,8 +138,6 @@ Example: Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credi
 ### Audit Functions
 
 These functions are used for identifying weak configurations that can lead to unauthorized access.  Invoke-SQLAudit can be used to run all of them at once.
-
-Example: Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
 
 |Function Name                 |Description |Provide Sysadmin   |
 |:-----------------------------|:-----------|:---------|
@@ -142,8 +150,11 @@ Example: Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
 |Invoke-SQLAuditSampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|No|
 |Invoke-SQLAuditWeakLoginPw|This can be used for online dictionary attacks. It also support auto-discovery of SQL Logins for testing if you already have a least privilege account.|Yes|
 
+**Examples:** 
 
-	Roadmap:
+	Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
+	
+**Roadmap:**
 	
 	Create-SqlAuditPrivCreateStartUpProc
 	Invoke-SQLAuditCrawlOwnershipChain	
@@ -178,7 +189,7 @@ Example: Get-SQLInstanceLocal | Invoke-SQLAuditPrivImpersonateLogin -Verbose
 
 These functions are used for maintaining access to the SQL Server using various methods.  The roadmap for development is below.  I've included a few links to standalone scripts that have not been integrated yet.
 
-	Roadmap:
+**Roadmap:**
 	
 	Get-SQLPersistAssembly						  
 	Get-SQLPersistSp						
@@ -198,7 +209,7 @@ These functions are used for maintaining access to the SQL Server using various 
 
 These functions are used for recovering authentication tokens of varous types.  The roadmap for development is below.  I've included a few links to standalone scripts that have not been integrated yet.
 	
-	Roadmap:
+**Roadmap:**
 	
 	Get-SQLRecoverPwCredential - https://github.com/NetSPI/Powershell-Modules/blob/master/Get-MSSQLAllCredentials.psm1	
 	Get-SQLRecoverPwServerLink - https://github.com/NetSPI/Powershell-Modules/blob/master/Get-MSSQLLinkPasswords.psm1	
@@ -212,7 +223,7 @@ These functions are used for recovering authentication tokens of varous types.  
 
 These functions are used for exfiltrating data out of SQL Server.  The roadmap for development is below.  
 
-	Roadmap:
+**Roadmap:**
 	
 	Get-SQLExfilHttp							   
 	Get-SQLExfilHttps							      
@@ -227,8 +238,6 @@ These functions are used for exfiltrating data out of SQL Server.  The roadmap f
 
 These are essentially helper functions.  Some of them are used by other PowerUpSQL functions, but all of them can be run independently.
 
-Example: Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
-
 |Function Name                 |Description |
 |:-----------------------------|:-----------|
 |Get-SQLConnectionObject | Creates a object for connecting to SQL Server.|
@@ -241,8 +250,12 @@ Example: Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
 |Create-SQLFile-XPDLL | Used to create CPP DLLs with exported functions that can be imported as extended stored procedures in SQL Server. Supports arbitrary command execution.|
 |Get-DomainSpn | Returns a list of SPNs for the target domain. Supports authentication from non domain systems.|
 |Get-DomainObject | Used to query domain controllers via LDAP.  Supports alternative credentials from non-domain system.|
-	
-	Roadmap:
+
+**Examples:** 
+
+	Get-SQLFuzzServerLogin -Verbose -Instance "SQLSVR1\Instance1"
+
+**Roadmap:**
 
 	Get-SQLDatabaseOrphanUser             		
 	Get-SQLDatabaseUser- add fuzzing option		

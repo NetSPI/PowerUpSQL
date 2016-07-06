@@ -365,7 +365,8 @@ Function  Get-SQLConnectionTestThreaded {
 
         # Ensure provide instance is processed
         if($Instance){
-            $PipelineItems = $PipelineItems + $Instance
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
         }
     }
 
@@ -689,7 +690,8 @@ Function  Get-SQLQueryThreaded {
 
         # Ensure provide instance is processed
         if($Instance){
-            $PipelineItems = $PipelineItems + $Instance
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
         }
     }
 
@@ -946,7 +948,8 @@ Function  Invoke-SQLOSCmd {
 
         # Ensure provide instance is processed
         if($Instance){
-            $PipelineItems = $PipelineItems + $Instance
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
         }
     }
 
@@ -2648,7 +2651,8 @@ Function  Get-SQLServerConfiguration{
 
         # Ensure provide instance is processed
         if($Instance){
-            $PipelineItems = $PipelineItems + $Instance
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
         }
     }
 
@@ -2659,11 +2663,11 @@ Function  Get-SQLServerConfiguration{
     }
 
     End
-    {   
+    {           
 	    # Define code to be multi-threaded
         $MyScriptBlock = {                        
                         
-            $Instance = $_.Instance
+            $Instance = $_.Instance            
             
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance

@@ -2,6 +2,7 @@
 <#
     File: PowerUpSQL.ps1
     Author: Scott Sutherland (@_nullbind), NetSPI - 2016
+    Contributors: Antti Rantasaari and Eric Gruber
     Version: 1.0.0.0
     Description: PowerUpSQL is a PowerShell toolkit that supports common SQL Server attack workflows.
     License: BSD 3-Clause

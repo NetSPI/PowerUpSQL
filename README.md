@@ -100,6 +100,7 @@ These functions are used for common information gathering tasks.  Similar to cor
 |Get-SQLAuditServerSpec|Returns Audit server specifications from target SQL Servers.|
 |Get-SQLColumn|Returns column information from target SQL Servers. Supports keyword search.|
 |Get-SQLColumnSampleData|Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.|
+|Get-SQLColumnSampleDataThreaded|Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers. Supports host threading.|
 |Get-SQLDatabase|Returns database information from target SQL Servers.|
 |Get-SQLDatabasePriv|Returns database user privilege information from target SQL Servers.|
 |Get-SQLDatabaseRole|Returns database role information from target SQL Servers.|

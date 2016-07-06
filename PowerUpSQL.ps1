@@ -8349,6 +8349,15 @@ Function Invoke-SQLAuditPrivDbChaining{
             Write-Verbose "$Instance : - No non-default databases were found with ownership chaining enabled."
         }
 
+        # Check for server wide setting
+        $ServerCheck = Get-SQLServerConfiguration -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Name -like "*chain*" -and $_.config_value -eq 1}
+        if($ServerCheck){
+                $IsVulnerable  = "Yes" 
+                Write-Verbose "The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
+                $Details = "The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
+                $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                       
+        }
+
         # -----------------------------------------------------------------     
         # Check for exploit dependancies 
         # Note: Typically secondary configs required for dba/os execution

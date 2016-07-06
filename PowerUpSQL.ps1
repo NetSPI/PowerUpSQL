@@ -7551,6 +7551,202 @@ function Get-SQLInstanceScanUDP
 
 
 # ----------------------------------
+#  Get-SQLInstanceScanUDPThreaded
+# ----------------------------------
+# Author: Eric Gruber
+# Note: Pipeline and timeout mods by Scott Sutherland
+function Get-SQLInstanceScanUDPThreaded
+{
+<#
+    .SYNOPSIS
+        Returns a list of SQL Servers resulting from a UDP discovery scan of provided computers.
+    .PARAMETER ComputerName
+        Computer name or IP address to enumerate SQL Instance from.
+    .PARAMETER UDPTimeOut
+        Timeout in seconds. Longer timeout = more accurate.    
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceScanUDPThreaded -Verbose -ComputerName SQLServer1.domain.com
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Start.
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Complete.
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Express
+        InstanceName : Express
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51663
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Standard
+        InstanceName : Standard
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51861
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain | Get-SQLInstanceScanUDP -Verbose -Threads 20
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Start.
+        VERBOSE:  - SQLServer1.domain.com - UDP Scan Complete.
+
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Express
+        InstanceName : Express
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51663
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+
+        ComputerName : SQLServer1.domain.com
+        Instance     : SQLServer1.domain.com\Standard
+        InstanceName : Standard
+        ServerIP     : 10.10.10.30
+        TCPPort      : 51861
+        BaseVersion  : 11.0.2100.60
+        IsClustered  : No
+        [TRUNCATED]                
+#>
+
+    [CmdletBinding()]
+    param(
+
+        [Parameter(Mandatory=$true,
+        ValueFromPipeline,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Computer name or IP address to enumerate SQL Instance from.")]
+        [string]$ComputerName,
+
+        [Parameter(Mandatory=$false,        
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Timeout in seconds. Longer timeout = more accurate.")]
+        [int]$UDPTimeOut = 2,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Number of threads.")]
+        [int]$Threads = 5,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Setup data table for results
+        $TableResults = New-Object -TypeName system.Data.DataTable -ArgumentList 'Table'
+        $TableResults.columns.add("ComputerName") | Out-Null
+        $TableResults.columns.add("Instance") | Out-Null
+        $TableResults.columns.add("InstanceName") | Out-Null
+        $TableResults.columns.add("ServerIP") | Out-Null
+        $TableResults.columns.add("TCPPort") | Out-Null
+        $TableResults.columns.add("BaseVersion") | Out-Null
+        $TableResults.columns.add("IsClustered") | Out-Null  
+        $TableResults.Clear()
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object System.Data.DataTable
+
+        # Ensure provide instance is processed
+        if($Instance){
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
+        }
+    }
+
+    Process
+    {      
+      # Create list of pipeline items
+      $PipelineItems = $PipelineItems + $_         
+    }
+
+    End
+    {   
+	    # Define code to be multi-threaded
+        $MyScriptBlock = {              
+        
+            $ComputerName = $_.ComputerName
+                              
+            Write-Verbose " - $ComputerName - UDP Scan Start."
+
+            # Verify server name isn't empty
+            if ($ComputerName -ne '')
+            {        
+                # Try to enumerate SQL Server instances from remote system             
+                try
+                {
+                    # Resolve IP
+                    $IPAddress = [System.Net.Dns]::GetHostAddresses($ComputerName)
+
+                    # Create UDP client object
+                    $UDPClient = New-Object -TypeName System.Net.Sockets.Udpclient
+
+                    # Attempt to connect to system
+                    $UDPTimeOutMilsec = $UDPTimeOut * 1000
+                    $UDPClient.client.ReceiveTimeout = $UDPTimeOutMilsec
+                    $UDPClient.Connect($ComputerName,0x59a)
+                    $UDPPacket = 0x03  
+
+                    # Send request to system
+                    $UDPEndpoint = New-Object -TypeName System.Net.Ipendpoint -ArgumentList ([System.Net.Ipaddress]::Any, 0)
+                    $UDPClient.Client.Blocking = $true
+                    [void]$UDPClient.Send($UDPPacket,$UDPPacket.Length)
+
+                    # Process response from system
+                    $BytesRecived = $UDPClient.Receive([ref]$UDPEndpoint)
+                    $Response = [System.Text.Encoding]::ASCII.GetString($BytesRecived).split(';')
+
+                    $values = @{}
+           
+                    for($i = 0; $i -le $Response.length; $i++)
+                    {
+                        if(![string]::IsNullOrEmpty($Response[$i])) 
+                        {
+                            $values.Add(($Response[$i].ToLower() -replace '[\W]', ''),$Response[$i+1])
+                        }
+                        else 
+                        {
+                            if(![string]::IsNullOrEmpty($values.'tcp'))
+                            {
+                                # Add SQL Server instance info to results table
+                                $TableResults.rows.Add(
+                                    [string]$ComputerName,
+                                    [string]"$ComputerName\"+$values.'instancename',                                
+                                    [string]$values.'instancename',                                
+                                    [string]$IPAddress,
+                                    [string]$values.'tcp',
+                                    [string]$values.'version',
+                                    [string]$values.'isclustered') | Out-Null
+                                $values = @{}
+                            }
+                        }
+                    }
+
+                    # Close connection
+                    $UDPClient.Close()
+                }
+                catch
+                {
+                    #"Error was $_"
+                    #$line = $_.InvocationInfo.ScriptLineNumber
+                    #"Error was in Line $line"
+
+                    # Close connection
+                    # $UDPClient.Close()
+                } 
+            }       
+   
+            Write-Verbose " - $ComputerName - UDP Scan Complete."                                                                         		
+        }         
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+
+        return $TableResults
+    }
+}
+
+# ----------------------------------
 #  Get-SQLInstanceFile
 # ----------------------------------
 # Author: Scott Sutherland

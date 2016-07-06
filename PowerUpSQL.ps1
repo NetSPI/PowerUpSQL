@@ -7678,7 +7678,12 @@ function Get-SQLInstanceScanUDPThreaded
 	    # Define code to be multi-threaded
         $MyScriptBlock = {              
         
-            $ComputerName = $_.ComputerName                              
+            $ComputerName = $_.ComputerName     
+            
+            if(-not $SuppressVerbose){
+                Write-Verbose " - $ComputerName - UDP Scan Start."
+            }
+                                     
 
             # Verify server name isn't empty
             if ($ComputerName -ne '')
@@ -7722,7 +7727,7 @@ function Get-SQLInstanceScanUDPThreaded
                                 
                                 if(-not $SuppressVerbose){
                                     $DiscoveredInstance =  "$ComputerName\"+$values.'instancename'
-                                    Write-Verbose "$ComputerName - Found: $DiscoveredInstance"
+                                    Write-Verbose " - $ComputerName - Found: $DiscoveredInstance"
                                 }
 
                                 # Add SQL Server instance info to results table
@@ -7750,12 +7755,13 @@ function Get-SQLInstanceScanUDPThreaded
 
                     # Close connection
                     # $UDPClient.Close()
-                    if(-not $SuppressVerbose){
-                        $DiscoveredInstance =  "$ComputerName\"+$values.'instancename'
-                        Write-Verbose "$ComputerName"
-                    }
                 } 
-            }                                                                            		
+            }
+            
+            if(-not $SuppressVerbose){
+                Write-Verbose " - $ComputerName - UDP Scan End."
+            }
+                                                                                        		
         }         
 
         # Run scriptblock using multi-threading

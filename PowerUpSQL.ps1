@@ -2084,6 +2084,231 @@ Function Get-SQLColumnSampleData {
 }
 
 
+# ---------------------------------------
+# Get-SQLColumnSampleDataThreaded
+# ---------------------------------------
+# Author: Scott Sutherland
+Function Get-SQLColumnSampleDataThreaded {
+<#
+    .SYNOPSIS
+        Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER $NoOutput
+        Don't output any sample data.
+    .PARAMETER SampleSize
+        Number of records to sample.
+    .PARAMETER Keywords
+        Comma seperated list of keywords to search for.
+    .PARAMETER $CheckCC
+        Use Luhn formula to check if sample is a valid credit card.
+    .EXAMPLE
+        PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -CheckCC | ft -AutoSize
+        VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
+        VERBOSE: SQLServer1\STANDARDDEV2014 : CONNECTION SUCCESS
+        VERBOSE: SQLServer1\STANDARDDEV2014 : - Searching for column names that match criteria...
+        VERBOSE: SQLServer1\STANDARDDEV2014 : - Column match: [testdb].[dbo].[tracking].[card]
+        VERBOSE: SQLServer1\STANDARDDEV2014 : - Selecting 5 rows of data sample from column [testdb].[dbo].[tracking].[card].
+        VERBOSE: SQLServer1\STANDARDDEV2014 : COMPLETED SEARCH DATA BY COLUMN
+
+        ComputerName   Instance                   Database Schema Table    Column Sample           RowCount IsCC 
+        ------------   --------                   -------- ------ -----    ------ ------           -------- ---- 
+        SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True 
+        SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   41111111111ASDFD 2        False
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -ValidateCC -Threads 10
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,       
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Don't output anything.")]
+        [string]$NoOutput,       
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Number of records to sample.")]
+        [int]$SampleSize = 1,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Comma seperated list of keywords to search for.")]
+        [string]$Keywords = "Password",
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Use Luhn formula to check if sample is a valid credit card.")]
+        [switch]$ValidateCC,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Number of threads.")]
+        [int]$Threads = 5,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output               
+        $TblData = New-Object System.Data.DataTable 
+        $TblData.Columns.Add("ComputerName") | Out-Null
+        $TblData.Columns.Add("Instance") | Out-Null
+        $TblData.Columns.Add("Database") | Out-Null
+        $TblData.Columns.Add("Schema") | Out-Null
+        $TblData.Columns.Add("Table") | Out-Null
+        $TblData.Columns.Add("Column") | Out-Null
+        $TblData.Columns.Add("Sample") | Out-Null   
+        $TblData.Columns.Add("RowCount") | Out-Null    
+
+        if($CheckCC){
+            $TblData.Columns.Add("IsCC") | Out-Null      
+        }
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object System.Data.DataTable
+
+        # Ensure provide instance is processed
+        if($Instance){
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
+        }
+    }
+
+    Process
+    {      
+      # Create list of pipeline items
+      $PipelineItems = $PipelineItems + $_         
+    }
+
+    End
+    {   
+	    # Define code to be multi-threaded
+        $MyScriptBlock = {           
+        
+            $Instance = $_.Instance
+                     
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance){
+                $Instance = $env:COMPUTERNAME
+            }
+
+            # Test connection to server
+            $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+            if(-not $TestConnection){   
+            
+                if( -not $SuppressVerbose){            
+                    Write-Verbose "$Instance : CONNECTION FAILED" 
+                }                     
+                Return
+            }else{
+
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : START SEARCH DATA BY COLUMN" 
+                    Write-Verbose "$Instance : - Connection Success."
+                    Write-Verbose "$Instance : - Searching for column names that match criteria..." 
+                }
+            
+                # Search for columns   
+                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+            }           
+        
+            # Check if columns were found
+            if($Columns){
+           
+               # List columns found
+               $Columns|
+               ForEach-Object {    
+            
+                    $DatabaseName = $_.DatabaseName
+                    $SchemaName = $_.SchemaName
+                    $TableName = $_.TableName
+                    $ColumnName = $_.ColumnName
+                    $AffectedColumn = "[$DatabaseName].[$SchemaName].[$TableName].[$ColumnName]"
+                    $AffectedTable = "[$DatabaseName].[$SchemaName].[$TableName]"
+                    $Query = "USE $DatabaseName; SELECT TOP $SampleSize [$ColumnName] FROM $AffectedTable WHERE [$ColumnName] is not null"
+                    $QueryRowCount = "USE $DatabaseName; SELECT count(CAST([$ColumnName] as VARCHAR(1))) as NumRows FROM $AffectedTable WHERE [$ColumnName] is not null"
+
+                    if( -not $SuppressVerbose){
+
+                        Write-Verbose "$Instance : - Column match: $AffectedColumn"                               
+                        Write-Verbose "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
+                    }
+
+                    # Query for data
+                    $RowCount = Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object NumRows -ExpandProperty NumRows
+                    Get-SqlQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose | Select-Object -ExpandProperty $ColumnName |
+                    ForEach-Object{                                                                                                              
+                        if($CheckCC){
+
+                            # Check if value is CC
+                            $Value = 0                                                   
+                            if([uint64]::TryParse($_,[ref]$Value)){                            
+                                $LuhnCheck = Test-IsLuhnValid $_ -ErrorAction SilentlyContinue
+                            }else{
+                                $LuhnCheck = "False"
+                            }
+
+                            # Add record
+                            $TblData.Rows.Add($ComputerName, $Instance, $DatabaseName, $SchemaName, $TableName, $ColumnName, $_, $RowCount, $LuhnCheck) | Out-Null                                                                        
+                        }else{
+                            # Add record
+                            $TblData.Rows.Add($ComputerName, $Instance, $DatabaseName, $SchemaName, $TableName, $ColumnName, $_, $RowCount) | Out-Null                                                                        
+                        }
+                    }
+               }                                          
+            }else{
+            
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : - No columns were found that matched the search."
+                }
+            } 
+                
+            # Status User
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : END SEARCH DATA BY COLUMN" 
+            }                            
+           
+        }         
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+
+        return $TblData
+    }
+}
+
+
 # ----------------------------------
 #  Get-SQLDatabaseSchema
 # ----------------------------------

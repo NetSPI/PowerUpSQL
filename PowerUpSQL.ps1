@@ -624,7 +624,7 @@ Function  Get-SQLQueryThreaded {
     .PARAMETER SuppressVerbose
         Suppress verbose errors.  Used when function is wrapped.
     .PARAMETER Threads
-        Number of concurrent threads.
+        Number of concurrent host threads.
     .PARAMETER Query
         Query to be executed on the SQL Server.
     .EXAMPLE
@@ -1460,8 +1460,12 @@ Function  Get-SQLDatabase {
             $Instance = $env:COMPUTERNAME
         }
            
-        # Define Query
-        $Query = "  SELECT  '$ComputerName' as [ComputerName],
+        # Check version
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber         
+        $SQLVersionShort = $SQLVersionFull.Split(".")[0]
+
+        # Base query
+        $QueryStart = "  SELECT  '$ComputerName' as [ComputerName],
                             '$Instance' as [Instance],
                             a.database_id as [DatabaseId],
                             a.name as [DatabaseName],
@@ -1469,21 +1473,35 @@ Function  Get-SQLDatabase {
                             IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],     
 	                        a.is_trustworthy_on,
 	                        a.is_db_chaining_on,
+	                        a.create_date,
+	                        a.recovery_model_desc,"
+
+        # Version specific columns
+        if([int]$SQLVersionShort -ge 10){
+            $QueryVerSpec = "  
 	                        a.is_broker_enabled,
 	                        a.is_encrypted,
-	                        a.is_read_only,
-	                        a.create_date,
-	                        a.recovery_model_desc,
-	                        b.filename as [FileName],
-                            (SELECT CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,2)) from sys.master_files where name like a.name) as [DbSizeMb],
-	                        HAS_DBACCESS(a.name) as [has_dbaccess]
-                    FROM [sys].[databases] a
-                    INNER JOIN [sys].[sysdatabases] b ON a.database_id = b.dbid WHERE 1=1
+	                        a.is_read_only,"
+         }
+
+        # Query end
+        $QueryEnd = "  
+                           b.filename as [FileName],
+	                       (SELECT CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,2))
+	                       from sys.master_files where name like a.name) as [DbSizeMb],
+	                       HAS_DBACCESS(a.name) as [has_dbaccess]
+	                       FROM [sys].[databases] a
+	                       INNER JOIN [sys].[sysdatabases] b ON a.database_id = b.dbid WHERE 1=1"
+
+        # User defined filters
+        $Filters = "
                     $DatabaseFilter
                     $NoDefaultsFilter
                     $HasAccessFilter
                     $SysAdminOnlyFilter
                     ORDER BY a.database_id"
+
+        $Query = "$QueryStart $QueryVerSpec $QueryEnd $Filters"
 
         # Execute Query
         if($SuppressVerbose){
@@ -1500,6 +1518,214 @@ Function  Get-SQLDatabase {
     {  
         # Return data
         $TblDatabases              
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLDatabaseThreaded
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDatabaseThreaded {
+<#
+    .SYNOPSIS
+        Returns database information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER DAC
+        Connect using Dedicated Admin Connection. 
+    .PARAMETER DatabaseName
+        Database name to filter for.
+    .PARAMETER NoDefaults
+        Only select non default databases.
+    .PARAMETER HasAccess
+        Only select databases the current user has access to.
+    .PARAMETER SysAdminOnly
+        Only select databases owned by a sysadmin.
+    .PARAMETER Threads
+        Number of concurrent host threads.
+    .EXAMPLE
+        PS C:\> Get-SQLDatabaseThreaded -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
+
+        ComputerName        : SQLServer1
+        Instance            : SQLServer1\STANDARDDEV2014
+        DatabaseId          : 7
+        DatabaseName        : testdb
+        DatabaseOwner       : sa
+        OwnerIsSysadmin     : 1
+        is_trustworthy_on   : True
+        is_db_chaining_on   : False
+        is_broker_enabled   : True
+        is_encrypted        : False
+        is_read_only        : False
+        create_date         : 4/13/2016 4:27:36 PM
+        recovery_model_desc : FULL
+        FileName            : C:\Program Files\Microsoft SQL Server\MSSQL12.STANDARDDEV2014\MSSQL\DATA\testdb.mdf
+        DbSizeMb            : 3.19
+        has_dbaccess        : 1
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDatabaseThreaded -Verbose
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Database name.")]
+        [string]$DatabaseName,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Only select non default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Only select databases the current user has access to.")]
+        [switch]$HasAccess,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Only select databases owned by a sysadmin.")]
+        [switch]$SysAdminOnly,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Number of threads.")]
+        [int]$Threads = 5,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Create data tables for output
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $TblDatabases = New-Object -TypeName System.Data.DataTable
+
+         # Setup database filter
+        if($DatabaseName){
+            $DatabaseFilter = " and a.name like '$DatabaseName'"
+        }else{
+            $DatabaseFilter = ""
+        }
+
+        # Setup NoDefault filter
+        if($NoDefaults){
+            $NoDefaultsFilter = " and a.name not in ('master','tempdb','msdb','model')"
+        }else{
+            $NoDefaultsFilter = ""
+        }
+
+        # Setup HasAccess filter
+        if($HasAccess){
+            $HasAccessFilter = " and HAS_DBACCESS(a.name)=1"
+        }else{
+            $HasAccessFilter = ""
+        }
+
+        # Setup owner is sysadmin filter
+        if($SysAdminOnly){
+            $SysAdminOnlyFilter = " and IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid))=1"
+        }else{
+            $SysAdminOnlyFilter = ""
+        }
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object System.Data.DataTable
+
+        # Ensure provide instance is processed
+        if($Instance){
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
+        }
+    }
+
+    Process
+    {      
+      # Create list of pipeline items
+      $PipelineItems = $PipelineItems + $_         
+    }
+
+    End
+    {   
+	    # Define code to be multi-threaded
+        $MyScriptBlock = {                        
+                        
+            $Instance = $_.Instance
+
+            $Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance){
+                $Instance = $env:COMPUTERNAME
+            }
+           
+            # Define Query
+            $Query = "  SELECT  '$ComputerName' as [ComputerName],
+                                '$Instance' as [Instance],
+                                a.database_id as [DatabaseId],
+                                a.name as [DatabaseName],
+                                SUSER_SNAME(a.owner_sid) as [DatabaseOwner],
+                                IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],     
+	                            a.is_trustworthy_on,
+	                            a.is_db_chaining_on,
+	                            a.is_broker_enabled,
+	                            a.is_encrypted,
+	                            a.is_read_only,
+	                            a.create_date,
+	                            a.recovery_model_desc,
+	                            b.filename as [FileName],
+                                (SELECT CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,2)) from sys.master_files where name like a.name) as [DbSizeMb],
+	                            HAS_DBACCESS(a.name) as [has_dbaccess]
+                        FROM [sys].[databases] a
+                        INNER JOIN [sys].[sysdatabases] b ON a.database_id = b.dbid WHERE 1=1
+                        $DatabaseFilter
+                        $NoDefaultsFilter
+                        $HasAccessFilter
+                        $SysAdminOnlyFilter
+                        ORDER BY a.database_id"
+
+            # Execute Query
+            if($SuppressVerbose){
+                $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                      
+            }else{
+                $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential 
+            }
+
+            # Append results for pipeline items
+            $TblDatabases = $TblDatabases + $TblResults                        
+        }         
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+
+        return $TblDatabases
     }
 }
 
@@ -2110,6 +2336,8 @@ Function Get-SQLColumnSampleDataThreaded {
         Comma seperated list of keywords to search for.
     .PARAMETER ValidateCC
         Use Luhn formula to check if sample is a valid credit card.
+    .PARAMETER Threads
+        Number of concurrent host threads.
     .EXAMPLE
         PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC | ft -AutoSize
         VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
@@ -7802,6 +8030,8 @@ function Get-SQLInstanceScanUDPThreaded
         Computer name or IP address to enumerate SQL Instance from.
     .PARAMETER UDPTimeOut
         Timeout in seconds. Longer timeout = more accurate.    
+    .PARAMETER Threads
+        Number of concurrent host threads.
     .EXAMPLE
         PS C:\> Get-SQLInstanceScanUDPThreaded -Verbose -ComputerName SQLServer1.domain.com
         VERBOSE:  - SQLServer1.domain.com - UDP Scan Start.

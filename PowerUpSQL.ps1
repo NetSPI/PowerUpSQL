@@ -1754,8 +1754,6 @@ Function  Get-SQLDatabaseThreaded {
                         
             $Instance = $_.Instance
 
-            $Instance
-
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 

@@ -1420,6 +1420,22 @@ Function  Get-SQLDatabase {
         # Create data tables for output
         $TblResults = New-Object -TypeName System.Data.DataTable
         $TblDatabases = New-Object -TypeName System.Data.DataTable
+        $TblDatabases.Columns.Add("ComputerName") | Out-Null
+        $TblDatabases.Columns.Add("Instance") | Out-Null
+        $TblDatabases.Columns.Add("DatabaseId") | Out-Null
+        $TblDatabases.Columns.Add("DatabaseName") | Out-Null
+        $TblDatabases.Columns.Add("DatabaseOwner") | Out-Null
+        $TblDatabases.Columns.Add("OwnerIsSysadmin") | Out-Null
+        $TblDatabases.Columns.Add("is_trustworthy_on") | Out-Null
+        $TblDatabases.Columns.Add("is_db_chaining_on") | Out-Null
+        $TblDatabases.Columns.Add("is_broker_enabled") | Out-Null
+        $TblDatabases.Columns.Add("is_encrypted") | Out-Null
+        $TblDatabases.Columns.Add("is_read_only") | Out-Null
+        $TblDatabases.Columns.Add("create_date") | Out-Null
+        $TblDatabases.Columns.Add("recovery_model_desc") | Out-Null
+        $TblDatabases.Columns.Add("FileName") | Out-Null
+        $TblDatabases.Columns.Add("DbSizeMb") | Out-Null
+        $TblDatabases.Columns.Add("has_dbaccess") | Out-Null
 
          # Setup database filter
         if($DatabaseName){
@@ -1472,9 +1488,7 @@ Function  Get-SQLDatabase {
                             SUSER_SNAME(a.owner_sid) as [DatabaseOwner],
                             IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],     
 	                        a.is_trustworthy_on,
-	                        a.is_db_chaining_on,
-	                        a.create_date,
-	                        a.recovery_model_desc,"
+	                        a.is_db_chaining_on,"
 
         # Version specific columns
         if([int]$SQLVersionShort -ge 10){
@@ -1486,6 +1500,8 @@ Function  Get-SQLDatabase {
 
         # Query end
         $QueryEnd = "  
+                           a.create_date,
+	                       a.recovery_model_desc,
                            b.filename as [FileName],
 	                       (SELECT CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,2))
 	                       from sys.master_files where name like a.name) as [DbSizeMb],
@@ -1511,7 +1527,40 @@ Function  Get-SQLDatabase {
         }
 
         # Append results for pipeline items
-        $TblDatabases = $TblDatabases + $TblResults                        
+        $TblResults | 
+        ForEach-Object{
+
+            # Set version specific values
+            if([int]$SQLVersionShort -ge 10){
+                $is_broker_enabled = $_.is_broker_enabled
+                $is_encrypted = $_.is_encrypted
+	            $is_read_only = $_.is_read_only 
+            }else{
+                $is_broker_enabled = "NA"
+                $is_encrypted = "NA"
+	            $is_read_only = "NA"
+            }
+            
+            $TblDatabases.Rows.Add(
+                $_.ComputerName,
+                $_.Instance,
+                $_.DatabaseId,
+                $_.DatabaseName,
+                $_.DatabaseOwner,
+                $_.OwnerIsSysadmin,
+                $_.is_trustworthy_on,
+                $_.is_db_chaining_on,
+                $is_broker_enabled,
+                $is_encrypted,
+                $is_read_only,
+                $_.create_date,
+                $_.recovery_model_desc,
+                $_.FileName,
+                $_.DbSizeMb,
+                $_.has_dbaccess
+            ) | Out-Null
+        } 
+                                
     }
 
     End

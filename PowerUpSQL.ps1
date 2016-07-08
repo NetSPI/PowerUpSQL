@@ -1475,10 +1475,27 @@ Function  Get-SQLDatabase {
         if(-not $Instance){
             $Instance = $env:COMPUTERNAME
         }
+
+        # Test connection to instance
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if($TestConnection){   
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Success."                
+            }
+        }else{
+            
+            if( -not $SuppressVerbose){
+                Write-Verbose "$Instance : Connection Failed."
+            }
+            return
+        }
            
         # Check version
         $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber         
-        $SQLVersionShort = $SQLVersionFull.Split(".")[0]
+        if($SQLVersionFull){
+            $SQLVersionShort = $SQLVersionFull.Split(".")[0]
+        }
 
         # Base query
         $QueryStart = "  SELECT  '$ComputerName' as [ComputerName],
@@ -1519,12 +1536,8 @@ Function  Get-SQLDatabase {
 
         $Query = "$QueryStart $QueryVerSpec $QueryEnd $Filters"
 
-        # Execute Query
-        if($SuppressVerbose){
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                      
-        }else{
-            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential 
-        }
+        # Execute Query        
+        $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                              
 
         # Append results for pipeline items
         $TblResults | 

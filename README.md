@@ -26,7 +26,7 @@ Script Information
 * Version: 1.0.0.0
 * Description: PowerUpSQL is a offensive toolkit that supports common attack workflow against SQL Server.
 * License: BSD 3-Clause
-* Required Dependencies: None
+* Required Dependencies: PowerShell Version 3
 * Optional Dependencies: None
 
 Below are the functions included in this module.  I've provided a list of the ones completed so far, but I've also outlined the intended development roadmap. High level roadmap Goals include adding functions, adding multi-threading to all common functions, and testing against SQL Server version 2000 to 2014.  At the moment most of the testing was done on versions 2008-2014.

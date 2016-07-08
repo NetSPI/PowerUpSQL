@@ -1674,7 +1674,7 @@ Function  Get-SQLDatabaseThreaded {
 
         [Parameter(Mandatory=$false,
         HelpMessage="Number of threads.")]
-        [int]$Threads = 5,
+        [int]$Threads = 2,
 
         [Parameter(Mandatory=$false,
         HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
@@ -1686,6 +1686,22 @@ Function  Get-SQLDatabaseThreaded {
         # Create data tables for output
         $TblResults = New-Object -TypeName System.Data.DataTable
         $TblDatabases = New-Object -TypeName System.Data.DataTable
+        $TblDatabases.Columns.Add("ComputerName") | Out-Null
+        $TblDatabases.Columns.Add("Instance") | Out-Null
+        $TblDatabases.Columns.Add("DatabaseId") | Out-Null
+        $TblDatabases.Columns.Add("DatabaseName") | Out-Null
+        $TblDatabases.Columns.Add("DatabaseOwner") | Out-Null
+        $TblDatabases.Columns.Add("OwnerIsSysadmin") | Out-Null
+        $TblDatabases.Columns.Add("is_trustworthy_on") | Out-Null
+        $TblDatabases.Columns.Add("is_db_chaining_on") | Out-Null
+        $TblDatabases.Columns.Add("is_broker_enabled") | Out-Null
+        $TblDatabases.Columns.Add("is_encrypted") | Out-Null
+        $TblDatabases.Columns.Add("is_read_only") | Out-Null
+        $TblDatabases.Columns.Add("create_date") | Out-Null
+        $TblDatabases.Columns.Add("recovery_model_desc") | Out-Null
+        $TblDatabases.Columns.Add("FileName") | Out-Null
+        $TblDatabases.Columns.Add("DbSizeMb") | Out-Null
+        $TblDatabases.Columns.Add("has_dbaccess") | Out-Null
 
          # Setup database filter
         if($DatabaseName){
@@ -1747,41 +1763,105 @@ Function  Get-SQLDatabaseThreaded {
             if(-not $Instance){
                 $Instance = $env:COMPUTERNAME
             }
+
+            # Test connection to instance
+            $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+            if($TestConnection){   
+            
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : Connection Success."                
+                }
+            }else{
+            
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : Connection Failed."
+                }
+                return
+            }
            
-            # Define Query
-            $Query = "  SELECT  '$ComputerName' as [ComputerName],
+            # Check version
+            $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber         
+            if($SQLVersionFull){
+                $SQLVersionShort = $SQLVersionFull.Split(".")[0]
+            }
+
+            # Base query
+            $QueryStart = "  SELECT  '$ComputerName' as [ComputerName],
                                 '$Instance' as [Instance],
                                 a.database_id as [DatabaseId],
                                 a.name as [DatabaseName],
                                 SUSER_SNAME(a.owner_sid) as [DatabaseOwner],
                                 IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],     
 	                            a.is_trustworthy_on,
-	                            a.is_db_chaining_on,
+	                            a.is_db_chaining_on,"
+
+            # Version specific columns
+            if([int]$SQLVersionShort -ge 10){
+                $QueryVerSpec = "  
 	                            a.is_broker_enabled,
 	                            a.is_encrypted,
-	                            a.is_read_only,
-	                            a.create_date,
-	                            a.recovery_model_desc,
-	                            b.filename as [FileName],
-                                (SELECT CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,2)) from sys.master_files where name like a.name) as [DbSizeMb],
-	                            HAS_DBACCESS(a.name) as [has_dbaccess]
-                        FROM [sys].[databases] a
-                        INNER JOIN [sys].[sysdatabases] b ON a.database_id = b.dbid WHERE 1=1
+	                            a.is_read_only,"
+             }
+
+            # Query end
+            $QueryEnd = "  
+                               a.create_date,
+	                           a.recovery_model_desc,
+                               b.filename as [FileName],
+	                           (SELECT CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,2))
+	                           from sys.master_files where name like a.name) as [DbSizeMb],
+	                           HAS_DBACCESS(a.name) as [has_dbaccess]
+	                           FROM [sys].[databases] a
+	                           INNER JOIN [sys].[sysdatabases] b ON a.database_id = b.dbid WHERE 1=1"
+
+            # User defined filters
+            $Filters = "
                         $DatabaseFilter
                         $NoDefaultsFilter
                         $HasAccessFilter
                         $SysAdminOnlyFilter
                         ORDER BY a.database_id"
 
-            # Execute Query
-            if($SuppressVerbose){
-                $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                      
-            }else{
-                $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential 
-            }
+            $Query = "$QueryStart $QueryVerSpec $QueryEnd $Filters"
+
+            # Execute Query        
+            $TblResults =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                              
 
             # Append results for pipeline items
-            $TblDatabases = $TblDatabases + $TblResults                        
+            $TblResults | 
+            ForEach-Object{
+
+                # Set version specific values
+                if([int]$SQLVersionShort -ge 10){
+                    $is_broker_enabled = $_.is_broker_enabled
+                    $is_encrypted = $_.is_encrypted
+	                $is_read_only = $_.is_read_only 
+                }else{
+                    $is_broker_enabled = "NA"
+                    $is_encrypted = "NA"
+	                $is_read_only = "NA"
+                }
+            
+                $TblDatabases.Rows.Add(
+                    $_.ComputerName,
+                    $_.Instance,
+                    $_.DatabaseId,
+                    $_.DatabaseName,
+                    $_.DatabaseOwner,
+                    $_.OwnerIsSysadmin,
+                    $_.is_trustworthy_on,
+                    $_.is_db_chaining_on,
+                    $is_broker_enabled,
+                    $is_encrypted,
+                    $is_read_only,
+                    $_.create_date,
+                    $_.recovery_model_desc,
+                    $_.FileName,
+                    $_.DbSizeMb,
+                    $_.has_dbaccess
+                ) | Out-Null
+            } 
+                        
         }         
 
         # Run scriptblock using multi-threading

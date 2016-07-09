@@ -1163,12 +1163,10 @@ Function  Get-SQLServerInfo {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false,
-        ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server or domain account to authenticate with.")]
         [string]$Username,
 
         [Parameter(Mandatory=$false,
-        ValueFromPipelineByPropertyName=$true,
         HelpMessage="SQL Server or domain account password to authenticate with.")]
         [string]$Password,
 
@@ -1320,6 +1318,277 @@ Function  Get-SQLServerInfo {
     {  
         # Return data
         $TblServerInfo             
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLServerInfoThreaded 
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLServerInfoThreaded {
+<#
+    .SYNOPSIS
+        Returns basic server and user information from target SQL Servers.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to. 
+    .PARAMETER Instance
+        Number of host threads.
+    .EXAMPLE
+        PS C:\> Get-SQLServerInfoThreaded -Instance SQLServer1\STANDARDDEV2014 
+
+        ComputerName           : SQLServer1
+        InstanceName           : SQLServer1\STANDARDDEV2014
+        DomainName             : Domain
+        ServiceName            : MSSQL$STANDARDDEV2014
+        ServiceAccount         : LocalSystem
+        AuthenticationMode     : Windows and SQL Server Authentication
+        Clustered              : No
+        SQLServerVersionNumber : 12.0.4213.0
+        SQLServerMajorVersion  : 2014
+        SQLServerEdition       : Developer Edition (64-bit)
+        SQLServerServicePack   : SP1
+        OSArchitecture         : X64
+        OsMachineType          : WinNT
+        OSVersionName          : Windows 8.1 Pro
+        OsVersionNumber        : 6.3
+        OriginalLogin          : Domain\MyUser
+        Currentlogin           : Domain\MyUser
+        IsSysadmin             : Yes
+        ActiveSessions         : 1
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLServerInfoThreaded -Verbose -Threads 20
+#>
+    [CmdletBinding()]
+    Param(
+       [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Number of threads.")]
+        [int]$Threads = 5,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Suppress verbose errors.  Used when function is wrapped.")]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Setup data table for output
+        $TblServerInfo = New-Object System.Data.DataTable
+        $TblServerInfo.Columns.Add("ComputerName") | Out-Null
+        $TblServerInfo.Columns.Add("InstanceName") | Out-Null
+        $TblServerInfo.Columns.Add("DomainName") | Out-Null
+        $TblServerInfo.Columns.Add("ServiceName") | Out-Null
+        $TblServerInfo.Columns.Add("ServiceAccount") | Out-Null
+        $TblServerInfo.Columns.Add("AuthenticationMode") | Out-Null
+        $TblServerInfo.Columns.Add("Clustered") | Out-Null
+        $TblServerInfo.Columns.Add("SQLServerVersionNumber") | Out-Null
+        $TblServerInfo.Columns.Add("SQLServerMajorVersion") | Out-Null
+        $TblServerInfo.Columns.Add("SQLServerEdition") | Out-Null
+        $TblServerInfo.Columns.Add("SQLServerServicePack") | Out-Null
+        $TblServerInfo.Columns.Add("OSArchitecture") | Out-Null
+        $TblServerInfo.Columns.Add("OsVersionNumber") | Out-Null
+        $TblServerInfo.Columns.Add("OriginalLogin ") | Out-Null
+        $TblServerInfo.Columns.Add("Currentlogin") | Out-Null
+        $TblServerInfo.Columns.Add("IsSysadmin") | Out-Null
+        $TblServerInfo.Columns.Add("ActiveSessions") | Out-Null
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object System.Data.DataTable
+
+        # Ensure provide instance is processed
+        if($Instance){
+            $ProvideInstance = New-Object PSObject -Property @{Instance = $Instance}
+            $PipelineItems = $PipelineItems + $ProvideInstance
+        }
+    }
+
+    Process
+    {      
+      # Create list of pipeline items
+      $PipelineItems = $PipelineItems + $_         
+    }
+
+    End
+    {   
+	    # Define code to be multi-threaded
+        $MyScriptBlock = {                        
+                        
+            $Instance = $_.Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance){
+                $Instance = $env:COMPUTERNAME
+            }
+
+            # Test connection to instance
+            $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+            if($TestConnection){   
+            
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : Connection Success."
+                }
+            }else{
+            
+                if( -not $SuppressVerbose){
+                    Write-Verbose "$Instance : Connection Failed."
+                }
+                return
+            }
+
+            # Get number of active sessions for server
+            $ActiveSessions =   Get-SQLSession -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Where-Object {$_.SessionStatus -eq "running"} | Measure-Object -Line | Select-Object Lines -ExpandProperty Lines
+
+            # Get sysadmin status
+            $IsSysadmin =  Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object IsSysadmin -ExpandProperty IsSysadmin
+
+            if($IsSysadmin -eq "Yes"){
+                # Grab additional information if sysadmin
+                $SysadminSetup = "
+                             -- Get machine type
+                            DECLARE @MachineType  SYSNAME
+                            EXECUTE master.dbo.xp_regread
+                            @rootkey		= N'HKEY_LOCAL_MACHINE',
+                            @key			= N'SYSTEM\CurrentControlSet\Control\ProductOptions',
+                            @value_name		= N'ProductType', 
+                            @value			= @MachineType output
+
+                            -- Get OS version
+                            DECLARE @ProductName  SYSNAME
+                            EXECUTE master.dbo.xp_regread
+                            @rootkey		= N'HKEY_LOCAL_MACHINE',
+                            @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
+                            @value_name		= N'ProductName', 
+                            @value			= @ProductName output"
+
+                $SysadminQuery = "  @MachineType as [OsMachineType],
+                                    @ProductName as [OSVersionName],"
+            }else{
+                $SysadminSetup = ""
+                $SysadminQuery = ""
+            }
+
+            # Define Query
+            $Query = "  -- Get SQL Server Information 
+
+                        -- Get SQL Server Service Name and Path 
+                        DECLARE @SQLServerInstance varchar(250) 
+                        DECLARE @SQLServerServiceName varchar(250) 
+                        if @@SERVICENAME = 'MSSQLSERVER'
+	                        BEGIN											
+		                    set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
+                            set @SQLServerServiceName = 'MSSQLSERVER'
+	                        END						
+                        ELSE
+	                        BEGIN
+	                        set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))		
+                            set @SQLServerServiceName = 'MSSQL$'+cast(@@SERVICENAME as varchar(250))							
+	                        END
+
+                        -- Get SQL Server Service Account 
+                        DECLARE @ServiceaccountName varchar(250)  
+                        EXECUTE master.dbo.xp_instance_regread  
+                        N'HKEY_LOCAL_MACHINE', @SQLServerInstance,  
+                        N'ObjectName',@ServiceAccountName OUTPUT, N'no_output'
+
+                        -- Get authentication mode
+                        DECLARE @AuthenticationMode INT  
+                        EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', 
+                        N'Software\Microsoft\MSSQLServer\MSSQLServer',   
+                        N'LoginMode', @AuthenticationMode OUTPUT  
+
+                        -- Grab additional information as sysadmin
+                        $SysadminSetup
+
+                        -- Return server and version information
+                        SELECT  '$ComputerName' as [ComputerName],
+                                @@servername as [InstanceName],
+                                DEFAULT_DOMAIN() as [DomainName],                            
+                                @SQLServerServiceName as [ServiceName],
+                                @ServiceAccountName as [ServiceAccount],
+                                (SELECT CASE @AuthenticationMode    
+                                WHEN 1 THEN 'Windows Authentication'   
+                                WHEN 2 THEN 'Windows and SQL Server Authentication'   
+                                ELSE 'Unknown'  
+                                END) as [AuthenticationMode],  
+                                CASE  SERVERPROPERTY('IsClustered') 
+		                                WHEN 0 
+		                                THEN 'No'
+		                                ELSE 'Yes'
+		                                END as [Clustered],
+                                SERVERPROPERTY('productversion') as [SQLServerVersionNumber],
+                                SUBSTRING(@@VERSION, CHARINDEX('2', @@VERSION), 4) as [SQLServerMajorVersion],
+                                serverproperty('Edition') as [SQLServerEdition],
+                                SERVERPROPERTY('ProductLevel') AS [SQLServerServicePack],
+                                SUBSTRING(@@VERSION, CHARINDEX('x', @@VERSION), 3) as [OSArchitecture],
+                                $SysadminQuery
+                                RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows NT', @@VERSION), 14), 3) as [OsVersionNumber],
+                                ORIGINAL_LOGIN() as [OriginalLogin],
+                                SYSTEM_USER as [Currentlogin],
+                                '$IsSysadmin' as [IsSysadmin],
+                                '$ActiveSessions' as [ActiveSessions]"
+            # Execute Query
+            $TblServerInfoTemp =  Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose            
+        
+            # Append as needed
+            $TblServerInfoTemp |
+            ForEach-Object{
+                
+                # Add row
+                $TblServerInfo.Rows.Add(
+                    $_.ComputerName,
+                    $_.InstanceName,
+                    $_.DomainName,
+                    $_.ServiceName,
+                    $_.ServiceAccount,
+                    $_.AuthenticationMode,
+                    $_.Clustered,
+                    $_.SQLServerVersionNumber,
+                    $_.SQLServerMajorVersion,
+                    $_.SQLServerEdition,
+                    $_.SQLServerServicePack,
+                    $_.OSArchitecture,
+                    $_.OsVersionNumber,
+                    $_.OriginalLogin ,
+                    $_.Currentlogin,
+                    $_.IsSysadmin,
+                    $_.ActiveSessions
+                )| Out-Null
+            
+            }     
+                                  		
+        }         
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+
+        return $TblServerInfo 
     }
 }
 

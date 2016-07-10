@@ -7,7 +7,6 @@ This folder contains scripts written by other authors which are used by some of 
   	Imported Scripts: Invoke-Parallel.ps1
   	PowerUpSQL Functions: Used for all threaded functions.
   	
-	Project: Inveigh
 	Author: Kevin Robertson
   	Source: https://github.com/Kevin-Robertson/Inveigh
   	Imported Scripts: Inveigh.ps1, Inveigh-BruteForce.ps1, and Inveigh-Relay.ps1 

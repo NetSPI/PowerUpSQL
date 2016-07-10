@@ -1410,6 +1410,8 @@ Function  Get-SQLServerInfoThreaded {
         $TblServerInfo.Columns.Add("SQLServerEdition") | Out-Null
         $TblServerInfo.Columns.Add("SQLServerServicePack") | Out-Null
         $TblServerInfo.Columns.Add("OSArchitecture") | Out-Null
+        $TblServerInfo.Columns.Add("OsMachineType") | Out-Null
+        $TblServerInfo.Columns.Add("OSVersionName") | Out-Null 
         $TblServerInfo.Columns.Add("OsVersionNumber") | Out-Null
         $TblServerInfo.Columns.Add("OriginalLogin ") | Out-Null
         $TblServerInfo.Columns.Add("Currentlogin") | Out-Null
@@ -1574,6 +1576,8 @@ Function  Get-SQLServerInfoThreaded {
                     $_.SQLServerEdition,
                     $_.SQLServerServicePack,
                     $_.OSArchitecture,
+                    $_.OsMachineType,
+                    $_.OSVersionName,
                     $_.OsVersionNumber,
                     $_.OriginalLogin ,
                     $_.Currentlogin,

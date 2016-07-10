@@ -111,6 +111,7 @@ These functions are used for common information gathering tasks.  Similar to cor
 |Get-SQLServerConfiguration|Returns configuration settings from sp_configure.  Output includes advanced options if the connecting user is a sysadmin.|
 |Get-SQLServerCredential|Returns credentials from target SQL Servers.|
 |Get-SQLServerInfo|Returns basic server and user information from target SQL Servers.|
+|Get-SQLServerInfoThreaded|Returns basic server and user information from target SQL Servers. Supports host threading.|
 |Get-SQLServerLink|Returns link servers from target SQL Servers.|
 |Get-SQLServerLogin|Returns logins from target SQL Servers.|
 |Get-SQLServerPriv|Returns SQL Server login privilege information from target SQL Servers.|

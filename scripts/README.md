@@ -1,6 +1,6 @@
-### Summary of 3rd Party Scripts
+### 3rd Party Scripts
 
-This folder contains scripts written by other authors which are used by some of the PowerUpSQL functions. Credits below.
+This folder contains scripts written by other authors which are used by some of the PowerUpSQL functions. Summary below.
 
 	Author: Warren F. (RamblingCookieMonster)
   	Source: https://github.com/RamblingCookieMonster/Invoke-Parallel

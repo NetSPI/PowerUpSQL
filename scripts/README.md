@@ -1,6 +1,6 @@
-This folder contains scripts written by other author which are used by some of the PowerUpSQL functions.
+### Summary of 3rd Party Scripts
 
-### Summary of Imported Scripts
+This folder contains scripts written by other author which are used by some of the PowerUpSQL functions. Credits below.
 
 	Project: Inveigh
 	Author: Kevin Robertson

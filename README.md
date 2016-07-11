@@ -11,7 +11,7 @@ It was designed with six objectives in mind:
 * Easy Server Auditing: Invoke-SQLAudit audits for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
 * Easy Server Exploitation: Invoke-SQLEscalatePriv attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
-Script Information
+### Script Information
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 * Contributors: Antti Rantasaari and Eric Gruber
 * Version: 1.0.0.0
@@ -20,13 +20,11 @@ Script Information
 * Required Dependencies: PowerShell v.3
 * Optional Dependencies: None
 
-Script Usage
+### Script Usage
 * To use the module, type `Import-Module PowerUpSQL.psd1`
 * To list functions from the module, type `Get-Command -Module PowerUpSQL`
 * To list help for a function, type `Get-Help FunctionName`
-* To run as an alternative domain user, use the runas command to launch PowerShell first.
-
-Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
+* To run as an alternative domain user, use the runas command to launch PowerShell first. Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 
 Below are the functions included in this module.  I've provided a list of the ones completed so far, but I've also outlined the intended development roadmap. High level roadmap Goals include adding functions, adding multi-threading to all common functions, and testing against SQL Server version 2000 to 2014.  At the moment most of the testing was done on versions 2008-2014.
 

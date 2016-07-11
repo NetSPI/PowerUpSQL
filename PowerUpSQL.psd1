@@ -16,7 +16,7 @@ Author = 'Scott Sutherland'
 Copyright = 'BSD 3-Clause'
 
 # Description of the functionality provided by this module
-Description = 'PowerShellSQL: An Offensive Toolkit for SQL Server.'
+Description = 'PowerShellSQL: An Offensive Toolkit for attacking SQL Server.'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '3.0'
@@ -24,22 +24,19 @@ PowerShellVersion = '3.0'
 # Functions to export from this module
 FunctionsToExport = @(  
     'Create-SQLFile-XPDLL',
-    'ConvertTo-Digits',
-    'Get-ComputerNameFromInstance',    
-    'Get-DomainObject',
-    'Get-DomainSpn',
     'Get-SQLAuditDatabaseSpec',
     'Get-SQLAuditServerSpec',
     'Get-SQLColumn',        
     'Get-SQLColumnSampleData',                                                                                                                                   
-    'Get-SQLConnectionObject',                                                                                                                                   
+	'Get-SQLColumnSampleDataThreaded',                                                                                                                                   
     'Get-SQLConnectionTest',
     'Get-SQLConnectionTestThreaded',
     'Get-SQLDatabase',                                                                                                                   
     'Get-SQLDatabasePriv', 
     'Get-SQLDatabaseRole', 
     'Get-SQLDatabaseRoleMember',                                                                                                                                 
-    'Get-SQLDatabaseSchema',                                                                                                                                   
+    'Get-SQLDatabaseSchema',    
+	'Get-SQLDatabaseThreaded',   
     'Get-SQLDatabaseUser', 
     'Get-SQLFuzzDatabaseName',                                                                                                                                   
     'Get-SQLFuzzDomainAccount',                                                                                                                                  
@@ -48,11 +45,14 @@ FunctionsToExport = @(
     'Get-SQLInstanceDomain',
     'Get-SQLInstanceFile',  
     'Get-SQLInstanceLocal', 
-    'Get-SQLInstanceScanUDP',                                                                                                                                    
+    'Get-SQLInstanceScanUDP',    
+	'Get-SQLInstanceScanUDPThreaded',
     'Get-SQLQuery',         
-    'Get-SQLQueryThreaded', 
+    'Get-SQLQueryThreaded',
+	'Get-SQLServerConfiguration',	
     'Get-SQLServerCredential',                                                                                                                                   
     'Get-SQLServerInfo',    
+	'Get-SQLServerInfoThreaded',    
     'Get-SQLServerLink',    
     'Get-SQLServerLogin',   
     'Get-SQLServerPriv',    
@@ -61,20 +61,27 @@ FunctionsToExport = @(
     'Get-SQLServiceAccount',
     'Get-SQLServiceLocal', 
     'Get-SQLSession',       
-    'Get-SQLStoredProcure', 
+    'Get-SQLStoredProcedure', 
     'Get-SQLSysadminCheck', 
     'Get-SQLTable',         
     'Get-SQLTriggerDdl',    
     'Get-SQLTriggerDml',    
-    'Get-SQLView',              
-    'Invoke-PowerUpSQL',    
-    'Invoke-SQLEscalate-CreateProcedure',                                                                                                                        
-    'Invoke-SQLEscalate-DbOwnerRole',                                                                                                                            
-    'Invoke-SQLEscalate-ImpersonateLogin',                                                                                                                       
-    'Invoke-SQLEscalate-SampleDataByColumn',  
-    'Invoke-Parallel',                                                                                                           
-    'Invoke-SQLOSCmd',
-    'Test-IsLuhnValid'
+    'Get-SQLView',  
+	'Invoke-SQLAudit',
+	'Invoke-SQLAuditPrivCreateProcedure',	
+	'Invoke-SQLAuditPrivDbChaining',
+	'Invoke-SQLAuditPrivImpersonateLogin',
+	'Invoke-SQLAuditPrivServerLink',
+	'Invoke-SQLAuditPrivTrustworthy',
+	'Invoke-SQLAuditPrivXpDirtree',
+	'Invoke-SQLAuditPrivXpFileexit',
+	'Invoke-SQLAuditRoleDbDdlAdmin',
+	'Invoke-SQLAuditRoleDbOwner',
+	'Invoke-SQLAuditSampleDataByColumn',
+	'Invoke-SQLAuditWeakLoginPw',
+	'Invoke-SQLDumpInfo',
+	'Invoke-SQLEscalatePriv',
+	'Invoke-SQLOSCmd'		
 )
 
 # List of all files packaged with this module

@@ -2,7 +2,7 @@
 ## PowerUpSQL: A PowerShell Toolkit for Attacking SQL Server
 The PowerUpSQL module includes functions to support common attack workflows against SQL Server that can be used during internal penetration tests and red team engagements. I've also included many functions that could be used by administrators to inventory of the SQL Servers on their Active Directory domain.
 
-It was designed with six objectives in mind:
+PowerUpSQL was designed with six objectives in mind:
 * Scalability: Multi-threading is supported on core functions so they can be executed against many SQL Servers quickly.
 * Portability: Default .net libraries are used and there are no dependencies on SQLPS or the SMO libraries. Functions have also been designed so they can be run independently.
 * Flexibility: PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.

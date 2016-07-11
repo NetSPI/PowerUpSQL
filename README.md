@@ -299,6 +299,6 @@ These are functions developed by third parties.  Some of them have been modified
 
 |Function Name                 |Description |
 |:-----------------------------|:-----------|
-|Invoke-Parallel|Modified version of RamblingCookieMonster's (Warren F) function that supports importing functions from the current session.|
-|Invoke-Inveigh|Inveigh is a Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle tool create by Kevin Robertson.|
+|Invoke-Parallel|A PowerShell function created by Warren F. ( RamblingCookieMonster) for running multiple threads in PowerShell via runspaces.
+|Invoke-Inveigh|A Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle tool create by Kevin Robertson.|
 |Test-IsLuhnValid|Valdidate a number based on the Luhn Algorithm.  Function written by ØYVIND KALLSTAD.|

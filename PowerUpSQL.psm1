@@ -1,1 +1,3 @@
-Get-ChildItem (Join-Path $PSScriptRoot *.ps1) | % { . $_.FullName}
+Get-ChildItem (Join-Path -Path $PSScriptRoot -ChildPath *.ps1) | ForEach-Object -Process {
+    . $_.FullName
+}

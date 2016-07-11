@@ -14,7 +14,7 @@ Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 
 Contributors: Antti Rantasaari and Eric Gruber (@egru)
  
-### Script Usage
+### Usage
 * To use the module, type `Import-Module PowerUpSQL.psd1`
 * To list functions from the module, type `Get-Command -Module PowerUpSQL`
 * To list help for a function, type `Get-Help FunctionName`

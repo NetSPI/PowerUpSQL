@@ -1,6 +1,5 @@
 
 ## PowerUpSQL: A PowerShell Toolkit for Attacking SQL Server
-
 The PowerUpSQL module includes functions to support common attack workflows against SQL Server that can be used during internal penetration tests and red team engagements. I've also included many functions that could be used by administrators for SQL Server inventory and other auditing tasks.
 
 It was designed with six objectives in mind:
@@ -11,15 +10,10 @@ It was designed with six objectives in mind:
 * Easy Server Auditing: Invoke-SQLAudit audits for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
 * Easy Server Exploitation: Invoke-SQLEscalatePriv attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
-### Script Information
-* Author: Scott Sutherland (@_nullbind), NetSPI - 2016
-* Contributors: Antti Rantasaari and Eric Gruber
-* Version: 1.0.0.0
-* Description: PowerUpSQL is a PowerShell Toolkit for Attacking SQL Server.
-* License: BSD 3-Clause
-* Required Dependencies: PowerShell v.3
-* Optional Dependencies: None
+Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 
+Contributors: Antti Rantasaari and Eric Gruber
+ 
 ### Script Usage
 * To use the module, type `Import-Module PowerUpSQL.psd1`
 * To list functions from the module, type `Get-Command -Module PowerUpSQL`
@@ -299,3 +293,4 @@ A few PowerUpSQL functions use the third party functions below.
 |Invoke-Parallel|A PowerShell function created by Warren F. ( RamblingCookieMonster) for running multiple threads in PowerShell via runspaces.
 |Invoke-Inveigh|A Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle tool create by Kevin Robertson.|
 |Test-IsLuhnValid|Valdidate a number based on the Luhn Algorithm.  Function written by ØYVIND KALLSTAD.|
+

@@ -13,7 +13,7 @@ Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 The PowerUpSQL module includes functions to support common attack workflows against SQL Server that can be used during internal penetration tests and red team engagements. I've also included many functions that could be used by administrators for SQL Server inventory and other auditing tasks.
 
 It was designed with six objectives in mind:
-* Scalability: Auto-discovery of SQL Server instances, pipeline support, and multi-threading on core functions is supported so commands can be executed against many SQL Servers quickly.
+* Scalability: Multi-threading is supported on core functions so they can be executed against many SQL Servers quickly.
 * Portability: Default .net libraries are used and there are no dependencies on SQLPS or the SMO libraries. Also, functions are designed so they can run independently.
 * Flexibility: PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.
 * Easy Server Discovery: Blindly identify local, domain, and non-domain SQL Server instances on scale using discovery functions.

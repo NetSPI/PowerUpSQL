@@ -295,7 +295,7 @@ These are essentially helper functions.  Some of them are used by other PowerUpS
 
 ### Third Party Functions
 
-A few PowerUpSQL functions use the third party functoins below.
+A few PowerUpSQL functions use the third party functions below.
 
 |Function Name                 |Description |
 |:-----------------------------|:-----------|

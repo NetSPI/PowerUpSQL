@@ -10,7 +10,7 @@ Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 
 ## PowerUpSQL: A PowerShell Toolkit for Attacking SQL Server
 
-The PowerUpSQL module includes functions to support common attack workflows against SQL Server. However, I've also included many functions that could be used by administrators for SQL Server inventory and other auditing tasks.
+The PowerUpSQL module includes functions to support common attack workflows against SQL Server that can be used during internal penetration tests and red team engagements. I've also included many functions that could be used by administrators for SQL Server inventory and other auditing tasks.
 
 It was designed with six objectives in mind:
 * Scalability: Auto-discovery of SQL Server instances, pipeline support, and multi-threading on core functions is supported so commands can be executed against many SQL Servers quickly.

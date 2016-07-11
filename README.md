@@ -150,8 +150,8 @@ These functions are used for identifying weak configurations that can lead to un
 |Invoke-SQLAuditPrivServerLink|Check if SQL Server links exist that are preconfigured with alternative credentials that can be impersonated. Provide example queries for execution on remote servers.|Yes|
 Invoke-SQLAuditPrivDbChaining|Check if database ownership chaining is enabled at the server or databases levels.|No|
 |Invoke-SQLAuditPrivTrustworthy|Check if any database have been flagged as trusted.|No|
-|Invoke-SQLAuditPrivXpDirtree|Checks if the xp_dirtree stored procedure is executable.  Uses Inveigh to obtain password hash for the SQL Server service account.|Yes|
-|Invoke-SQLAuditPrivXpFileexist|Checks if the xp_fileexist stored procedure is executable.  Uses Inveigh to obtain password hash for the SQL Server service account.|Yes|
+|Invoke-SQLAuditPrivXpDirtree|Checks if the xp_dirtree stored procedure is executable.  Uses Inveigh to obtain password hash for the SQL Server service account. Note: Capture likelihood is better when longer timeouts are set.|Yes|
+|Invoke-SQLAuditPrivXpFileexist|Checks if the xp_fileexist stored procedure is executable.  Uses Inveigh to obtain password hash for the SQL Server service account. Note: Capture likelihood is better when longer timeouts are set.|Yes|
 |Invoke-SQLAuditRoleDbDdlAdmin|Check if the current login has the DB_DdlAdmin role in any databases.  Attempt to use permission to obtain sysadmin privileges.|No|
 |Invoke-SQLAuditRoleDbOwner|Check if the current login has the DB_OWNER role in any databases.  Attempt to use permission to obtain sysadmin privileges.|Yes|
 |Invoke-SQLAuditSampleDataByColumn|Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.  For better data searches use Get-SQLColumnSampleData.|No|

@@ -11,8 +11,7 @@ It was designed with six objectives in mind:
 * Easy Server Exploitation: Invoke-SQLEscalatePriv attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
 Author: Scott Sutherland (@_nullbind), NetSPI - 2016
-
-Contributors: Antti Rantasaari and Eric Gruber
+Contributors: Antti Rantasaari and Eric Gruber (@egru)
  
 ### Script Usage
 * To use the module, type `Import-Module PowerUpSQL.psd1`

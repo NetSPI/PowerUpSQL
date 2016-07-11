@@ -6,9 +6,9 @@ PowerUpSQL was designed with six objectives in mind:
 * Scalability: Multi-threading is supported on core functions so they can be executed against many SQL Servers quickly.
 * Portability: Default .net libraries are used and there are no dependencies on SQLPS or the SMO libraries. Functions have also been designed so they can be run independently.
 * Flexibility: PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.
-* Easy Server Discovery: Blindly identify local, domain, and non-domain SQL Server instances on scale using discovery functions.
-* Easy Server Auditing: Invoke-SQLAudit audits for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
-* Easy Server Exploitation: Invoke-SQLEscalatePriv attempts to obtain sysadmin privileges using identified vulnerabilities. 
+* Easy Server Discovery: Discovery functions can be used to blindly identify local, domain, and non-domain SQL Server instances on scale.
+* Easy Server Auditing: The Invoke-SQLAudit function can be used to audit for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
+* Easy Server Exploitation: The Invoke-SQLEscalatePriv function attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
 Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 

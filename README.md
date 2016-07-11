@@ -1,4 +1,4 @@
-To use the module, type `Import-Module PowerUpSQL.psm1`
+To use the module, type `Import-Module PowerUpSQL.psd1`
 
 To list functions from the module, type `Get-Command -Module PowerUpSQL`
 

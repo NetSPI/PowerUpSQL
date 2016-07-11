@@ -499,7 +499,7 @@ Function  Get-SQLQuery
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
@@ -10071,7 +10071,7 @@ Function Invoke-SQLAuditPrivXpDirtree
             $TestMode  = 'Audit'
         }         
         $Vulnerability = 'Excessive Privilege - Execute xp_dirtree'
-        $Description   = 'Xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isn’t being used.  That’s because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
+        $Description   = 'Xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
         $Remediation   = 'Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public'
         $Severity      = 'Medium' 
         $IsVulnerable  = 'No'
@@ -10373,7 +10373,7 @@ Function Invoke-SQLAuditPrivXpFileexist
             $TestMode  = 'Audit'
         }         
         $Vulnerability = 'Excessive Privilege - Execute xp_fileexist'
-        $Description   = 'xp_fileexist is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isn’t being used.  That’s because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
+        $Description   = 'xp_fileexist is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
         $Remediation   = 'Remove EXECUTE privileges on the xp_fileexist procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_fileexist to Public'
         $Severity      = 'Medium' 
         $IsVulnerable  = 'No'

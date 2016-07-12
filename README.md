@@ -21,10 +21,10 @@ PowerUpSQL was designed with six objectives in mind:
 
     `Install-Module -Name PowerUpSQL`
 
-* Option 2: Download and import it:
+* Option 2: Download the project and import it:
 
     `Import-Module PowerUpSQL.psd1`
-* Option 3: Load it into the session via a download cradle: 
+* Option 3: Load it into a session via a download cradle: 
 
     `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
 

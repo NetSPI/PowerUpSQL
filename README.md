@@ -15,6 +15,8 @@ Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 Contributors: Antti Rantasaari and Eric Gruber (@egru)
 
 License: BSD 3-Clause
+
+Required Dependencies: PowerShell v.3
  
 ### Usage
 * To use the module, type `Import-Module PowerUpSQL.psd1`

@@ -83,8 +83,8 @@ These functions are used to test connections, execute SQL Server queries, and ex
 
 **Examples:**
 
-	Get-SQLInstanceDomain -Verbose | Get-SQLConnectionTestThreaded -Verbose -Threads 20 
-	Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 20 -Command "whoami"
+	Get-SQLInstanceDomain -Verbose | Get-SQLConnectionTestThreaded -Verbose -Threads 10 
+	Get-SQLInstanceDomain -Verbose | Invoke-SQLOSCmd -Verbose -Threads 10 -Command "whoami"
 	
 ### Common Functions
 

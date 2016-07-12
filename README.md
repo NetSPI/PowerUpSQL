@@ -88,7 +88,7 @@ These functions are used to test connections, execute SQL Server queries, and ex
 	
 ### Common Functions
 
-These functions are used for common information gathering tasks.  Similar to core functions, the common functions can be executed as standalone functions, but are also used other functions in the PowerUpSQL module.
+These functions are used for common information gathering tasks.  Similar to core functions, the common functions can be executed by themselves, but are also used by other functions in the PowerUpSQL module.
 
 |Function Name                 |Description |
 |:-----------------------------|:-----------|

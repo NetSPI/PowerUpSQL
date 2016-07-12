@@ -19,10 +19,10 @@ License: BSD 3-Clause
 Required Dependencies: PowerShell v.3
  
 ### Usage
-* To import the module for use, type `Import-Module PowerUpSQL.psd1`
-* Alternatively, the functions can be loaded into a PS session via a download cradle `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
-* To list functions from the module, type `Get-Command -Module PowerUpSQL`
-* To list help for a function, type `Get-Help FunctionName`
+* To import the module for use, type: `Import-Module PowerUpSQL.psd1`
+* Alternatively, the functions can be loaded into a PS session via a download cradle, type: `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
+* To list functions from the module, type: `Get-Command -Module PowerUpSQL`
+* To list help for a function, type: `Get-Help FunctionName`
 * To run as an alternative domain user, use the runas command to launch PowerShell first. Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 
 Below are the functions included in this module.  I've provided a list of the ones completed so far, but I've also outlined the intended development roadmap. The high level roadmap includes adding functions, adding multi-threading to all common functions, and testing against SQL Server version 2000 to 2014.  At the moment most of the testing was done on versions 2008-2014. Also, as a general note, use the verbose flag to monitor the progress of executing functions.

@@ -10,13 +10,13 @@ PowerUpSQL was designed with six objectives in mind:
 * Easy Server Auditing: The Invoke-SQLAudit function can be used to audit for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
 * Easy Server Exploitation: The Invoke-SQLEscalatePriv function attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
-### Script Information
+### Module Information
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 * Contributors: Antti Rantasaari and Eric Gruber (@egru)
 * License: BSD 3-Clause
 * Required Dependencies: PowerShell v.3
  
-### Install the Module
+### Installing the Module
 * Option 1, Install it from the PowerShell Gallery: `Install-Module -Name PowerUpSQL`
 * Option 2, Download and import it: `Import-Module PowerUpSQL.psd1`
 * Option 3, Load it into the session via a download cradle: `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`

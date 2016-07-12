@@ -10,6 +10,8 @@ PowerUpSQL was designed with six objectives in mind:
 * Easy Server Auditing: The Invoke-SQLAudit function can be used to audit for common high impact vulnerabilities and weak configurations using the current login's privileges.  Also, Invoke-SQLDumpInfo can be used to quickly inventory databases, privileges, and other information.
 * Easy Server Exploitation: The Invoke-SQLEscalatePriv function attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
+### Script Information
+
 Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 
 Contributors: Antti Rantasaari and Eric Gruber (@egru)

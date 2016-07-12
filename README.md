@@ -125,7 +125,7 @@ These functions are used for common information gathering tasks.  Similar to cor
 **Examples:**
 
 	Get-SQLInstanceLocal | Get-SQLDatabase -Verbose -NoDefaults
-	Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -CheckCC 
+	Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -ValidateCC 
 
 **Roadmap:**
 	

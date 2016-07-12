@@ -13,6 +13,8 @@ PowerUpSQL was designed with six objectives in mind:
 Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 
 Contributors: Antti Rantasaari and Eric Gruber (@egru)
+
+License: BSD 3-Clause
  
 ### Usage
 * To use the module, type `Import-Module PowerUpSQL.psd1`

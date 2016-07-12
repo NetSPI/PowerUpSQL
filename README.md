@@ -17,9 +17,12 @@ PowerUpSQL was designed with six objectives in mind:
 * Required Dependencies: PowerShell v.3
  
 ### Installing the Module
-* Option 1, Install it from the PowerShell Gallery: `Install-Module -Name PowerUpSQL`
-* Option 2, Download and import it: `Import-Module PowerUpSQL.psd1`
-* Option 3, Load it into the session via a download cradle: `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
+* Option 1: Install it from the PowerShell Gallery: 
+`Install-Module -Name PowerUpSQL`
+* Option 2: Download and import it:
+`Import-Module PowerUpSQL.psd1`
+* Option 3: Load it into the session via a download cradle: 
+`IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
 
 Note: To run as an alternative domain user, use the runas command to launch PowerShell first. Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 

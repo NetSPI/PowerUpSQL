@@ -18,9 +18,12 @@ License: BSD 3-Clause
 
 Required Dependencies: PowerShell v.3
  
-### Usage
-* To import the module for use, type: `Import-Module PowerUpSQL.psd1`
-* Alternatively, the functions can be loaded into a PS session via a download cradle, type: `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
+### Usage: Installation
+* Option 1, Install it from the PowerShell Gallery: `Install-Module -Name PowerUpSQL`
+* Option 2, Download and import it: `Import-Module PowerUpSQL.psd1`
+* Option 3, Load it into the session via a download cradle: `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
+* 
+### Usage: Help
 * To list functions from the module, type: `Get-Command -Module PowerUpSQL`
 * To list help for a function, type: `Get-Help FunctionName`
 * To run as an alternative domain user, use the runas command to launch PowerShell first. Example: `runas /noprofile /netonly /user:domain\user PowerShell.exe`

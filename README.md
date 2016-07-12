@@ -11,14 +11,10 @@ PowerUpSQL was designed with six objectives in mind:
 * Easy Server Exploitation: The Invoke-SQLEscalatePriv function attempts to obtain sysadmin privileges using identified vulnerabilities. 
 
 ### Script Information
-
-Author: Scott Sutherland (@_nullbind), NetSPI - 2016
-
-Contributors: Antti Rantasaari and Eric Gruber (@egru)
-
-License: BSD 3-Clause
-
-Required Dependencies: PowerShell v.3
+* Author: Scott Sutherland (@_nullbind), NetSPI - 2016
+* Contributors: Antti Rantasaari and Eric Gruber (@egru)
+* License: BSD 3-Clause
+* Required Dependencies: PowerShell v.3
  
 ### Usage: Installation
 * Option 1, Install it from the PowerShell Gallery: `Install-Module -Name PowerUpSQL`

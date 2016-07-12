@@ -286,8 +286,8 @@ These are essentially helper functions.  Some of them are used by other PowerUpS
 	Invoke-SqlOSCmdAssembly             		
 	Invoke-SqlOSCmdServerLinkMd			
 	Invoke-SqlOSCmdSsisExecuteProcessTask
-	Create-SQLFile-XPDLLCLR
-	Create-SQLFile-XPDLLBinary
+	Create-SQLFileCLRDll
+	Create-SQLFileXpDll
 
 ### Third Party Functions
 

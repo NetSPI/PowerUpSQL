@@ -1497,7 +1497,6 @@ Function  Get-SQLServerInfoThreaded
         $null = $TblServerInfo.Columns.Add('OsMachineType')
         $null = $TblServerInfo.Columns.Add('OSVersionName') 
         $null = $TblServerInfo.Columns.Add('OsVersionNumber')
-        $null = $TblServerInfo.Columns.Add('OriginalLogin ')
         $null = $TblServerInfo.Columns.Add('Currentlogin')
         $null = $TblServerInfo.Columns.Add('IsSysadmin')
         $null = $TblServerInfo.Columns.Add('ActiveSessions')
@@ -1677,7 +1676,6 @@ Function  Get-SQLServerInfoThreaded
                     $_.OsMachineType,
                     $_.OSVersionName,
                     $_.OsVersionNumber,
-                    $_.OriginalLogin ,
                     $_.Currentlogin,
                     $_.IsSysadmin,
                     $_.ActiveSessions
@@ -13405,6 +13403,8 @@ Function Invoke-SQLAudit
             Don't output anything.
             .PARAMETER Exploit
             Exploit vulnerable issues.
+            .PARAMETER OutFolder
+            Folder to write results to csv.
             .EXAMPLE
             PS C:\> Invoke-SQLAudit -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123!
 
@@ -13440,6 +13440,8 @@ Function Invoke-SQLAudit
             Details       : evil can impersonate the sa SYSADMIN login. This test was ran with the evil login.
             Reference     : https://msdn.microsoft.com/en-us/library/ms181362.aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+            .EXAMPLE
+            PS C:\> Invoke-SQLAudit -Instance SQLServer1\STANDARDDEV2014 -user evil -Password Password123! -OutFolder c:\temp
 
             [TRUNCATED]
     #>
@@ -13469,7 +13471,11 @@ Function Invoke-SQLAudit
         
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
-        [switch]$Exploit
+        [switch]$Exploit,
+       
+       [Parameter(Mandatory = $false,
+        HelpMessage = 'Folder to write results to csv.')]
+       [string]$OutFolder
     )
 
     Begin
@@ -13563,11 +13569,32 @@ Function Invoke-SQLAudit
         # Status user
         Write-Verbose -Message 'COMPLETED ALL VULNERABILITY CHECKS.'
 
+        # Setup output directory and write results
+        if($OutFolder)
+        {
+            $OutFolderCmd = "echo test > $OutFolder\test.txt"
+            $CheckAccess = (Invoke-Expression -Command $OutFolderCmd) 2>&1
+            if($CheckAccess -like '*denied.')
+            {
+                Write-Verbose -Object 'Access denied to output directory.'
+                Return  
+            }else{
+                Write-Verbose -Message 'Verified write access to output directory.'
+                $RemoveCmd = "del $OutFolder\test.txt"
+                Invoke-Expression -Command $RemoveCmd
+                $OutPutInstance = $Instance.Replace('\','-').Replace(',','-')                
+                $OutPutPath = "$OutFolder\"+'PowerUpSQL_Audit_Results_'+$OutPutInstance+'.csv'
+                $OutPutInstance
+                $OutPutPath
+                $TblData  | Export-Csv -NoTypeInformation $OutPutPath 
+            }
+        } 
+
         # Return full results table
         if ( -not $NoOutput)
-        {
-            Return $TblData
-        }   
+        {             
+            Return $TblData            
+        }            
     }
 }
 

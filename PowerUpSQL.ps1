@@ -13813,7 +13813,7 @@ Function Invoke-SQLDumpInfo
             $Instance = $env:COMPUTERNAME
         }       
         
-        Write-Verbose -Message "$Instance - START Dumping information for server and non-default databases..."
+        Write-Verbose -Message "$Instance - START..."
         $OutPutInstance = $Instance.Replace('\','-').Replace(',','-')
                 
         # Getting Databases
@@ -13943,7 +13943,7 @@ Function Invoke-SQLDumpInfo
         }
         
         # Getting Server Logins
-        Write-Verbose -Message "$Instance - Getting ServerLogins..."
+        Write-Verbose -Message "$Instance - Getting server logins..."
         $Results = Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
         if($xml)
         {
@@ -14110,7 +14110,7 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath 
         }     
 
-        Write-Verbose -Message "$Instance - COMPLETE"       
+        Write-Verbose -Message "$Instance - END"       
     }
         
     End

@@ -29,9 +29,9 @@ PowerUpSQL was designed with six objectives in mind:
 
     `IEX(New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/PowerUpSQL.ps1")`
 
-Note: To run as an alternative domain user, use the runas command to launch PowerShell first. 
+     Note: To run as an alternative domain user, use the runas command to launch PowerShell first. 
 
-`runas /noprofile /netonly /user:domain\user PowerShell.exe`
+    `runas /noprofile /netonly /user:domain\user PowerShell.exe`
 
 ### Getting Command Help
 * To list functions from the module, type: `Get-Command -Module PowerUpSQL`

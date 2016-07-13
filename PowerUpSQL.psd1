@@ -1,14 +1,14 @@
 #requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
-    ModuleVersion     = '1.0.0.6'
+    ModuleVersion     = '1.0.0.7'
     GUID              = 'dd1fe106-2226-4869-9363-44469e930a4a'
     Author            = 'Scott Sutherland'
     Copyright         = 'BSD 3-Clause'
     Description       = 'PowerUpSQL is an Offensive toolkit designed for attacking SQL Server.  The PowerUpSQL module includes functions that support SQL Server discovery, auditing for common weak configurations, and privilege escalation on scale.  It is intended to be used during penetration tests and red team engagements. However, PowerUpSQL also includes many functions that could be used by administrators to inventory the SQL Servers on their ADS domain very quickly.  More information can be found at https://github.com/NetSPI/PowerUpSQL.'
     PowerShellVersion = '3.0'
     FunctionsToExport = @(  
-        'Create-SQLFile-XPDLL', 
+        'Create-SQLFileXpDll', 
         'Get-SQLAuditDatabaseSpec', 
         'Get-SQLAuditServerSpec', 
         'Get-SQLColumn', 

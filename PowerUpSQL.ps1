@@ -10126,8 +10126,17 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                     {
                         $IsExploitable  = 'Yes' 
 
+                        If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] “Administrator”))
+                        {
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh.”
+                            $IAMADMIN = 'No'
+                        }else{
+                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded.”
+                            $IAMADMIN = 'Yes'
+                        }
+
                         # Check for exploit flag
-                        if($IsExploitable -eq 'Yes')
+                        if($IAMADMIN -eq 'Yes')
                         {
                             # Attempt to load Inveigh from file
                             #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue | Out-Null
@@ -10430,8 +10439,17 @@ Function Invoke-SQLAuditPrivXpFileexist
                     {
                         $IsExploitable  = 'Yes' 
 
+                        If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] “Administrator”))
+                        {
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh.”
+                            $IAMADMIN = 'No'
+                        }else{
+                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded.”
+                            $IAMADMIN = 'Yes'
+                        }
+
                         # Check for exploit flag
-                        if($IsExploitable -eq 'Yes')
+                        if($IAMADMIN -eq 'Yes')
                         {
                             # Attempt to load Inveigh from file
                             #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue 
@@ -10750,7 +10768,7 @@ Function Invoke-SQLAuditPrivDbChaining
         if($ServerCheck)
         {
             $IsVulnerable  = 'Yes' 
-            Write-Verbose -Message "The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
+            Write-Verbose -Message "$Instance : - The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
             $Details = "The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
             $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
         }

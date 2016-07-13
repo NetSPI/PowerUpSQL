@@ -1225,7 +1225,6 @@ Function  Get-SQLServerInfo
             OsMachineType          : WinNT
             OSVersionName          : Windows 8.1 Pro
             OsVersionNumber        : 6.3
-            OriginalLogin          : Domain\MyUser
             Currentlogin           : Domain\MyUser
             IsSysadmin             : Yes
             ActiveSessions         : 1
@@ -1389,7 +1388,6 @@ Function  Get-SQLServerInfo
             SUBSTRING(@@VERSION, CHARINDEX('x', @@VERSION), 3) as [OSArchitecture],
             $SysadminQuery
             RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows NT', @@VERSION), 14), 3) as [OsVersionNumber],
-            ORIGINAL_LOGIN() as [OriginalLogin],
             SYSTEM_USER as [Currentlogin],
             '$IsSysadmin' as [IsSysadmin],
         '$ActiveSessions' as [ActiveSessions]"
@@ -1445,7 +1443,6 @@ Function  Get-SQLServerInfoThreaded
             OsMachineType          : WinNT
             OSVersionName          : Windows 8.1 Pro
             OsVersionNumber        : 6.3
-            OriginalLogin          : Domain\MyUser
             Currentlogin           : Domain\MyUser
             IsSysadmin             : Yes
             ActiveSessions         : 1
@@ -1654,7 +1651,6 @@ Function  Get-SQLServerInfoThreaded
                 SUBSTRING(@@VERSION, CHARINDEX('x', @@VERSION), 3) as [OSArchitecture],
                 $SysadminQuery
                 RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows NT', @@VERSION), 14), 3) as [OsVersionNumber],
-                ORIGINAL_LOGIN() as [OriginalLogin],
                 SYSTEM_USER as [Currentlogin],
                 '$IsSysadmin' as [IsSysadmin],
             '$ActiveSessions' as [ActiveSessions]"

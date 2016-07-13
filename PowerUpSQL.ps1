@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.5
+        Version: 1.0.0.6
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -1211,7 +1211,7 @@ Function  Get-SQLServerInfo
             PS C:\> Get-SQLServerInfo -Instance SQLServer1\STANDARDDEV2014 
 
             ComputerName           : SQLServer1
-            InstanceName           : SQLServer1\STANDARDDEV2014
+            Instance               : SQLServer1\STANDARDDEV2014
             DomainName             : Domain
             ServiceName            : MSSQL$STANDARDDEV2014
             ServiceAccount         : LocalSystem
@@ -1368,7 +1368,7 @@ Function  Get-SQLServerInfo
 
             -- Return server and version information
             SELECT  '$ComputerName' as [ComputerName],
-            @@servername as [InstanceName],
+            @@servername as [Instance],
             DEFAULT_DOMAIN() as [DomainName],                            
             @SQLServerServiceName as [ServiceName],
             @ServiceAccountName as [ServiceAccount],
@@ -1431,7 +1431,7 @@ Function  Get-SQLServerInfoThreaded
             PS C:\> Get-SQLServerInfoThreaded -Instance SQLServer1\STANDARDDEV2014 
 
             ComputerName           : SQLServer1
-            InstanceName           : SQLServer1\STANDARDDEV2014
+            Instance               : SQLServer1\STANDARDDEV2014
             DomainName             : Domain
             ServiceName            : MSSQL$STANDARDDEV2014
             ServiceAccount         : LocalSystem
@@ -1486,7 +1486,7 @@ Function  Get-SQLServerInfoThreaded
         # Setup data table for output
         $TblServerInfo = New-Object -TypeName System.Data.DataTable
         $null = $TblServerInfo.Columns.Add('ComputerName')
-        $null = $TblServerInfo.Columns.Add('InstanceName')
+        $null = $TblServerInfo.Columns.Add('Instance')
         $null = $TblServerInfo.Columns.Add('DomainName')
         $null = $TblServerInfo.Columns.Add('ServiceName')
         $null = $TblServerInfo.Columns.Add('ServiceAccount')
@@ -1633,7 +1633,7 @@ Function  Get-SQLServerInfoThreaded
 
                 -- Return server and version information
                 SELECT  '$ComputerName' as [ComputerName],
-                @@servername as [InstanceName],
+                @@servername as [Instance],
                 DEFAULT_DOMAIN() as [DomainName],                            
                 @SQLServerServiceName as [ServiceName],
                 @ServiceAccountName as [ServiceAccount],
@@ -1667,7 +1667,7 @@ Function  Get-SQLServerInfoThreaded
                 # Add row
                 $null = $TblServerInfo.Rows.Add(
                     $_.ComputerName,
-                    $_.InstanceName,
+                    $_.Instance,
                     $_.DomainName,
                     $_.ServiceName,
                     $_.ServiceAccount,
@@ -2948,7 +2948,7 @@ Function Get-SQLColumnSampleDataThreaded
             .PARAMETER Threads
             Number of concurrent host threads.
             .EXAMPLE
-            PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC | ft -AutoSize
+            PS C:\> Get-SQLColumnSampleDataThreaded -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC | ft -AutoSize
             VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
             VERBOSE: SQLServer1\STANDARDDEV2014 : CONNECTION SUCCESS
             VERBOSE: SQLServer1\STANDARDDEV2014 : - Searching for column names that match criteria...
@@ -2961,7 +2961,7 @@ Function Get-SQLColumnSampleDataThreaded
             SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True 
             SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   41111111111ASDFD 2        False
             .EXAMPLE
-            PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -ValidateCC -Threads 10
+            PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleDataThreaded -Keywords "account,credit,card" -SampleSize 5 -ValidateCC -Threads 10
     #>
     [CmdletBinding()]
     Param(
@@ -7766,7 +7766,7 @@ Function  Get-SQLFuzzDomainAccount
         # Grab server information
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                  
         $ComputerName = $ServerInfo.ComputerName
-        $Instance = $ServerInfo.InstanceName
+        $Instance = $ServerInfo.Instance
         $Domain = $ServerInfo.DomainName
         $DomainGroup = "$Domain\Domain Admins"
         $DomainGroupSid = Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

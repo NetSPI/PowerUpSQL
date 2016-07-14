@@ -66,7 +66,7 @@ These functions can be used for enumerating SQL Server instances.  Discovered in
 
 ### Primary Attack Functions
 
-These are the functions used to quickly dump databse information, audit for common vulnerabilities, and attempt to obtain sysadmin privileges.
+These are the functions used to quickly dump database information, audit for common vulnerabilities, and attempt to obtain sysadmin privileges.
 
 |Function Name                 |Description |
 |:-----------------------------|:-----------|

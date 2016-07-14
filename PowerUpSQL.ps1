@@ -10122,7 +10122,7 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                 ForEach-Object -Process { 
                     $PrincipalCheck = $_
 
-                    if($PrincipalName -eq $PrincipalCheck)
+                    if($PrincipalName -eq $PrincipalCheck -or $PrincipalName -eq 'public')
                     {
                         $IsExploitable  = 'Yes' 
 
@@ -10134,10 +10134,10 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                         $IsAdmin=$prp.IsInRole($adm)
                         if (-not $IsAdmin)
                          {
-                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh.”
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
                             $IAMADMIN = 'No'
                          }else{
-                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded.”
+                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
                             $IAMADMIN = 'Yes'
                          }
 
@@ -10215,7 +10215,8 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                                     # Update Status    
                                     Write-Verbose -Message "$Instance : - Recovered $HashType hash:" 
                                     Write-Verbose -Message "$Instance : - $Hash"
-                                    $Exploited = 'Yes'
+                                    $Exploited = "Yes"
+                                    
                                     $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
                                 }
                                 else
@@ -10459,10 +10460,10 @@ Function Invoke-SQLAuditPrivXpFileexist
                         $IsAdmin=$prp.IsInRole($adm)
                         if (-not $IsAdmin)
                          {
-                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh.”
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."�
                             $IAMADMIN = 'No'
                          }else{
-                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded.”
+                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
                             $IAMADMIN = 'Yes'
                          }
 

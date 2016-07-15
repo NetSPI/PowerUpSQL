@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.8
+        Version: 1.0.0.9
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -67,10 +67,10 @@ Function  Get-SQLConnectionObject
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -134,8 +134,18 @@ Function  Get-SQLConnectionObject
             Write-Debug -Message "Attempting to authenticate to $DacConn$Instance as current Windows user ($ConnectionectUser)..."
 
             # Setup connection string with trusted connection
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1"                                  
-        }
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1" 
+            
+            # Check for provided credential
+            if ($Credential){
+                
+                $Username = $credential.Username 
+                $Password = $Credential.GetNetworkCredential().Password 
+
+                # Setup connection string with SQL Server credentials
+                $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"                
+            }                                 
+        }       
 
         # Return the connection object             
         return $Connection                     
@@ -192,11 +202,11 @@ Function  Get-SQLConnectionTest
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -339,11 +349,11 @@ Function  Get-SQLConnectionTestThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -504,22 +514,22 @@ Function  Get-SQLQuery
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
         
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server query.')]
         [string]$Query,
 
@@ -683,11 +693,11 @@ Function  Get-SQLQueryThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -945,11 +955,11 @@ Function  Invoke-SQLOSCmd
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -1244,10 +1254,10 @@ Function  Get-SQLServerInfo
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -1462,10 +1472,10 @@ Function  Get-SQLServerInfoThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -1753,16 +1763,16 @@ Function  Get-SQLDatabase
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
@@ -2038,16 +2048,16 @@ Function  Get-SQLDatabaseThreaded
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
@@ -2329,32 +2339,32 @@ Function  Get-SQLTable
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,               
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Table name.')]
         [string]$TableName,
 
@@ -2504,42 +2514,42 @@ Function  Get-SQLColumn
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,               
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Table name.')]
         [string]$TableName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Filter by exact column name.')]
         [string]$ColumnName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Column name using wildcards in search.  Supports comma seperated list.')]
         [string]$ColumnNameSearch,
 
@@ -2739,24 +2749,24 @@ Function Get-SQLColumnSampleData
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -2960,24 +2970,24 @@ Function Get-SQLColumnSampleDataThreaded
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -3207,20 +3217,20 @@ Function  Get-SQLDatabaseSchema
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,               
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Schema name.')]
         [string]$SchemaName,
 
@@ -3386,20 +3396,20 @@ Function  Get-SQLView
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,               
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'View name.')]
         [string]$ViewName,
 
@@ -3578,16 +3588,16 @@ Function  Get-SQLServerLink
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server link name.')]
         [string]$DatabaseLinkName,
 
@@ -3721,15 +3731,15 @@ Function  Get-SQLServerConfiguration
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,    
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Nubmer of hosts to query at one time.')]
         [int]$Threads = 5,   
 
@@ -3957,16 +3967,16 @@ Function  Get-SQLServerCredential
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Credential name.')]
         [string]$CredentialName,      
 
@@ -4085,28 +4095,28 @@ Function  Get-SQLServerLogin
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Principal name to filter for.')]
         [string]$PrincipalName,
 
@@ -4261,28 +4271,28 @@ Function  Get-SQLSession
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'PrincipalName.')]
         [string]$PrincipalName,
 
@@ -4442,10 +4452,10 @@ Function  Get-SQLSysadminCheck
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -4571,10 +4581,10 @@ Function  Get-SQLServiceAccount
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -4781,25 +4791,25 @@ Function  Get-SQLAuditDatabaseSpec
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit name.')]
         [string]$AuditName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Specification name.')]
         [string]$AuditSpecification,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit action name.')]
         [string]$AuditAction,
 
@@ -4961,25 +4971,25 @@ Function  Get-SQLAuditServerSpec
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit name.')]
         [string]$AuditName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Specification name.')]
         [string]$AuditSpecification,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit action name.')]
         [string]$AuditAction,
 
@@ -5140,16 +5150,16 @@ Function  Get-SQLServerPriv
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Permission name.')]
         [string]$PermissionName,
 
@@ -5302,35 +5312,35 @@ Function  Get-SQLDatabasePriv
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,                
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name to filter for.')]
         [string]$DatabaseName,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Permission name to filter for.')]
         [string]$PermissionName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Permission type to filter for.')]
         [string]$PermissionType,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Principal name for grantee to filter for.')]
         [string]$PrincipalName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = "Don't select permissions for default databases.")]
         [switch]$NoDefaults,
 
@@ -5515,30 +5525,30 @@ Function  Get-SQLDatabaseUser
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,                
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database user.')]
         [string]$DatabaseUser,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Server login.')]
         [string]$PrincipalName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Do not show database users associated with default databases.')]
         [Switch]$NoDefaults,
 
@@ -5761,20 +5771,20 @@ Function  Get-SQLServerRole
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = "Role owner's name.")]
         [string]$RoleOwner,
 
@@ -5976,20 +5986,20 @@ Function  Get-SQLServerRoleMember
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL login or Windows account name.')]
         [string]$PrincipalName,
 
@@ -6141,25 +6151,25 @@ Function  Get-SQLDatabaseRole
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,                
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = "Role owner's name.")]
         [string]$RoleOwner,
 
@@ -6377,37 +6387,37 @@ Function  Get-SQLDatabaseRoleMember
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,                
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL login or Windows account name.')]
         [string]$PrincipalName,
 
@@ -6598,15 +6608,15 @@ Function  Get-SQLTriggerDdl
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Trigger name.')]
         [string]$TriggerName,
 
@@ -6770,20 +6780,20 @@ Function  Get-SQLTriggerDml
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,                
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Trigger name.')]
         [string]$TriggerName,
 
@@ -6948,20 +6958,20 @@ Function  Get-SQLStoredProcedure
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,                
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Trigger name.')]
         [string]$ProcedureName,
 
@@ -7126,22 +7136,22 @@ Function  Get-SQLFuzzObjectName
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7283,22 +7293,22 @@ Function  Get-SQLFuzzDatabaseName
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7468,22 +7478,22 @@ Function  Get-SQLFuzzServerLogin
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7687,22 +7697,22 @@ Function  Get-SQLFuzzDomainAccount
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7856,8 +7866,8 @@ Function Get-ComputerNameFromInstance
     [CmdletBinding()]
     Param(          
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance.')]
         [string]$Instance
     )
@@ -8257,18 +8267,18 @@ function Get-DomainSpn
         [string]$DomainController,
 
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name to filter for.')]
         [string]$ComputerName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Domain account to filter for.')]
         [string]$DomainAccount,
 
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SPN service code.')]
         [string]$SpnService,
 
@@ -8430,7 +8440,7 @@ function Get-DomainObject
         [Parameter(Mandatory = $false,
         HelpMessage = 'Credentials to use when connecting to a Domain Controller.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
         HelpMessage = 'Domain controller for Domain and Site that you want to query against.')]
@@ -8630,24 +8640,24 @@ Function  Get-SQLInstanceDomain
         [string]$DomainController,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name to filter for.')]
         [string]$ComputerName,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Domain account to filter for.')]
         [string]$DomainAccount,
 
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Performs UDP scan of servers managing SQL Server clusters.')]
         [switch]$CheckMgmt,
 
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 3
     )
@@ -8922,12 +8932,12 @@ function Get-SQLInstanceScanUDP
 
         [Parameter(Mandatory = $true,
                 ValueFromPipeline,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name or IP address to enumerate SQL Instance from.')]
         [string]$ComputerName,
 
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 2,
 
@@ -9107,12 +9117,12 @@ function Get-SQLInstanceScanUDPThreaded
 
         [Parameter(Mandatory = $true,
                 ValueFromPipeline,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name or IP address to enumerate SQL Instance from.')]
         [string]$ComputerName,
 
         [Parameter(Mandatory = $false,        
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 2,
 
@@ -9383,23 +9393,23 @@ Function Invoke-SQLAuditTemplate
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -9561,23 +9571,23 @@ Function Invoke-SQLAuditPrivServerLink
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -9774,23 +9784,23 @@ Function Invoke-SQLAuditPrivTrustworthy
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -9983,20 +9993,20 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
@@ -10309,23 +10319,23 @@ Function Invoke-SQLAuditPrivXpFileexist
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -10460,7 +10470,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                         $IsAdmin=$prp.IsInRole($adm)
                         if (-not $IsAdmin)
                          {
-                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."�
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
                             $IAMADMIN = 'No'
                          }else{
                             Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
@@ -10646,23 +10656,23 @@ Function Invoke-SQLAuditPrivDbChaining
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -10871,23 +10881,23 @@ Function Invoke-SQLAuditPrivCreateProcedure
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -11131,12 +11141,12 @@ Function Invoke-SQLAuditWeakLoginPw
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Known SQL Server login to fuzz logins with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Username to test.')]
         [string]$TestUsername = 'sa',
 
@@ -11145,12 +11155,12 @@ Function Invoke-SQLAuditWeakLoginPw
         [string]$UserFile,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Known SQL Server password to fuzz logins with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server password to attempt to login with.')]
         [string]$TestPassword = 'password',
 
@@ -11163,13 +11173,13 @@ Function Invoke-SQLAuditWeakLoginPw
         [switch]$NoUserAsPass,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance, 
         
@@ -11591,23 +11601,23 @@ Function Invoke-SQLAuditRoleDbOwner
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -11868,23 +11878,23 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -12141,22 +12151,22 @@ Function Invoke-SQLAuditPrivImpersonateLogin
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -12401,24 +12411,24 @@ Function Invoke-SQLAuditSampleDataByColumn
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipeline = $true,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -12613,7 +12623,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 # -------------------------------------------
 # Function: Test-IsLuhnValid 
 # -------------------------------------------
-# Author: Ã˜YVIND KALLSTAD
+# Author: ÃƒËœYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function Test-IsLuhnValid 
 {
@@ -12631,7 +12641,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: Ã˜yvind Kallstad
+            Author: ÃƒËœyvind Kallstad
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -12665,7 +12675,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: Ã˜YVIND KALLSTAD
+# Author: ÃƒËœYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits 
 {
@@ -12682,7 +12692,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: Ã˜yvind Kallstad
+            Author: ÃƒËœyvind Kallstad
             Date: 09.05.2015
             Version: 1.0
     #>
@@ -13500,10 +13510,10 @@ Function Invoke-SQLAudit
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
@@ -13674,10 +13684,10 @@ Function Invoke-SQLEscalatePriv
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance
     )
@@ -13772,10 +13782,10 @@ Function Invoke-SQLDumpInfo
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+        [System.Management.Automation.Credential()]$Credential,
         
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 

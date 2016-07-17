@@ -151,7 +151,7 @@ These functions are used for common information gathering tasks.  Similar to cor
 
 These functions are used for identifying weak configurations that can lead to unauthorized access.  Invoke-SQLAudit can be used to run all of them at once. Also, all of the audit functions support an exploit flag.  In most cases that means the script will try to add your login to the sysadmin server role.
 
-|Function Name                 |Description |Provide Sysadmin   |
+|Function Name                 |Description |Obtains Sysadmin Privs|
 |:-----------------------------|:-----------|:---------|
 |Invoke-SQLAuditPrivCreateProcedure|Check if the current login has the CREATE PROCEDURE permission.  Attempt to use permission to obtain sysadmin privileges.|No|
 |Invoke-SQLAuditPrivImpersonateLogin|Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.|Yes|

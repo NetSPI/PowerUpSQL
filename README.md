@@ -229,10 +229,12 @@ These functions are used for recovering authentication tokens of varous types.  
 	Get-SQLRecoverPwCredential - https://github.com/NetSPI/Powershell-Modules/blob/master/Get-MSSQLAllCredentials.psm1	
 	Get-SQLRecoverPwServerLink - https://github.com/NetSPI/Powershell-Modules/blob/master/Get-MSSQLLinkPasswords.psm1	
 	Get-SQLRecoverPWProxyAccount - https://github.com/NetSPI/Powershell-Modules/blob/master/Get-MSSQLAllCredentials.psm1	
-	Get-SQLRecoverPwAutoLogon					 
-	Get-SQLRecoverLoginHash						 
+	Get-SQLRecoverLoginHash	
 	Get-SQLRecoverMasterKey						 
 	Get-SQLRecoverMachineKey		
+	Get-SQLRecoverPwAutoLogon
+	Get-SQLRecoverPwLsaSecrets
+	Get-SQLRecoverPwLogonOn
 
 ### Data Exfiltration Functions
 

@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.10
+        Version: 1.0.0.11
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -10472,7 +10472,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                         $IsAdmin=$prp.IsInRole($adm)
                         if (-not $IsAdmin)
                          {
-                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."Â
                             $IAMADMIN = 'No'
                          }else{
                             Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
@@ -10553,13 +10553,13 @@ Function Invoke-SQLAuditPrivXpFileexist
                                     Write-Verbose -Message "$Instance : - Recovered $HashType hash:" 
                                     Write-Verbose -Message "$Instance : - $Hash"
                                     $Exploited = 'Yes'
-                                    $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
                                 }
                                 else
                                 {
                                     # Update Status    
                                     $Exploited = 'No'
-                                    $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database.  xp_fileexist Executed, but no password hash was recovered."   
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database.  xp_fileexist Executed, but no password hash was recovered."   
                                 }        
                                 
                                 # Clear inveigh cache
@@ -10570,21 +10570,21 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 Write-Verbose -Message "$Instance : - Inveigh could not be loaded." 
                                 # Update status
                                 $Exploited = 'No'
-                                $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
+                                $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
                             }
                         }
                         else
                         {
                             # Update status
                             $Exploited = 'No'
-                            $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."                            
+                            $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."                            
                         }
                     }
                     else
                     {
                         # Update status
                         $IsExploitable  = 'No' 
-                        $Details = "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."  
+                        $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."  
                     }
                 }
 
@@ -12625,7 +12625,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 # -------------------------------------------
 # Function: Test-IsLuhnValid 
 # -------------------------------------------
-# Author: ÃƒËœYVIND KALLSTAD
+# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function Test-IsLuhnValid 
 {
@@ -12643,7 +12643,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ÃƒËœyvind Kallstad
+            Author: ÃƒÆ’Ã‹Å“yvind Kallstad
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -12677,7 +12677,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ÃƒËœYVIND KALLSTAD
+# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits 
 {
@@ -12694,7 +12694,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ÃƒËœyvind Kallstad
+            Author: ÃƒÆ’Ã‹Å“yvind Kallstad
             Date: 09.05.2015
             Version: 1.0
     #>

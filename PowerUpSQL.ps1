@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.12
+        Version: 1.0.0.13
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -9697,9 +9697,10 @@ Function Invoke-SQLAuditPrivServerLink
                 $Details = 
                 $LinkName = $LinkedServers.DatabaseLinkName
                 $LinkUser = $LinkedServers.RemoteLoginName
+                $LinkAccess = $LinkedServers.is_data_access_enabled
                 $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
                 
-                if($LinkUser){
+                if($LinkUser -and $LinkAccess -eq "True" ){
                     Write-Verbose -Message "$Instance : - The $LinkName linked server was found configured with the $LinkUser login."
                     $Details = "The SQL Server link $LinkName was found configured with the $LinkUser login."
                     $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
@@ -9976,7 +9977,7 @@ Function Invoke-SQLAuditPrivXpDirtree
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : Excessive Privilege - Execute xp_dirtree
-            Description   : Xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force 
+            Description   : xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force 
                             the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized 
                             access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats 
                             because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.
@@ -10099,7 +10100,7 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             $TestMode  = 'Audit'
         }         
         $Vulnerability = 'Excessive Privilege - Execute xp_dirtree'
-        $Description   = 'Xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
+        $Description   = 'xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
         $Remediation   = 'Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public'
         $Severity      = 'Medium' 
         $IsVulnerable  = 'No'
@@ -10231,13 +10232,13 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                                     Write-Verbose -Message "$Instance : - $Hash"
                                     $Exploited = "Yes"
                                     
-                                    $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
                                 }
                                 else
                                 {
                                     # Update Status    
                                     $Exploited = 'No'
-                                    $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database.  xp_dirtree Executed, but no password hash was recovered."   
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database.  xp_dirtree Executed, but no password hash was recovered."   
                                 }        
                                 
                                 # Clear inveigh cache
@@ -10248,21 +10249,21 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                                 Write-Verbose -Message "$Instance : - Inveigh could not be loaded." 
                                 # Update status
                                 $Exploited = 'No'
-                                $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
+                                $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
                             }
                         }
                         else
                         {
                             # Update status
                             $Exploited = 'No'
-                            $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database."                            
+                            $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database."                            
                         }
                     }
                     else
                     {
                         # Update status
                         $IsExploitable  = 'No' 
-                        $Details = "The $PrincipalName principal has EXECUTE privileges on XP_DIRTREE procedure in the master database."  
+                        $Details = "The $PrincipalName principal has EXECUTE privileges the xp_dirtree procedure in the master database."  
                     }
                 }
 

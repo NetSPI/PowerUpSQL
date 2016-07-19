@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.11
+        Version: 1.0.0.12
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -9698,10 +9698,12 @@ Function Invoke-SQLAuditPrivServerLink
                 $LinkName = $LinkedServers.DatabaseLinkName
                 $LinkUser = $LinkedServers.RemoteLoginName
                 $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
-        
-                Write-Verbose -Message "$Instance : - The $LinkName linked server was found configured with the $LinkUser login."
-                $Details = "The SQL Server link $LinkName was found configured with the $LinkUser login."
-                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                
+                if($LinkUser){
+                    Write-Verbose -Message "$Instance : - The $LinkName linked server was found configured with the $LinkUser login."
+                    $Details = "The SQL Server link $LinkName was found configured with the $LinkUser login."
+                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                }
             }
         }
         else

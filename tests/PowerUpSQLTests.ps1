@@ -526,3 +526,138 @@ Describe "Get-SQLConnectionTestThreaded" {
         }
     }
 }
+
+Describe "Get-SQLFuzzDatabaseName" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLFuzzDatabaseName | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz database name results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLFuzzDatabaseName -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz database name results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLFuzzDatabaseName -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz database name results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLFuzzDatabaseName -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz database name results returned"
+        }
+    }
+    It "Should accept -StartId and -EndId arguments" {
+        if ( (Get-SQLFuzzDatabaseName -Instance $env:COMPUTERNAME -StartID 1 -EndId 500 | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz database name results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLFuzzDatabaseName | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz database name results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLFuzzDomainAccount" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLFuzzDomainAccount | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz domain account name results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLFuzzDomainAccount -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz domain account name results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLFuzzDomainAccount -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz domain account name results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLFuzzDomainAccount -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz domain account name results returned"
+        }
+    }
+    It "Should accept -StartId and -EndId arguments" {
+        if ( (Get-SQLFuzzDomainAccount -Instance $env:COMPUTERNAME -StartID 500 -EndId 550 | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz domain account name results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLFuzzDomainAccount | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz domain account name results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLFuzzObjectName" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLFuzzObjectName | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz object name results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLFuzzObjectName -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz object name results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLFuzzObjectName -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz object name results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLFuzzObjectName -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz object name results returned"
+        }
+    }
+    It "Should accept -StartId and -EndId arguments" {
+        if ( (Get-SQLFuzzObjectName -Instance $env:COMPUTERNAME -StartID 1 -EndId 50 | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz object name results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLFuzzObjectName | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz object name results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLFuzzServerLogin" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLFuzzServerLogin | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz sql login name results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLFuzzServerLogin -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz sql login name results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLFuzzServerLogin -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz sql login name results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLFuzzServerLogin -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz sql login name results returned"
+        }
+    }
+    It "Should accept -StartId and -EndId arguments" {
+        if ( (Get-SQLFuzzServerLogin -Instance $env:COMPUTERNAME -StartID 1 -EndId 50 | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz sql login name results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLFuzzServerLogin | Measure-Object).count -lt 1) {
+            Throw "Incorrect fuzz sql login name results returned"
+        }
+    }
+}

@@ -1,4 +1,3 @@
-
 Describe "Get-SQLDatabase" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabase | Measure-Object).count -lt 1) {
@@ -343,6 +342,89 @@ Describe "Get-SQLDatabaseUser" {
     It "Should accept pipeline input" {
         if ( ( Get-SQLInstanceLocal | Get-SQLDatabaseUser | Measure-Object).count -lt 1) {
             Throw "Incorrect database user results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLConnectionTest" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLConnectionTest | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -TimeOut 5 | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -DAC| Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLConnectionTest | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLConnectionTestThreaded" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLConnectionTestThreaded | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -TimeOut 5 | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Threads argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -Threads 5 | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -DAC| Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLConnectionTestThreaded | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
         }
     }
 }

@@ -1,3 +1,101 @@
+Describe "Get-SQLColumn" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLColumn  | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -DatabaseName "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -TableName argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -TableName "spt_values" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -ColumnName argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -ColumnName "status" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -ColumnNameSearch argument" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -ColumnNameSearch "stat" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -NoDefaults flag" {
+        if ( (Get-SQLColumn -Instance $env:COMPUTERNAME -NoDefaults | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLColumn | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLColumnSampleDataSampleData" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLColumnSampleData  | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME -Keywords "statu" -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME -Keywords "statu" -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept -Keywords argument" {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME -Keywords "statu" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept -SampleSize argument" {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME -Keywords "statu" -SampleSize 2 | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME -Keywords "statu" -DatabaseName "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "statu" | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search & sample data results returned"
+        }
+    }
+}
+
+
 Describe "Get-SQLDatabase" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabase | Measure-Object).count -lt 1) {

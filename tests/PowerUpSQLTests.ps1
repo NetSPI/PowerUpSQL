@@ -20,6 +20,11 @@ Describe "Get-SQLDatabase" {
             Throw "Incorrect database results returned"
         }
     }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLDatabase -Instance $env:COMPUTERNAME -DatabaseName master | Measure-Object).count -lt 1) {
+            Throw "Incorrect database results returned"
+        }
+    }
     It "Should accept -NoDefaults flag" {
         if ( (Get-SQLDatabase -Instance $env:COMPUTERNAME -NoDefaults | Measure-Object).count -lt 1) {
             Throw "Incorrect database results returned"
@@ -243,47 +248,101 @@ Describe "Get-SQLDatabaseSchema" {
 Describe "Get-SQLDatabaseThreaded" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabaseThreaded | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept -Instance argument" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept -Username argument" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept -Password argument" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -DatabaseName master | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept -NoDefaults flag" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -NoDefaults | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept -HasAccess flag" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -HasAccess | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
    It "Should accept -SysAdminOnly flag" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -SysAdminOnly | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept -Threads argument" {
         if ( (Get-SQLDatabaseThreaded -Instance $env:COMPUTERNAME -Threads 2 | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
         }
     }
     It "Should accept pipeline input" {
         if ( ( Get-SQLInstanceLocal | Get-SQLDatabaseThreaded | Measure-Object).count -lt 1) {
-            Throw "Incorrectthreaded database results returned"
+            Throw "Incorrect threaded database results returned"
+        }
+    }
+}
+
+
+Describe "Get-SQLDatabaseUser" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLDatabaseUser | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME -DatabaseName "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -DatabaseUser argument" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME -DatabaseUser "dbo" | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -PrincipalName argument" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME -PrincipalName "sa" | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept -NoDefaults flag" {
+        if ( (Get-SQLDatabaseUser -Instance $env:COMPUTERNAME -NoDefaults | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLDatabaseUser | Measure-Object).count -lt 1) {
+            Throw "Incorrect database user results returned"
         }
     }
 }

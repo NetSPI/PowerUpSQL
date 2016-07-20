@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.14
+        Version: 1.0.0.15
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -2149,14 +2149,22 @@ Function  Get-SQLDatabaseThreaded
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
+        
+        # set instance to local host by default
+        if(-not $Instance){ 
+            $Instance = $env:COMPUTERNAME
+        }
+
         # Ensure provide instance is processed
         if($Instance)
-        {
+        {            
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }
-            $PipelineItems = $PipelineItems + $ProvideInstance
+            }            
         }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
     }
 
     Process
@@ -2169,16 +2177,12 @@ Function  Get-SQLDatabaseThreaded
     {   
         # Define code to be multi-threaded
         $MyScriptBlock = {
+
+            # Set instance
             $Instance = $_.Instance
 
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
-
-            # Default connection to local default instance
-            if(-not $Instance)
-            {
-                $Instance = $env:COMPUTERNAME
-            }
 
             # Test connection to instance
             $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -9700,7 +9704,7 @@ Function Invoke-SQLAuditPrivServerLink
                 $LinkAccess = $LinkedServers.is_data_access_enabled
                 $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
                 
-                if($LinkUser -and $LinkAccess -eq "True" ){
+                if($LinkUser -and $LinkAccess -eq "True"){
                     Write-Verbose -Message "$Instance : - The $LinkName linked server was found configured with the $LinkUser login."
                     $Details = "The SQL Server link $LinkName was found configured with the $LinkUser login."
                     $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
@@ -11521,7 +11525,7 @@ Function Invoke-SQLAuditWeakLoginPw
                     }
 
                     # Add record                    
-                    $Details = "The $TargetLogin ($SysadminStatus) is configured with the password $TargetLogin."
+                    $Details = "The $TargetLogin ($SysadminStatus) principal is configured with the password $TargetLogin."
                     $IsVulnerable = 'Yes'
                     $IsExploitable = 'Yes'
                     $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                     

@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.16
+        Version: 1.0.0.17
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -2735,16 +2735,18 @@ Function Get-SQLColumnSampleData
             SQL Server credential. 
             .PARAMETER Instance
             SQL Server instance to connection to. 
-            .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
             .PARAMETER $NoOutput
             Don't output any sample data.
             .PARAMETER SampleSize
             Number of records to sample.
             .PARAMETER Keywords
-            Comma seperated list of keywords to search for.
+            Number of records to sample.
+            .PARAMETER DatabaseName
+            Database to filter on.
             .PARAMETER ValidateCC
             Use Luhn formula to check if sample is a valid credit card.
+            Column name filter that support wildcards.
+            .PARAMETER NoDefaults
             .EXAMPLE
             PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC| ft -AutoSize
             VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
@@ -2764,12 +2766,10 @@ Function Get-SQLColumnSampleData
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -2780,14 +2780,13 @@ Function Get-SQLColumnSampleData
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
         
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,       
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
-        [string]$NoOutput,       
+        [switch]$NoOutput,       
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Number of records to sample.')]
@@ -2798,8 +2797,16 @@ Function Get-SQLColumnSampleData
         [string]$Keywords = 'Password',
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Database name to filter on.')]
+        [string]$DatabaseName,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Use Luhn formula to check if sample is a valid credit card.')]
         [switch]$ValidateCC,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't select tables from default databases.")]
+        [switch]$NoDefaults,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -2857,8 +2864,13 @@ Function Get-SQLColumnSampleData
                 Write-Verbose -Message "$Instance : - Searching for column names that match criteria..." 
             }
             
-            # Search for columns   
-            $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+            if($NoDefaults){
+                # Search for columns   
+                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+            }else{
+                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -SuppressVerbose
+            }
+
         }           
         
         # Check if columns were found
@@ -2867,25 +2879,28 @@ Function Get-SQLColumnSampleData
             # List columns found
             $Columns|
             ForEach-Object -Process {
-                $DatabaseName = $_.DatabaseName
-                $SchemaName = $_.SchemaName
-                $TableName = $_.TableName
-                $ColumnName = $_.ColumnName
-                $AffectedColumn = "[$DatabaseName].[$SchemaName].[$TableName].[$ColumnName]"
-                $AffectedTable = "[$DatabaseName].[$SchemaName].[$TableName]"
-                $Query = "USE $DatabaseName; SELECT TOP $SampleSize [$ColumnName] FROM $AffectedTable WHERE [$ColumnName] is not null"
-                $QueryRowCount = "USE $DatabaseName; SELECT count(CAST([$ColumnName] as VARCHAR(1))) as NumRows FROM $AffectedTable WHERE [$ColumnName] is not null"
+                $sDatabaseName = $_.DatabaseName
+                $sSchemaName = $_.SchemaName
+                $sTableName = $_.TableName
+                $sColumnName = $_.ColumnName
+                $AffectedColumn = "[$sDatabaseName].[$sSchemaName].[$sTableName].[$sColumnName]"
+                $AffectedTable = "[$sDatabaseName].[$sSchemaName].[$sTableName]"
+                $Query = "USE $sDatabaseName; SELECT TOP $SampleSize [$sColumnName] FROM $AffectedTable WHERE [$sColumnName] is not null"
+                $QueryRowCount = "USE $sDatabaseName; SELECT count(CAST([$sColumnName] as VARCHAR(200))) as NumRows FROM $AffectedTable WHERE [$sColumnName] is not null"
 
+                # Status user
                 if( -not $SuppressVerbose)
                 {
                     Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"                               
                     Write-Verbose -Message "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
                 }
 
-                # Query for data
+                # Get row count for column matches
                 $RowCount = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object -Property NumRows -ExpandProperty NumRows
+                
+                # Get sample data
                 Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose |
-                Select-Object -ExpandProperty $ColumnName |
+                Select-Object -ExpandProperty $sColumnName |
                 ForEach-Object -Process {                                                                                                              
                     if($ValidateCC)
                     {
@@ -2901,12 +2916,12 @@ Function Get-SQLColumnSampleData
                         }
 
                         # Add record
-                        $null = $TblData.Rows.Add($ComputerName, $Instance, $DatabaseName, $SchemaName, $TableName, $ColumnName, $_, $RowCount, $LuhnCheck)                                                                        
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount, $LuhnCheck)                                                                        
                     }
                     else
                     {
                         # Add record
-                        $null = $TblData.Rows.Add($ComputerName, $Instance, $DatabaseName, $SchemaName, $TableName, $ColumnName, $_, $RowCount)                                                                        
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount)                                                                        
                     }
                 }
             }                                          

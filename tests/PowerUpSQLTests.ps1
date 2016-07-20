@@ -143,3 +143,51 @@ Describe "Get-SQLDatabaseRole" {
         }
     }
 }
+
+Describe "Get-SQLDatabaseRoleMember" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLDatabaseRoleMember | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -Username argument" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -Password argument" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME -DatabaseName master | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -RolePrincipalName argument" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME -RolePrincipalName "db_owner" | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -PrincipalName argument" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME -PrincipalName "dbo" | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept -NoDefaults flag" {
+        if ( (Get-SQLDatabaseRoleMember -Instance $env:COMPUTERNAME -NoDefaults | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLDatabaseRoleMember | Measure-Object).count -lt 1) {
+            Throw "Incorrect database role member results returned"
+        }
+    }
+}

@@ -36,10 +36,44 @@ Invoke-SQLEscalatePriv
 #
 ######################################################
 
-<#                      
-Get-SQLQueryThreaded            
-Invoke-SQLOSCmd    
-#>
+# Invoke-SQLOSCmd 
+Describe "Invoke-SQLOSCmd" {
+    It "Should return results for the local host with query" {
+        if ( (Invoke-SQLOSCmd -Command "whoami" | Measure-Object).count -lt 1) {
+            Throw "Incorrect OS command results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Invoke-SQLOSCmd  -Instance $env:COMPUTERNAME -Command "whoami" | Measure-Object).count -lt 1) {
+            Throw "Incorrect OS command results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Invoke-SQLOSCmd   -Instance $env:COMPUTERNAME -Command "whoami" -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Invoke-SQLOSCmd  -Instance $env:COMPUTERNAME -TimeOut 5 -Command "whoami" | Measure-Object).count -lt 1) {
+            Throw "Incorrect OS command results returned"
+        }
+    }
+    It "Should accept -Threads argument" {
+        if ( (Invoke-SQLOSCmd  -Instance $env:COMPUTERNAME -Threads 5 -Command "whoami" | Measure-Object).count -lt 1) {
+            Throw "Incorrect OS command results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Invoke-SQLOSCmd  -Instance $env:COMPUTERNAME -DAC -Command "whoami" | Measure-Object).count -lt 1) {
+            Throw "Incorrect OS command results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Invoke-SQLOSCmd  -Command "whoami"  | Measure-Object).count -lt 1) {
+            Throw "Incorrect OS command results returned"
+        }
+    }
+}
 
 # Get-SQLQuery
 Describe "Get-SQLQuery" {

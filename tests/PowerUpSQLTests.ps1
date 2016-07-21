@@ -36,8 +36,7 @@ Invoke-SQLEscalatePriv
 #
 ######################################################
 
-<#
-Get-SQLQuery                       
+<#                      
 Get-SQLQueryThreaded            
 Invoke-SQLOSCmd    
 #>
@@ -77,6 +76,50 @@ Describe "Get-SQLQuery" {
     It "Should accept pipeline input" {
         if ( ( Get-SQLInstanceLocal | Get-SQLQuery -Query "SELECT @@SERVERNAME"  | Measure-Object).count -lt 1) {
             Throw "Incorrect query results returned"
+        }
+    }
+}
+
+# Get-SQLQueryThreaded
+Describe "Get-SQLQueryThreaded" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLQueryThreaded -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLQueryThreaded -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLQueryThreaded  -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -Database argument" {
+        if ( (Get-SQLQueryThreaded -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" -Database "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Get-SQLQueryThreaded -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" -TimeOut 5  | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
+        }
+    }
+    It "Should accept -Threads argument" {
+        if ( (Get-SQLQueryThreaded -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" -Threads 2 | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Get-SQLQueryThreaded -Instance $env:COMPUTERNAME -DAC -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLQueryThreaded -Query "SELECT @@SERVERNAME" -Threads 2  | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded query results returned"
         }
     }
 }

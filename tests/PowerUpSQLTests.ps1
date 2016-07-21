@@ -244,8 +244,7 @@ Describe "Get-SQLConnectionTestThreaded" {
 <#
 Get-SQLColumnSampleDataThreaded 
 Get-SQLAuditDatabaseSpec           
-Get-SQLAuditServerSpec       
-Get-SQLServerConfiguration         
+Get-SQLAuditServerSpec                
 Get-SQLServerCredential            
 Get-SQLServerInfo                  
 Get-SQLServerInfoThreaded          
@@ -260,6 +259,30 @@ Get-SQLStoredProcedure
 Get-SQLTriggerDdl                  
 Get-SQLTriggerDml                  
 #>
+
+# Get-SQLServerConfiguration
+Describe "Get-SQLServerConfiguration" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerConfiguration  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server configuration results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerConfiguration -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server configuration results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerConfiguration -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect server configuration results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerConfiguration    | Measure-Object).count -lt 1) {
+            Throw "Incorrect server configuration results returned"
+        }
+    }
+}
 
 # Get-SQLSession
 Describe "Get-SQLSession" {

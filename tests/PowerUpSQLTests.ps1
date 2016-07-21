@@ -1,3 +1,155 @@
+# PowerUpSQL Pester Tests
+
+######################################################
+#
+#region           Discovery Function Tests
+#
+######################################################
+
+<#
+Get-SQLInstanceDomain              
+Get-SQLInstanceFile                
+Get-SQLInstanceLocal               
+Get-SQLInstanceScanUDP             
+Get-SQLInstanceScanUDPThreaded  
+#>
+
+#endregion
+
+######################################################
+#
+#region           Primary Attack Function Tests
+#
+######################################################
+
+<#
+Invoke-SQLDumpInfo   
+Invoke-SQLAudit               
+Invoke-SQLEscalatePriv  
+#>
+
+#endregion
+
+######################################################
+#
+#region           Core Function Tests
+#
+######################################################
+
+<#
+Get-SQLQuery                       
+Get-SQLQueryThreaded            
+Invoke-SQLOSCmd    
+#>
+
+# Get-SQLConnectionTest
+Describe "Get-SQLConnectionTest" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLConnectionTest | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -TimeOut 5 | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -DAC| Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLConnectionTest | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+}
+
+
+#Get-SQLConnectionTestThreaded
+Describe "Get-SQLConnectionTestThreaded" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLConnectionTestThreaded | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -TimeOut 5 | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept -Threads argument" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -Threads 5 | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -DAC| Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLConnectionTestThreaded | Measure-Object).count -lt 1) {
+            Throw "Incorrect connection test results returned"
+        }
+    }
+}
+
+
+#endregion
+
+######################################################
+#
+#region           Common Function Tests
+#
+######################################################
+
+<#
+Get-SQLColumnSampleDataThreaded 
+Get-SQLAuditDatabaseSpec           
+Get-SQLAuditServerSpec       
+Get-SQLServerConfiguration         
+Get-SQLServerCredential            
+Get-SQLServerInfo                  
+Get-SQLServerInfoThreaded          
+Get-SQLServerLink                  
+Get-SQLServerLogin                 
+Get-SQLServerPriv                  
+Get-SQLServerRole                  
+Get-SQLServerRoleMember            
+Get-SQLServiceAccount              
+Get-SQLServiceLocal                
+Get-SQLSession                     
+Get-SQLStoredProcedure             
+Get-SQLSysadminCheck               
+Get-SQLTable                       
+Get-SQLTriggerDdl                  
+Get-SQLTriggerDml                  
+Get-SQLView
+#>
+
+# Get-SQLColumn
 Describe "Get-SQLColumn" {
     It "Should return results for the local host" {
         if ( (Get-SQLColumn  | Measure-Object).count -lt 1) {
@@ -46,7 +198,7 @@ Describe "Get-SQLColumn" {
     }
 }
 
-
+# Get-SQLColumnSampleDataSampleData
 Describe "Get-SQLColumnSampleDataSampleData" {
     It "Should return results for the local host" {
         if ( (Get-SQLColumnSampleData  | Measure-Object).count -lt 1) {
@@ -85,7 +237,7 @@ Describe "Get-SQLColumnSampleDataSampleData" {
     }
 }
 
-
+# Get-SQLDatabase
 Describe "Get-SQLDatabase" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabase | Measure-Object).count -lt 1) {
@@ -129,7 +281,7 @@ Describe "Get-SQLDatabase" {
     }
 }
 
-
+# Get-SQLDatabasePriv
 Describe "Get-SQLDatabasePriv" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabasePriv | Measure-Object).count -lt 1) {
@@ -178,7 +330,7 @@ Describe "Get-SQLDatabasePriv" {
     }
 }
 
-
+# Get-SQLDatabaseRole
 Describe "Get-SQLDatabaseRole" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabaseRole | Measure-Object).count -lt 1) {
@@ -222,7 +374,7 @@ Describe "Get-SQLDatabaseRole" {
     }
 }
 
-
+# Get-SQLDatabaseRoleMember
 Describe "Get-SQLDatabaseRoleMember" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabaseRoleMember | Measure-Object).count -lt 1) {
@@ -266,7 +418,7 @@ Describe "Get-SQLDatabaseRoleMember" {
     }
 }
 
-
+# Get-SQLDatabaseSchema
 Describe "Get-SQLDatabaseSchema" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabaseSchema | Measure-Object).count -lt 1) {
@@ -306,7 +458,7 @@ Describe "Get-SQLDatabaseSchema" {
     }
 }
 
-
+# Get-SQLDatabaseThreaded
 Describe "Get-SQLDatabaseThreaded" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabaseThreaded | Measure-Object).count -lt 1) {
@@ -355,7 +507,7 @@ Describe "Get-SQLDatabaseThreaded" {
     }
 }
 
-
+# Get-SQLDatabaseUser
 Describe "Get-SQLDatabaseUser" {
     It "Should return results for the local host" {
         if ( (Get-SQLDatabaseUser | Measure-Object).count -lt 1) {
@@ -399,79 +551,70 @@ Describe "Get-SQLDatabaseUser" {
     }
 }
 
+#endregion
 
-Describe "Get-SQLConnectionTest" {
-    It "Should return results for the local host" {
-        if ( (Get-SQLConnectionTest | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept -Instance argument" {
-        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
-            Throw "Incorrect column search results returned"
-        }
-    }
-    It "Should accept -TimeOut argument" {
-        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -TimeOut 5 | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-   It "Should accept -DAC flag" {
-        if ( (Get-SQLConnectionTest -Instance $env:COMPUTERNAME -DAC| Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept pipeline input" {
-        if ( ( Get-SQLInstanceLocal | Get-SQLConnectionTest | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-}
+######################################################
+#
+#region           Audit Function Tests
+#
+######################################################
 
+<#                   
+Invoke-SQLAuditPrivCreateProcedure 
+Invoke-SQLAuditPrivDbChaining      
+Invoke-SQLAuditPrivImpersonateLogin
+Invoke-SQLAuditPrivServerLink      
+Invoke-SQLAuditPrivTrustworthy     
+Invoke-SQLAuditPrivXpDirtree       
+Invoke-SQLAuditRoleDbDdlAdmin      
+Invoke-SQLAuditRoleDbOwner         
+Invoke-SQLAuditSampleDataByColumn  
+Invoke-SQLAuditWeakLoginPw          
+#>
 
-Describe "Get-SQLConnectionTestThreaded" {
-    It "Should return results for the local host" {
-        if ( (Get-SQLConnectionTestThreaded | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept -Instance argument" {
-        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
-            Throw "Incorrect column search results returned"
-        }
-    }
-    It "Should accept -TimeOut argument" {
-        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -TimeOut 5 | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept -Threads argument" {
-        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -Threads 5 | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-   It "Should accept -DAC flag" {
-        if ( (Get-SQLConnectionTestThreaded -Instance $env:COMPUTERNAME -DAC| Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-    It "Should accept pipeline input" {
-        if ( ( Get-SQLInstanceLocal | Get-SQLConnectionTestThreaded | Measure-Object).count -lt 1) {
-            Throw "Incorrect connection test results returned"
-        }
-    }
-}
+#endregion
 
+######################################################
+#
+#region           Persistence Function Tests
+#
+######################################################
+
+# No function have been written yet.
+
+#endregion
+
+######################################################
+#
+#region           Password Recovery Function Tests
+#
+######################################################
+
+# No function have been written yet.
+
+#endregion
+
+######################################################
+#
+#region           Data Exfiltration Function Tests
+#
+######################################################
+
+# No function have been written yet.
+
+#endregion
+
+######################################################
+#
+#region           Utility Function Tests
+#
+######################################################
+
+<#
+Create-SQLFileXpDll 
+#>
+
+# Get-SQLFuzzDatabaseName
 Describe "Get-SQLFuzzDatabaseName" {
     It "Should return results for the local host" {
         if ( (Get-SQLFuzzDatabaseName | Measure-Object).count -lt 1) {
@@ -500,7 +643,8 @@ Describe "Get-SQLFuzzDatabaseName" {
     }
 }
 
-
+# Get-SQLFuzzDomainAccount
+# Note: Need to be on a domain.
 Describe "Get-SQLFuzzDomainAccount" {
     It "Should return results for the local host" {
         if ( (Get-SQLFuzzDomainAccount | Measure-Object).count -lt 1) {
@@ -529,7 +673,7 @@ Describe "Get-SQLFuzzDomainAccount" {
     }
 }
 
-
+# Get-SQLFuzzObjectName
 Describe "Get-SQLFuzzObjectName" {
     It "Should return results for the local host" {
         if ( (Get-SQLFuzzObjectName | Measure-Object).count -lt 1) {
@@ -558,7 +702,7 @@ Describe "Get-SQLFuzzObjectName" {
     }
 }
 
-
+# Get-SQLFuzzServerLogin
 Describe "Get-SQLFuzzServerLogin" {
     It "Should return results for the local host" {
         if ( (Get-SQLFuzzServerLogin | Measure-Object).count -lt 1) {
@@ -586,3 +730,6 @@ Describe "Get-SQLFuzzServerLogin" {
         }
     }
 }
+
+
+#endregion

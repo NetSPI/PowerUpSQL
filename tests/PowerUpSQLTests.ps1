@@ -42,6 +42,45 @@ Get-SQLQueryThreaded
 Invoke-SQLOSCmd    
 #>
 
+# Get-SQLQuery
+Describe "Get-SQLQuery" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLQuery -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect query results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLQuery -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect query results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLQuery  -Instance $env:COMPUTERNAME -Query "SELECT @@SERVERNAME" -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -Database argument" {
+        if ( (Get-SQLQuery -Instance $env:COMPUTERNAME -Database "master" -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect query results returned"
+        }
+    }
+    It "Should accept -TimeOut argument" {
+        if ( (Get-SQLQuery -Instance $env:COMPUTERNAME -TimeOut 5 -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect query results returned"
+        }
+    }
+   It "Should accept -DAC flag" {
+        if ( (Get-SQLQuery -Instance $env:COMPUTERNAME -DAC -Query "SELECT @@SERVERNAME" | Measure-Object).count -lt 1) {
+            Throw "Incorrect query results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLQuery -Query "SELECT @@SERVERNAME"  | Measure-Object).count -lt 1) {
+            Throw "Incorrect query results returned"
+        }
+    }
+}
+
 # Get-SQLConnectionTest
 Describe "Get-SQLConnectionTest" {
     It "Should return results for the local host" {
@@ -55,7 +94,7 @@ Describe "Get-SQLConnectionTest" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLConnectionTest  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -90,7 +129,7 @@ Describe "Get-SQLConnectionTestThreaded" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLConnectionTestThreaded  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -198,8 +237,8 @@ Describe "Get-SQLColumn" {
     }
 }
 
-# Get-SQLColumnSampleDataSampleData
-Describe "Get-SQLColumnSampleDataSampleData" {
+# Get-SQLColumnSampleData
+Describe "Get-SQLColumnSampleData" {
     It "Should return results for the local host" {
         if ( (Get-SQLColumnSampleData  | Measure-Object).count -lt 1) {
             Throw "Incorrect column search & sample data results returned"
@@ -211,7 +250,7 @@ Describe "Get-SQLColumnSampleDataSampleData" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLColumnSampleData  -Instance $env:COMPUTERNAME -Username test -Password test -Keywords "statu" | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -250,7 +289,7 @@ Describe "Get-SQLDatabase" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabase  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -294,7 +333,7 @@ Describe "Get-SQLDatabasePriv" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabasePriv -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -343,7 +382,7 @@ Describe "Get-SQLDatabaseRole" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabaseRole  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -387,7 +426,7 @@ Describe "Get-SQLDatabaseRoleMember" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabaseRoleMember  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -431,7 +470,7 @@ Describe "Get-SQLDatabaseSchema" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabaseSchema  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -471,7 +510,7 @@ Describe "Get-SQLDatabaseThreaded" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabaseThreaded  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -520,7 +559,7 @@ Describe "Get-SQLDatabaseUser" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLDatabaseUser  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -627,7 +666,7 @@ Describe "Get-SQLFuzzDatabaseName" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLFuzzDatabaseName -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -657,7 +696,7 @@ Describe "Get-SQLFuzzDomainAccount" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLFuzzDomainAccount  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -674,6 +713,7 @@ Describe "Get-SQLFuzzDomainAccount" {
 }
 
 # Get-SQLFuzzObjectName
+# Note: This function requires a login with the sysadmin role.
 Describe "Get-SQLFuzzObjectName" {
     It "Should return results for the local host" {
         if ( (Get-SQLFuzzObjectName | Measure-Object).count -lt 1) {
@@ -686,7 +726,7 @@ Describe "Get-SQLFuzzObjectName" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLFuzzObjectName  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }
@@ -715,7 +755,7 @@ Describe "Get-SQLFuzzServerLogin" {
         }
     }
     It "Should accept -Username and -Password arguments" {
-        if ( (Get-SQLColumn  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+        if ( (Get-SQLFuzzServerLogin  -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
             Throw "Incorrect column search results returned"
         }
     }

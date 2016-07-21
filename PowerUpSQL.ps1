@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.19
+        Version: 1.0.0.20
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -3808,14 +3808,21 @@ Function  Get-SQLServerConfiguration
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
-        # Ensure provide instance is processed
+        # set instance to local host by default
+        if(-not $Instance){ 
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
         if($Instance)
-        {
+        {            
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }
-            $PipelineItems = $PipelineItems + $ProvideInstance
+            }            
         }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
     }
 
     Process

@@ -256,12 +256,58 @@ Get-SQLServerRole
 Get-SQLServerRoleMember            
 Get-SQLServiceAccount              
 Get-SQLServiceLocal                
-Get-SQLSession                     
-Get-SQLStoredProcedure             
-Get-SQLSysadminCheck               
+Get-SQLStoredProcedure                           
 Get-SQLTriggerDdl                  
 Get-SQLTriggerDml                  
 #>
+
+# Get-SQLSession
+Describe "Get-SQLSession" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLSession  | Measure-Object).count -lt 1) {
+            Throw "Incorrect session query results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLSession -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect session query results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLSession -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLSession    | Measure-Object).count -lt 1) {
+            Throw "Incorrect session query results returned"
+        }
+    }
+}
+
+# Get-SQLSysadminCheck 
+Describe "Get-SQLSysadminCheck " {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLSysadminCheck  | Measure-Object).count -lt 1) {
+            Throw "Incorrect sysadmin check results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLSysadminCheck  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect sysadmin check results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLSysadminCheck    -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLSysadminCheck    | Measure-Object).count -lt 1) {
+            Throw "Incorrect sysadmin check results returned"
+        }
+    }
+}
 
 # Get-SQLTable
 Describe "Get-SQLTable" {

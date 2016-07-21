@@ -245,9 +245,7 @@ Describe "Get-SQLConnectionTestThreaded" {
 Get-SQLColumnSampleDataThreaded 
 Get-SQLAuditDatabaseSpec           
 Get-SQLAuditServerSpec                
-Get-SQLServerCredential            
-Get-SQLServerInfo                  
-Get-SQLServerInfoThreaded          
+Get-SQLServerCredential                                    
 Get-SQLServerLink                  
 Get-SQLServerLogin                 
 Get-SQLServerPriv                  
@@ -259,6 +257,54 @@ Get-SQLStoredProcedure
 Get-SQLTriggerDdl                  
 Get-SQLTriggerDml                  
 #>
+
+# Get-SQLServerInfo
+Describe "Get-SQLServerInfo" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerInfo  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerInfo -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerInfo -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerInfo    | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information results returned"
+        }
+    }
+}
+
+# Get-SQLServerInfoThreaded
+Describe "Get-SQLServerInfoThreaded" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerInfoThreaded  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information threaded results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerInfoThreaded -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information threaded results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerInfoThreaded -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information threaded results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerInfoThreaded    | Measure-Object).count -lt 1) {
+            Throw "Incorrect server information threaded results returned"
+        }
+    }
+}
 
 # Get-SQLServerConfiguration
 Describe "Get-SQLServerConfiguration" {

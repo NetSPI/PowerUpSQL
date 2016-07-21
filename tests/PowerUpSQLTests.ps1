@@ -259,11 +259,77 @@ Get-SQLServiceLocal
 Get-SQLSession                     
 Get-SQLStoredProcedure             
 Get-SQLSysadminCheck               
-Get-SQLTable                       
 Get-SQLTriggerDdl                  
 Get-SQLTriggerDml                  
-Get-SQLView
 #>
+
+# Get-SQLTable
+Describe "Get-SQLTable" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLTable | Measure-Object).count -lt 1) {
+            Throw "Incorrect table results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLTable -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect table results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLTable   -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLTable  -Instance $env:COMPUTERNAME -DatabaseName "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect table results returned"
+        }
+    }
+    It "Should accept -TableName argument" {
+        if ( (Get-SQLTable  -Instance $env:COMPUTERNAME -TableName "spt_monitor" | Measure-Object).count -lt 1) {
+            Throw "Incorrect table results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLTable   | Measure-Object).count -lt 1) {
+            Throw "Incorrect table results returned"
+        }
+    }
+}
+
+# Get-SQLView
+Describe "Get-SQLView" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLView | Measure-Object).count -lt 1) {
+            Throw "Incorrect view results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLView -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect view results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLView   -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect column search results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLView  -Instance $env:COMPUTERNAME -DatabaseName "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect view results returned"
+        }
+    }
+    It "Should accept -ViewName argument" {
+        if ( (Get-SQLView  -Instance $env:COMPUTERNAME -ViewName "spt_values" | Measure-Object).count -lt 1) {
+            Throw "Incorrect view results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLView   | Measure-Object).count -lt 1) {
+            Throw "Incorrect view results returned"
+        }
+    }
+}
 
 # Get-SQLColumn
 Describe "Get-SQLColumn" {

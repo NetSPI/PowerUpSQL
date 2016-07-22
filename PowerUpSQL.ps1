@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.21
+        Version: 1.0.0.22
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -2768,6 +2768,7 @@ Function Get-SQLColumnSampleData
             Use Luhn formula to check if sample is a valid credit card.
             Column name filter that support wildcards.
             .PARAMETER NoDefaults
+            Don't show columns from default databases.
             .EXAMPLE
             PS C:\> Get-SQLColumnSampleData -verbose -Instance SQLServer1\STANDARDDEV2014 -Keywords "account,credit,card" -SampleSize 5 -ValidateCC| ft -AutoSize
             VERBOSE: SQLServer1\STANDARDDEV2014 : START SEARCH DATA BY COLUMN
@@ -2998,8 +2999,13 @@ Function Get-SQLColumnSampleDataThreaded
             Number of records to sample.
             .PARAMETER Keywords
             Comma seperated list of keywords to search for.
+            .PARAMETER DatabaseName
+            Database to filter on.
+            .PARAMETER NoDefaults
+            Don't show columns from default databases.
             .PARAMETER ValidateCC
             Use Luhn formula to check if sample is a valid credit card.
+
             .PARAMETER Threads
             Number of concurrent host threads.
             .EXAMPLE
@@ -3055,6 +3061,14 @@ Function Get-SQLColumnSampleDataThreaded
         [string]$Keywords = 'Password',
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Database name to filter on.')]
+        [string]$DatabaseName,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't select tables from default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Use Luhn formula to check if sample is a valid credit card.')]
         [switch]$ValidateCC,
 
@@ -3088,14 +3102,21 @@ Function Get-SQLColumnSampleDataThreaded
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
 
-        # Ensure provide instance is processed
+        # set instance to local host by default
+        if(-not $Instance){ 
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
         if($Instance)
-        {
+        {            
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
                 Instance = $Instance
-            }
-            $PipelineItems = $PipelineItems + $ProvideInstance
+            }            
         }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
     }
 
     Process
@@ -3108,6 +3129,8 @@ Function Get-SQLColumnSampleDataThreaded
     {   
         # Define code to be multi-threaded
         $MyScriptBlock = {
+
+            # Set instance
             $Instance = $_.Instance
                      
             # Parse computer name from the instance
@@ -3140,8 +3163,13 @@ Function Get-SQLColumnSampleDataThreaded
                     Write-Verbose -Message "$Instance : - Searching for column names that match criteria..." 
                 }
             
-                # Search for columns   
-                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+                if($NoDefaults){
+                    # Search for columns   
+                    $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults -SuppressVerbose
+                }else{
+                    $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -SuppressVerbose
+                }
+
             }           
         
             # Check if columns were found
@@ -3150,25 +3178,28 @@ Function Get-SQLColumnSampleDataThreaded
                 # List columns found
                 $Columns|
                 ForEach-Object -Process {
-                    $DatabaseName = $_.DatabaseName
-                    $SchemaName = $_.SchemaName
-                    $TableName = $_.TableName
-                    $ColumnName = $_.ColumnName
-                    $AffectedColumn = "[$DatabaseName].[$SchemaName].[$TableName].[$ColumnName]"
-                    $AffectedTable = "[$DatabaseName].[$SchemaName].[$TableName]"
-                    $Query = "USE $DatabaseName; SELECT TOP $SampleSize [$ColumnName] FROM $AffectedTable WHERE [$ColumnName] is not null"
-                    $QueryRowCount = "USE $DatabaseName; SELECT count(CAST([$ColumnName] as VARCHAR(1))) as NumRows FROM $AffectedTable WHERE [$ColumnName] is not null"
+                    $sDatabaseName = $_.DatabaseName
+                    $sSchemaName = $_.SchemaName
+                    $sTableName = $_.TableName
+                    $sColumnName = $_.ColumnName
+                    $AffectedColumn = "[$sDatabaseName].[$sSchemaName].[$sTableName].[$sColumnName]"
+                    $AffectedTable = "[$sDatabaseName].[$sSchemaName].[$sTableName]"
+                    $Query = "USE $sDatabaseName; SELECT TOP $SampleSize [$sColumnName] FROM $AffectedTable WHERE [$sColumnName] is not null"
+                    $QueryRowCount = "USE $sDatabaseName; SELECT count(CAST([$sColumnName] as VARCHAR(200))) as NumRows FROM $AffectedTable WHERE [$sColumnName] is not null"
 
+                    # Status user
                     if( -not $SuppressVerbose)
                     {
                         Write-Verbose -Message "$Instance : - Column match: $AffectedColumn"                               
                         Write-Verbose -Message "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn."
                     }
 
-                    # Query for data
+                    # Get row count for column matches
                     $RowCount = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $QueryRowCount -SuppressVerbose | Select-Object -Property NumRows -ExpandProperty NumRows
+                
+                    # Get sample data
                     Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query $Query -SuppressVerbose |
-                    Select-Object -ExpandProperty $ColumnName |
+                    Select-Object -ExpandProperty $sColumnName |
                     ForEach-Object -Process {                                                                                                              
                         if($ValidateCC)
                         {
@@ -3184,12 +3215,12 @@ Function Get-SQLColumnSampleDataThreaded
                             }
 
                             # Add record
-                            $null = $TblData.Rows.Add($ComputerName, $Instance, $DatabaseName, $SchemaName, $TableName, $ColumnName, $_, $RowCount, $LuhnCheck)                                                                        
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount, $LuhnCheck)                                                                        
                         }
                         else
                         {
                             # Add record
-                            $null = $TblData.Rows.Add($ComputerName, $Instance, $DatabaseName, $SchemaName, $TableName, $ColumnName, $_, $RowCount)                                                                        
+                            $null = $TblData.Rows.Add($ComputerName, $Instance, $sDatabaseName, $sSchemaName, $sTableName, $sColumnName, $_, $RowCount)                                                                        
                         }
                     }
                 }                                          
@@ -3207,6 +3238,7 @@ Function Get-SQLColumnSampleDataThreaded
             {
                 Write-Verbose -Message "$Instance : END SEARCH DATA BY COLUMN"
             }
+            
         }         
 
         # Run scriptblock using multi-threading

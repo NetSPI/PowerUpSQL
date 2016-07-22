@@ -1,4 +1,4 @@
-# PowerUpSQL Pester Tests
+# PowerUpSQL Pester Tests - Baseline Tests
 
 ######################################################
 #
@@ -242,7 +242,6 @@ Describe "Get-SQLConnectionTestThreaded" {
 ######################################################
 
 <#
-Get-SQLColumnSampleDataThreaded 
 Get-SQLAuditDatabaseSpec           
 Get-SQLAuditServerSpec                
 Get-SQLServerCredential                                    
@@ -250,13 +249,44 @@ Get-SQLServerLink
 Get-SQLServerLogin                 
 Get-SQLServerPriv                  
 Get-SQLServerRole                  
-Get-SQLServerRoleMember            
-Get-SQLServiceAccount              
-Get-SQLServiceLocal                
+Get-SQLServerRoleMember                                          
 Get-SQLStoredProcedure                           
 Get-SQLTriggerDdl                  
 Get-SQLTriggerDml                  
 #>
+
+# Get-SQLServiceLocal
+Describe "Get-SQLServiceLocal" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServiceLocal  | Measure-Object).count -lt 1) {
+            Throw "Incorrect service information results returned"
+        }
+    }
+}
+
+# Get-SQLServiceAccount
+Describe "Get-SQLServiceAccount" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServiceAccount  | Measure-Object).count -lt 1) {
+            Throw "Incorrect service information results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServiceAccount -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect service information results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServiceAccount -Instance $env:COMPUTERNAME -Username test -Password test | Measure-Object).count -lt 1) {
+            Throw "Incorrect service information results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServiceAccount    | Measure-Object).count -lt 1) {
+            Throw "Incorrect service information results returned"
+        }
+    }
+}
 
 # Get-SQLServerInfo
 Describe "Get-SQLServerInfo" {
@@ -530,6 +560,46 @@ Describe "Get-SQLColumnSampleData" {
     It "Should accept pipeline input" {
         if ( ( Get-SQLInstanceLocal | Get-SQLColumnSampleData -Keywords "statu" | Measure-Object).count -lt 1) {
             Throw "Incorrect column search & sample data results returned"
+        }
+    }
+}
+
+# Get-SQLColumnSampleDataThreaded
+Describe "Get-SQLColumnSampleDataThreaded" {
+    It "Should return results for the local host" {
+        if ( (Get-SQLColumnSampleDataThreaded  | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLColumnSampleDataThreaded  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLColumnSampleDataThreaded  -Instance $env:COMPUTERNAME -Username test -Password test -Keywords "statu" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
+        }
+    }
+    It "Should accept -Keywords argument" {
+        if ( (Get-SQLColumnSampleDataThreaded  -Instance $env:COMPUTERNAME -Keywords "statu" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
+        }
+    }
+    It "Should accept -SampleSize argument" {
+        if ( (Get-SQLColumnSampleDataThreaded  -Instance $env:COMPUTERNAME -Keywords "statu" -SampleSize 2 | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
+        }
+    }
+    It "Should accept -DatabaseName argument" {
+        if ( (Get-SQLColumnSampleDataThreaded  -Instance $env:COMPUTERNAME -Keywords "statu" -DatabaseName "master" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
+        }
+    }
+
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLColumnSampleDataThreaded -Keywords "statu" | Measure-Object).count -lt 1) {
+            Throw "Incorrect threaded column search & sample data results returned"
         }
     }
 }

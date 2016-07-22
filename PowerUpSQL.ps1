@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.22
+        Version: 1.0.0.23
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -12753,9 +12753,10 @@ function Test-IsLuhnValid
     $checksumDigit = $numberDigits[-1]
     $numberWithoutChecksumDigit = $numberDigits[0..($numberDigits.Count - 2)] -join ''
     $checksum = Get-LuhnCheckSum -Number $numberWithoutChecksumDigit
+    $NumCount = ([string]$numberWithoutChecksumDigit).Length
 
-    if ((($checksum + $checksumDigit) % 10) -eq 0) 
-    {
+    if ((($checksum + $checksumDigit) % 10) -eq 0 -and $NumCount -ge 12) 
+    {       
         Write-Output -InputObject $true
     }
     else 

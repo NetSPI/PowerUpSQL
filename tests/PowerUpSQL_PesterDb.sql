@@ -42,6 +42,9 @@ GO
 CREATE LOGIN [dbouser] WITH PASSWORD = 'dbouser', CHECK_POLICY = OFF;
 GO
 
+-- Create server link login
+CREATE LOGIN [linkuser] WITH PASSWORD = 'linkuser', CHECK_POLICY = OFF;
+GO
 
 ------------------------------------------------------------
 -- Create Test Databases

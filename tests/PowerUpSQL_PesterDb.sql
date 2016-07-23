@@ -414,14 +414,17 @@ EXPIRY_DATE = '2050-10-20';
 GO
 
 -- Create cert login
+If not Exists (select loginname from master.dbo.syslogins where name = 'certuser')
 CREATE LOGIN certuser
 FROM CERTIFICATE sp_sqli2_cert
 
 -- Add cert to stored procedure
+If not Exists (select loginname from master.dbo.syslogins where name = 'certuser')
 ADD SIGNATURE to sp_sqli2
 BY CERTIFICATE sp_sqli2_cert;
 GO
 
 -- Add the certuser to the sysadmin role
+If not Exists (select loginname from master.dbo.syslogins where name = 'certuser')
 EXEC sp_addsrvrolemember 'certuser', 'sysadmin';
 GO

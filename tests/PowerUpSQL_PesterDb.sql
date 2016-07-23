@@ -4,17 +4,24 @@
 ------------------------------------------------------------
 -- Create Test SQL Logins
 ------------------------------------------------------------
- 
--- Create least privilege server login
-CREATE LOGIN [user] WITH PASSWORD = 'user', CHECK_POLICY = OFF;
+
+-- Select master database
+USE master
 GO
  
+--- Create least privilege server login
+If not Exists (select loginname from master.dbo.syslogins where name = 'user')
+CREATE LOGIN [user] WITH PASSWORD = 'user', CHECK_POLICY = OFF;
+GO
+
 -- Create sysadmin server login
+If not Exists (select loginname from master.dbo.syslogins where name = 'admin')
 CREATE LOGIN [admin] WITH PASSWORD = 'admin', CHECK_POLICY = OFF;
 EXEC sp_addsrvrolemember 'admin', 'sysadmin';
 GO
 
 -- Create impersonation login 1
+If not Exists (select loginname from master.dbo.syslogins where name = 'impuser1')
 CREATE LOGIN [impuser1] WITH PASSWORD = 'impuser1', CHECK_POLICY = OFF;
 GO
 
@@ -23,6 +30,7 @@ GRANT IMPERSONATE ON LOGIN::sa to [impuser1];
 GO
 
 -- Create impersonation login 2
+If not Exists (select loginname from master.dbo.syslogins where name = 'impuser2')
 CREATE LOGIN [impuser2] WITH PASSWORD = 'impuser2', CHECK_POLICY = OFF;
 GO
 
@@ -31,6 +39,7 @@ GRANT IMPERSONATE ON LOGIN::impuser2 to [impuser2];
 GO
 
 -- Create impersonation login 3
+If not Exists (select loginname from master.dbo.syslogins where name = 'impuser3')
 CREATE LOGIN [impuser3] WITH PASSWORD = 'impuser2', CHECK_POLICY = OFF;
 GO
 
@@ -39,11 +48,18 @@ GRANT IMPERSONATE ON LOGIN::impuser1 to [impuser3];
 GO
 
 -- Create db_owner login
+If not Exists (select loginname from master.dbo.syslogins where name = 'dbouser')
 CREATE LOGIN [dbouser] WITH PASSWORD = 'dbouser', CHECK_POLICY = OFF;
 GO
 
 -- Create server link login
+If not Exists (select loginname from master.dbo.syslogins where name = 'linkuser')
 CREATE LOGIN [linkuser] WITH PASSWORD = 'linkuser', CHECK_POLICY = OFF;
+GO
+
+-- Create ddladmin login
+If not Exists (select loginname from master.dbo.syslogins where name = 'ddladminuser')
+CREATE LOGIN [ddladminuser] WITH PASSWORD = 'ddladminuser', CHECK_POLICY = OFF;
 GO
 
 ------------------------------------------------------------
@@ -51,10 +67,14 @@ GO
 ------------------------------------------------------------
 
 -- Create testdb for senstive data tests
+If not Exists (select name from master.dbo.sysdatabases where name = 'testdb')
 CREATE DATABASE testdb
+GO
 
--- Create testdb2 for db_ownere tests
+-- Create testdb2 for db_owner tests
+If not Exists (select name from master.dbo.sysdatabases where name = 'testdb2')
 CREATE DATABASE testdb2
+GO
 
 ------------------------------------------------------------
 -- Create Test Database Users
@@ -65,10 +85,11 @@ USE testdb2
 GO
 
 -- Set testdb2 as the default db for dbouser
-ALTER LOGIN [dbouser] with default_database = [dbouser];
+ALTER LOGIN [dbouser] with default_database = [testdb2];
 GO
 
 -- Create database user for dbouser login
+If not Exists (SELECT name FROM sys.database_principals where name = 'dbouser')
 CREATE USER [dbouser] FROM LOGIN [dbouser];
 GO
 
@@ -76,6 +97,30 @@ GO
 EXEC sp_addrolemember [db_owner], [dbouser];
 GO
 
+-- Set testdb2 as the default db for ddladminuser
+ALTER LOGIN [ddladminuser] with default_database = [testdb2];
+GO
+
+-- Create database user for ddladminuser login
+If not Exists (SELECT name FROM sys.database_principals where name = 'ddladminuser')
+CREATE USER [ddladminuser] FROM LOGIN [ddladminuser];
+GO
+
+-- Add the ddladminuser database user to the db_ddladmin role in the testdb2 database
+EXEC sp_addrolemember [db_ddladmin], [ddladminuser];
+GO
+
+-- Select master database
+USE master
+GO
+
+-- Create database user for user login
+If not Exists (SELECT name FROM sys.database_principals where name = 'user')
+CREATE USER [user] FROM LOGIN [user];
+GO
+
+-- Provide the user database user with the CREATE PROCEDURE privilege in the master db
+GRANT CREATE PROCEDURE TO [user]
 
 ------------------------------------------------------------
 -- Create Test Tables

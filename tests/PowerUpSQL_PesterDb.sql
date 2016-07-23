@@ -14,7 +14,7 @@ CREATE LOGIN [admin] WITH PASSWORD = 'admin', CHECK_POLICY = OFF;
 EXEC sp_addsrvrolemember 'admin', 'sysadmin';
 GO
 
--- Create impersonation user 1
+-- Create impersonation login 1
 CREATE LOGIN [impuser1] WITH PASSWORD = 'impuser1', CHECK_POLICY = OFF;
 GO
 
@@ -22,7 +22,7 @@ GO
 GRANT IMPERSONATE ON LOGIN::sa to [impuser1];
 GO
 
--- Create impersonation user 2
+-- Create impersonation login 2
 CREATE LOGIN [impuser2] WITH PASSWORD = 'impuser2', CHECK_POLICY = OFF;
 GO
 
@@ -30,7 +30,7 @@ GO
 GRANT IMPERSONATE ON LOGIN::impuser2 to [impuser2];
 GO
 
--- Create impersonation user 3
+-- Create impersonation login 3
 CREATE LOGIN [impuser3] WITH PASSWORD = 'impuser2', CHECK_POLICY = OFF;
 GO
 
@@ -38,8 +38,17 @@ GO
 GRANT IMPERSONATE ON LOGIN::impuser1 to [impuser3];
 GO
 
--- Create db_owner user
+-- Create db_owner login
 CREATE LOGIN [dbouser] WITH PASSWORD = 'dbouser', CHECK_POLICY = OFF;
+GO
+
+-- Create certuser login
+CREATE LOGIN [certuser] WITH PASSWORD = 'certuser', CHECK_POLICY = OFF;
+EXEC sp_addsrvrolemember 'certuser', 'sysadmin';
+GO
+
+-- Set  for certuser
+ALTER LOGIN [certuser] with default_database = [master];
 GO
 
 
@@ -175,6 +184,7 @@ sp_configure 'xp_cmdshell',1;
 RECONFIGURE;
 GO
 
+
 ------------------------------------------------------------
 -- Create Audit, Server Spec, and Database Spec
 ------------------------------------------------------------
@@ -212,6 +222,26 @@ GO
 ------------------------------------------------------------
 -- Create Test Procedures
 ------------------------------------------------------------
+
+-- Select master database
+USE master
+GO
+
+-- Create procedure vulnerable to SQL injection
+CREATE PROCEDURE sp_sqli1
+@DbName varchar(max)
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+Declare @query as varchar(max)
+SET @query = 'SELECT name FROM master..sysdatabases where name like ''%'+ @DbName+'%'' OR name=''tempdb''';
+EXECUTE(@query)
+END
+GO
+ 
+-- Allow members of PUBLIC to execute it
+GRANT EXECUTE ON sp_sqli1 to PUBLIC
+GO
 
 -- Select master database
 USE master
@@ -255,6 +285,21 @@ WITH EXECUTE AS OWNER
 AS
 EXEC sp_addsrvrolemember 'dbouser','sysadmin'
 GO
+
+CREATE PROCEDURE sp_sqli2
+@DbName varchar(max)
+AS
+BEGIN
+Declare @query as varchar(max)
+SET @query = 'SELECT name FROM master..sysdatabases where name like ''%'+ @DbName+'%'' OR name=''tempdb''';
+EXECUTE(@query)
+END
+GO
+
+-- Allow members of PUBLIC to execute it
+GRANT EXECUTE ON sp_sqli2 to PUBLIC
+GO
+
 
 ------------------------------------------------------------
 -- Create Test Triggers

@@ -42,15 +42,6 @@ GO
 CREATE LOGIN [dbouser] WITH PASSWORD = 'dbouser', CHECK_POLICY = OFF;
 GO
 
--- Create certuser login
-CREATE LOGIN [certuser] WITH PASSWORD = 'certuser', CHECK_POLICY = OFF;
-EXEC sp_addsrvrolemember 'certuser', 'sysadmin';
-GO
-
--- Set  for certuser
-ALTER LOGIN [certuser] with default_database = [master];
-GO
-
 
 ------------------------------------------------------------
 -- Create Test Databases
@@ -81,6 +72,7 @@ GO
 -- Add the dbouser database user to the db_owner role in the testdb2 database
 EXEC sp_addrolemember [db_owner], [dbouser];
 GO
+
 
 ------------------------------------------------------------
 -- Create Test Tables
@@ -348,4 +340,32 @@ if (select count(*) from sys.sql_logins where name like 'SysAdmin_DML') = 0
 	
 	-- Add the login to the sysadmin fixed server role
 	EXEC sp_addsrvrolemember 'SysAdmin_DML', 'sysadmin';
+GO
+
+
+------------------------------------------------------------
+-- Create Test Keys, Certificates, and Cert Logins
+------------------------------------------------------------
+
+-- Create a master key for the database
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'SuperSecretPasswordHere!';
+GO
+
+-- Create certificate for the sp_sqli2 procedure
+CREATE CERTIFICATE sp_sqli2_cert
+WITH SUBJECT = 'This should be used to sign the sp_sqli2',
+EXPIRY_DATE = '2050-10-20';
+GO
+
+-- Create cert login
+CREATE LOGIN certuser
+FROM CERTIFICATE sp_sqli2_cert
+
+-- Add cert to stored procedure
+ADD SIGNATURE to sp_sqli2
+BY CERTIFICATE sp_sqli2_cert;
+GO
+
+-- Add the certuser to the sysadmin role
+EXEC sp_addsrvrolemember 'certuser', 'sysadmin';
 GO

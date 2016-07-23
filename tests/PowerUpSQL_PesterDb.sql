@@ -122,6 +122,7 @@ GO
 -- Provide the user database user with the CREATE PROCEDURE privilege in the master db
 GRANT CREATE PROCEDURE TO [user]
 
+
 ------------------------------------------------------------
 -- Create Test Tables
 ------------------------------------------------------------
@@ -131,17 +132,20 @@ USE testdb
 GO
 
 -- Create noclist table for ownership chaining test
+If not Exists (SELECT name FROM sys.tables WHERE name = 'NOCList')
 CREATE TABLE dbo.NOCList
 (SpyName text NOT NULL,RealName text NULL)
 GO
 
 -- Create tracking table for sensitive data test
+If not Exists (SELECT name FROM sys.tables WHERE name = 'tracking')
  CREATE TABLE [dbo].[tracking](
 	[card] [varchar](50) NULL
 ) ON [PRIMARY]
 GO
 
 -- Create secrets table for sensitive data test
+If not Exists (SELECT name FROM sys.tables WHERE name = 'secrets')
 CREATE TABLE [dbo].[secrets](
 	[password] [nchar](200) NULL
 ) ON [PRIMARY]
@@ -157,6 +161,7 @@ USE testdb
 GO
 
 -- Add sample records to nolist table for ownership chaining test
+If Exists (SELECT name FROM sys.tables WHERE name = 'NOCList')
 INSERT dbo.NOCList (SpyName, RealName)
 VALUES ('James Bond','Sean Connery')
 INSERT dbo.NOCList (SpyName, RealName)
@@ -182,6 +187,7 @@ USE testdb
 GO
 
 -- Add sample records to tracking table for sensitive data test
+If Exists (SELECT name FROM sys.tables WHERE name = 'tracking')
 INSERT INTO [dbo].[tracking] ([card])
 VALUES ('6011998081409707')
 INSERT INTO [dbo].[tracking] ([card])
@@ -196,6 +202,8 @@ GO
 USE testdb
 GO
 
+-- Add sample records to secrets table for sensitive data test
+If Exists (SELECT name FROM sys.tables WHERE name = 'secrets')
 INSERT INTO [dbo].[secrets] ([password])
 VALUES ('password1')
 INSERT INTO [dbo].[secrets] ([password])

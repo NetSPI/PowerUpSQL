@@ -10,18 +10,26 @@ USE master
 GO
  
 --- Create least privilege server login
+If Exists (select loginname from master.dbo.syslogins where name = 'test_login_user')
+DROP LOGIN [test_login_user]
+GO
+
 If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_user')
 CREATE LOGIN [test_login_user] WITH PASSWORD = 'test_login_user', CHECK_POLICY = OFF;
 GO
 
 -- Create sysadmin server login
+If Exists (select loginname from master.dbo.syslogins where name = 'test_login_admin')
+DROP LOGIN [test_login_admin]
+GO
+
 If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_admin')
 CREATE LOGIN [test_login_admin] WITH PASSWORD = 'test_login_admin', CHECK_POLICY = OFF;
 EXEC sp_addsrvrolemember 'test_login_admin', 'sysadmin';
 GO
 
 -- Create impersonation login 1
-If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_impersonate1')
+if not Exists (select loginname from master.dbo.syslogins where name = 'test_login_impersonate1')
 CREATE LOGIN [test_login_impersonate1] WITH PASSWORD = 'test_login_impersonate1', CHECK_POLICY = OFF;
 GO
 

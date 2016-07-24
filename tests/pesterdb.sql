@@ -1,5 +1,5 @@
--- Script: PowerUpSQL_PesterDb.sql
--- Description: This is a script for setting up the local SQL Server instance for Pester Tests.
+-- Script: pesterdb.sql
+-- Description: This script can be used to configure a new SQL Server 2014 instance for PowerUpSQL Pester tests.
 
 ------------------------------------------------------------
 -- Create Test SQL Logins
@@ -10,56 +10,64 @@ USE master
 GO
  
 --- Create least privilege server login
-If not Exists (select loginname from master.dbo.syslogins where name = 'user')
-CREATE LOGIN [user] WITH PASSWORD = 'user', CHECK_POLICY = OFF;
+If Exists (select loginname from master.dbo.syslogins where name = 'test_login_user')
+DROP LOGIN [test_login_user]
+GO
+
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_user')
+CREATE LOGIN [test_login_user] WITH PASSWORD = 'test_login_user', CHECK_POLICY = OFF;
 GO
 
 -- Create sysadmin server login
-If not Exists (select loginname from master.dbo.syslogins where name = 'admin')
-CREATE LOGIN [admin] WITH PASSWORD = 'admin', CHECK_POLICY = OFF;
-EXEC sp_addsrvrolemember 'admin', 'sysadmin';
+If Exists (select loginname from master.dbo.syslogins where name = 'test_login_admin')
+DROP LOGIN [test_login_admin]
+GO
+
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_admin')
+CREATE LOGIN [test_login_admin] WITH PASSWORD = 'test_login_admin', CHECK_POLICY = OFF;
+EXEC sp_addsrvrolemember 'test_login_admin', 'sysadmin';
 GO
 
 -- Create impersonation login 1
-If not Exists (select loginname from master.dbo.syslogins where name = 'impuser1')
-CREATE LOGIN [impuser1] WITH PASSWORD = 'impuser1', CHECK_POLICY = OFF;
+if not Exists (select loginname from master.dbo.syslogins where name = 'test_login_impersonate1')
+CREATE LOGIN [test_login_impersonate1] WITH PASSWORD = 'test_login_impersonate1', CHECK_POLICY = OFF;
 GO
 
--- Grant impersonate on sa to impuser1
-GRANT IMPERSONATE ON LOGIN::sa to [impuser1];
+-- Grant impersonate on sa to test_login_impersonate1
+GRANT IMPERSONATE ON LOGIN::sa to [test_login_impersonate1];
 GO
 
 -- Create impersonation login 2
-If not Exists (select loginname from master.dbo.syslogins where name = 'impuser2')
-CREATE LOGIN [impuser2] WITH PASSWORD = 'impuser2', CHECK_POLICY = OFF;
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_impersonate2')
+CREATE LOGIN [test_login_impersonate2] WITH PASSWORD = 'test_login_impersonate2', CHECK_POLICY = OFF;
 GO
 
--- Grant impersonate on impuser1 to impuser2
-GRANT IMPERSONATE ON LOGIN::impuser2 to [impuser2];
+-- Grant impersonate on test_login_impersonate1 to test_login_impersonate2
+GRANT IMPERSONATE ON LOGIN::test_login_impersonate2 to [test_login_impersonate2];
 GO
 
 -- Create impersonation login 3
-If not Exists (select loginname from master.dbo.syslogins where name = 'impuser3')
-CREATE LOGIN [impuser3] WITH PASSWORD = 'impuser2', CHECK_POLICY = OFF;
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_impersonate3')
+CREATE LOGIN [test_login_impersonate3] WITH PASSWORD = 'test_login_impersonate2', CHECK_POLICY = OFF;
 GO
 
--- Grant impersonate on impuser2 to impuser3
-GRANT IMPERSONATE ON LOGIN::impuser1 to [impuser3];
+-- Grant impersonate on test_login_impersonate2 to test_login_impersonate3
+GRANT IMPERSONATE ON LOGIN::test_login_impersonate1 to [test_login_impersonate3];
 GO
 
 -- Create db_owner login
-If not Exists (select loginname from master.dbo.syslogins where name = 'dbouser')
-CREATE LOGIN [dbouser] WITH PASSWORD = 'dbouser', CHECK_POLICY = OFF;
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_dbowner')
+CREATE LOGIN [test_login_dbowner] WITH PASSWORD = 'test_login_dbowner', CHECK_POLICY = OFF;
 GO
 
 -- Create ownership chaining login
-If not Exists (select loginname from master.dbo.syslogins where name = 'chainlogin')
-CREATE LOGIN [chainlogin] WITH PASSWORD = 'chainlogin', CHECK_POLICY = OFF;
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_ownerchain')
+CREATE LOGIN [test_login_ownerchain] WITH PASSWORD = 'test_login_ownerchain', CHECK_POLICY = OFF;
 GO
 
 -- Create server link login
-If not Exists (select loginname from master.dbo.syslogins where name = 'linkuser')
-CREATE LOGIN [linkuser] WITH PASSWORD = 'linkuser', CHECK_POLICY = OFF;
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_dblink')
+CREATE LOGIN [test_login_dblink] WITH PASSWORD = 'test_login_dblink', CHECK_POLICY = OFF;
 GO
 
 -- Create ddladmin login
@@ -67,9 +75,9 @@ If not Exists (select loginname from master.dbo.syslogins where name = 'ddladmin
 CREATE LOGIN [ddladminuser] WITH PASSWORD = 'ddladminuser', CHECK_POLICY = OFF;
 GO
 
--- Create  credlogin login
-If not Exists (select loginname from master.dbo.syslogins where name = 'credlogin')
-CREATE LOGIN [credlogin] WITH PASSWORD = 'credlogin', CHECK_POLICY = OFF;
+-- Create  test_login_credential login
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_credential')
+CREATE LOGIN [test_login_credential] WITH PASSWORD = 'test_login_credential', CHECK_POLICY = OFF;
 GO
 
 -- Create credential
@@ -79,7 +87,7 @@ GO
 
 -- Add credential to login
 If not Exists (select name from sys.credentials where name = 'MyCred1')
-ALTER LOGIN credlogin
+ALTER LOGIN test_login_credential
 WITH CREDENTIAL = MyCred1;
 GO
 
@@ -90,7 +98,7 @@ GO
 
 -- Add login to role
 If not Exists (select name from sys.server_principals  where name = 'EvilServerRole')
-EXEC sp_addsrvrolemember 'user', 'EvilServerRole';
+EXEC sp_addsrvrolemember 'test_login_user', 'EvilServerRole';
 GO
 
 
@@ -108,9 +116,9 @@ If not Exists (select name from master.dbo.sysdatabases where name = 'testdb2')
 CREATE DATABASE testdb2
 GO
 
--- Create database db1
-If not Exists (select name from master.dbo.sysdatabases where name = 'db1')
-CREATE DATABASE DB1
+-- Create database testdb3
+If not Exists (select name from master.dbo.sysdatabases where name = 'testdb3')
+CREATE DATABASE testdb3
 GO
 
 ------------------------------------------------------------
@@ -121,17 +129,17 @@ GO
 USE testdb2 
 GO
 
--- Set testdb2 as the default db for dbouser
-ALTER LOGIN [dbouser] with default_database = [testdb2];
+-- Set testdb2 as the default db for test_login_dbowner
+ALTER LOGIN [test_login_dbowner] with default_database = [testdb2];
 GO
 
--- Create database user for dbouser login
-If not Exists (SELECT name FROM sys.database_principals where name = 'dbouser')
-CREATE USER [dbouser] FROM LOGIN [dbouser];
+-- Create database user for test_login_dbowner login
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_dbowner')
+CREATE USER [test_login_dbowner] FROM LOGIN [test_login_dbowner];
 GO
 
--- Add the dbouser database user to the db_owner role in the testdb2 database
-EXEC sp_addrolemember [db_owner], [dbouser];
+-- Add the test_login_dbowner database user to the db_owner role in the testdb2 database
+EXEC sp_addrolemember [db_owner], [test_login_dbowner];
 GO
 
 -- Set testdb2 as the default db for ddladminuser
@@ -152,25 +160,25 @@ USE master
 GO
 
 -- Create database user for user login
-If not Exists (SELECT name FROM sys.database_principals where name = 'user')
-CREATE USER [user] FROM LOGIN [user];
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_user')
+CREATE USER [test_login_user] FROM LOGIN [test_login_user];
 GO
 
 -- Provide the user database user with the CREATE PROCEDURE privilege in the master db
-GRANT CREATE PROCEDURE TO [user]
+GRANT CREATE PROCEDURE TO [test_login_user]
 
--- Select db1 database
-USE db1
+-- Select testdb3 database
+USE testdb3
 GO
 
--- Set default database for chainlogin
-If not Exists (SELECT name FROM sys.database_principals where name = 'chainlogin')
-ALTER LOGIN [chainlogin] with default_database = [DB1];
+-- Set default database for test_login_ownerchain
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_ownerchain')
+ALTER LOGIN [test_login_ownerchain] with default_database = [testdb3];
 GO
 
--- Create database account for chainlogin
-If not Exists (SELECT name FROM sys.database_principals where name = 'chainlogin')
-CREATE USER [chainlogin] FROM LOGIN [chainlogin];
+-- Create database account for test_login_ownerchain
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_ownerchain')
+CREATE USER [test_login_ownerchain] FROM LOGIN [test_login_ownerchain];
 GO
 
 -- Select testdb
@@ -183,7 +191,7 @@ GO
 
 -- Add user to role
 If not Exists (SELECT name FROM sys.database_principals where name = 'EvilRole1')
-EXEC sp_addrolemember 'EvilRole1','user';  
+EXEC sp_addrolemember 'EvilRole1','test_login_user';  
 
 ------------------------------------------------------------
 -- Create Test Tables
@@ -213,8 +221,8 @@ CREATE TABLE [dbo].[secrets](
 ) ON [PRIMARY]
 GO
 
--- Select db1 databases
-USE db1
+-- Select testdb3 databases
+USE testdb3
 GO
 
 -- Create table1
@@ -232,8 +240,8 @@ CREATE TABLE dbo.NOCList2
 -- Create Test Views
 ------------------------------------------------------------
 
--- Select db1 databases
-USE db1
+-- Select testdb3 databases
+USE testdb3
 GO
 
 -- Create view nocview
@@ -247,7 +255,7 @@ GO
 
 -- Grant select privilege to chainuser
 if exists (select name from sys.views where name = 'nocview')
-GRANT SELECT ON OBJECT::dbo.NocView TO chainlogin
+GRANT SELECT ON OBJECT::dbo.NocView TO test_login_ownerchain
 GO
 
 -- Create view nocview2
@@ -322,8 +330,8 @@ INSERT INTO [dbo].[secrets] ([password])
 VALUES ('SueprPassword123!')
 GO
 
--- Select db1 databases
-USE db1
+-- Select testdb3 databases
+USE testdb3
 GO
 
 -- Add sample records to table
@@ -404,6 +412,7 @@ USE master
 GO
  
 -- Create audit
+if not exists (select * FROM sys.server_audits where name = 'Audit_Object_Changes')
 CREATE SERVER AUDIT Audit_Object_Changes
 TO APPLICATION_LOG
 WITH (QUEUE_DELAY = 1000, ON_FAILURE = CONTINUE)
@@ -412,6 +421,7 @@ WITH (STATE = ON)
 GO
 
 -- Create server audit specification
+if not exists (select name from sys.server_audit_specifications where name = 'Audit_Server_Level_Object_Changes')
 CREATE SERVER AUDIT SPECIFICATION Audit_Server_Level_Object_Changes
 FOR SERVER AUDIT Audit_Object_Changes
 ADD (SERVER_OBJECT_CHANGE_GROUP),
@@ -422,6 +432,7 @@ WITH (STATE = ON)
 GO
 
 -- Create the database audit specification
+if not exists (select name from sys.database_audit_specifications where name = 'Audit_Database_Level_Object_Changes')
 CREATE DATABASE AUDIT SPECIFICATION Audit_Database_Level_Object_Changes
 FOR SERVER AUDIT Audit_Object_Changes
 ADD (DATABASE_OBJECT_CHANGE_GROUP) 
@@ -438,6 +449,10 @@ USE master
 GO
 
 -- Create procedure vulnerable to SQL injection
+-- Create view nocview
+IF Object_ID('sp_sqli1') IS NOT NULL
+    DROP PROC sp_sqli1
+GO
 CREATE PROCEDURE sp_sqli1
 @DbName varchar(max)
 WITH EXECUTE AS OWNER
@@ -450,6 +465,7 @@ END
 GO
  
 -- Allow members of PUBLIC to execute it
+if exists (select name from sys.procedures where name = 'sp_sqli1')
 GRANT EXECUTE ON sp_sqli1 to PUBLIC
 GO
 
@@ -458,6 +474,9 @@ USE master
 GO
 
 -- Create proc to add sysadmin
+IF Object_ID('sp_add_backdoor_account') IS NOT NULL
+    DROP PROC sp_add_backdoor_account
+GO
 CREATE PROCEDURE sp_add_backdoor_account
 AS
 CREATE LOGIN backdoor_account WITH PASSWORD = 'backdoor_account', CHECK_POLICY = OFF;
@@ -465,6 +484,9 @@ EXEC sp_addsrvrolemember 'backdoor_account', 'sysadmin';
 GO
  
 -- Create proc to download and run powershell code
+IF Object_ID('sp_add_backdoor') IS NOT NULL
+    DROP PROC sp_add_backdoor
+GO
 CREATE PROCEDURE sp_add_backdoor
 AS
 -- Download and execute PowerShell code from the internet
@@ -488,13 +510,20 @@ GO
 USE testdb2
 GO
 
--- Create procedure to add dbouser to the sysadmin fixed server role (should be execute as db_owner)
+-- Create procedure to add test_login_dbowner to the sysadmin fixed server role (should be execute as db_owner)
+IF Object_ID('sp_elevate_me') IS NOT NULL
+    DROP PROC sp_elevate_me
+GO
 CREATE PROCEDURE sp_elevate_me
 WITH EXECUTE AS OWNER
 AS
-EXEC sp_addsrvrolemember 'dbouser','sysadmin'
+EXEC sp_addsrvrolemember 'test_login_dbowner','sysadmin'
 GO
 
+-- Create sp_sqli2 procedure
+IF Object_ID('sp_sqli2') IS NOT NULL
+    DROP PROC sp_sqli2
+GO
 CREATE PROCEDURE sp_sqli2
 @DbName varchar(max)
 AS
@@ -506,14 +535,18 @@ END
 GO
 
 -- Allow members of PUBLIC to execute it
+if exists (select name from sys.procedures where name  = 'sp_sqli2')
 GRANT EXECUTE ON sp_sqli2 to PUBLIC
 GO
 
--- Select database db1
-USE db1
+-- Select database testdb3
+USE testdb3
 GO
 
 -- Create procedure sp_findspy
+IF Object_ID('sp_findspy') IS NOT NULL
+    DROP PROC sp_findspy
+GO
 CREATE PROCEDURE sp_findspy
 @spy varchar(max)
 AS
@@ -525,17 +558,22 @@ END
 GO
 
 -- Allow the user to execute it
-GRANT EXECUTE ON sp_findspy to chainlogin
+if exists (select name from sys.procedures where name = 'sp_findspy')
+GRANT EXECUTE ON sp_findspy to test_login_ownerchain
 GO
 
 -- Create procedure 2
+IF Object_ID('sp_findspy2') IS NOT NULL
+    DROP PROC sp_findspy2
+GO
 CREATE PROCEDURE sp_findspy2
 AS
 SELECT * FROM NOCView2 
 GO
 
 -- Allow the user to execute it
-GRANT EXECUTE ON sp_findspy2 to chainlogin
+if exists (select name from sys.procedures where name = 'sp_findspy2')
+GRANT EXECUTE ON sp_findspy2 to test_login_ownerchain
 GO
 
 
@@ -548,6 +586,10 @@ USE master
 GO
 
 -- Create the DDL trigger
+IF exists (select name from sys.server_triggers where name = 'persistence_ddl_1')
+    DROP TRIGGER [persistence_ddl_1] on all server
+GO
+
 CREATE Trigger [persistence_ddl_1]
 ON ALL Server
 FOR DDL_LOGIN_EVENTS
@@ -571,6 +613,9 @@ USE testdb
 GO
  
 -- Create the DML trigger
+IF Object_ID('persistence_dml_1') IS NOT NULL
+    DROP trigger persistence_dml_1
+GO
 CREATE TRIGGER [persistence_dml_1]
 ON testdb.dbo.NOCList 
 FOR INSERT, UPDATE, DELETE AS
@@ -593,7 +638,11 @@ GO
 -- Create Test Keys, Certificates, and Cert Logins
 ------------------------------------------------------------
 
+-- Select master database
+USE master
+
 -- Create a master key for the database
+IF (select count(name)  from sys.symmetric_keys where name like '%DatabaseMasterKey%') = 0
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'SuperSecretPasswordHere!';
 GO
 

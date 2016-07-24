@@ -237,7 +237,6 @@ Describe "Get-SQLConnectionTestThreaded" {
     }
 }
 
-
 #endregion
 
 ######################################################
@@ -1414,6 +1413,5 @@ Describe "Get-SQLFuzzServerLogin" {
         }
     }
 }
-
 
 #endregion

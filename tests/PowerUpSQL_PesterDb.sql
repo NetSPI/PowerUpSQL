@@ -177,10 +177,12 @@ GO
 USE testdb
 
 -- Create custom role
+If not Exists (SELECT name FROM sys.database_principals where name = 'EvilRole1')
 CREATE ROLE EvilRole1 AUTHORIZATION db_owner;  
 GO  
 
 -- Add user to role
+If not Exists (SELECT name FROM sys.database_principals where name = 'EvilRole1')
 EXEC sp_addrolemember 'EvilRole1','user';  
 
 ------------------------------------------------------------

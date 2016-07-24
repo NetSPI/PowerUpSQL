@@ -132,10 +132,19 @@ GO
 -- Provide the user database user with the CREATE PROCEDURE privilege in the master db
 GRANT CREATE PROCEDURE TO [user]
 
+-- Select db1 database
+USE db1
+GO
 
--- Create database account for the user
+-- Set default database for chainlogin
+If not Exists (SELECT name FROM sys.database_principals where name = 'chainlogin')
 ALTER LOGIN [chainlogin] with default_database = [DB1];
+GO
+
+-- Create database account for chainlogin
+If not Exists (SELECT name FROM sys.database_principals where name = 'chainlogin')
 CREATE USER [chainlogin] FROM LOGIN [chainlogin];
+GO
 
 
 ------------------------------------------------------------
@@ -171,10 +180,12 @@ USE db1
 GO
 
 -- Create table1
+If not Exists (SELECT name FROM sys.tables WHERE name = 'NOCList')
 CREATE TABLE dbo.NOCList
 (SpyName text NOT NULL,RealName text NULL)
 
 -- Create table2
+If not Exists (SELECT name FROM sys.tables WHERE name = 'NOCList2')
 CREATE TABLE dbo.NOCList2
 (SpyName text NOT NULL,RealName text NULL)
 
@@ -187,16 +198,20 @@ CREATE TABLE dbo.NOCList2
 USE db1
 GO
 
--- Create view 1
+-- Create view nocview
 CREATE VIEW NocView AS
 SELECT * FROM NOCList
+GO
 
--- Grant select privilege to user
+-- Grant select privilege to chainuser
 GRANT SELECT ON OBJECT::dbo.NocView TO chainlogin
+GO
 
--- Create view 2
-CREATE VIEW NocView2 AS
+-- Create view nocview2
+CREATE VIEW NocView2 
+AS
 SELECT * FROM NOCList2
+GO
 
 
 ------------------------------------------------------------

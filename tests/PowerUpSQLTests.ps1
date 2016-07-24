@@ -1,8 +1,9 @@
 # PowerUpSQL Pester Tests
 # Tested on SQL Server 2014
 # This should used against a local SQL Server instance that meets the following criteria:
-# - Setup in mixed mode
-# - The windows user running the script hash sysadmin on the local SQL Server default instance
+# - SQL Server 2014
+# - Mixed mode
+# - The windows user running the script has sysadmin
 # - The pesterdb.sql configuration script was run on the SQL Server by a sysadmin
 
 ######################################################
@@ -235,7 +236,6 @@ Describe "Get-SQLConnectionTestThreaded" {
         }
     }
 }
-
 
 #endregion
 
@@ -1413,6 +1413,5 @@ Describe "Get-SQLFuzzServerLogin" {
         }
     }
 }
-
 
 #endregion

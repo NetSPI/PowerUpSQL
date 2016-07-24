@@ -232,6 +232,21 @@ sp_configure 'xp_cmdshell',1;
 RECONFIGURE;
 GO
 
+-- Select the master database
+USE master
+GO
+
+-- Create server link
+If Exists (select srvname from master..sysservers where srvname = 'sqlserver1\instance1')
+EXEC master.dbo.sp_addlinkedserver 
+    	@server = N'sqlserver1\instance1', 
+   	@srvproduct=N'SQL Server' ;
+GO
+
+-- Add login to link
+If Exists (select srvname from master..sysservers where srvname = 'sqlserver1\instance1')
+EXEC sp_addlinkedsrvlogin 'sqlserver1\instance1', 'false', NULL, 'linklogin', 'linklogin';
+GO
 
 ------------------------------------------------------------
 -- Create Audit, Server Spec, and Database Spec
@@ -408,6 +423,7 @@ CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'SuperSecretPasswordHere!';
 GO
 
 -- Create certificate for the sp_sqli2 procedure
+If not Exists (select name from sys.certificates where name = 'sp_sqli2_cert')
 CREATE CERTIFICATE sp_sqli2_cert
 WITH SUBJECT = 'This should be used to sign the sp_sqli2',
 EXPIRY_DATE = '2050-10-20';

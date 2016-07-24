@@ -1,5 +1,6 @@
 -- Script: PowerUpSQL_PesterDb.sql
 -- Description: This is a script for setting up the local SQL Server instance for Pester Tests.
+-- SQL Server Version: 2014
 
 ------------------------------------------------------------
 -- Create Test SQL Logins
@@ -578,9 +579,10 @@ USE master
 GO
 
 -- Create the DDL trigger
-IF Object_ID('persistence_ddl_1') IS NOT NULL
-    DROP trigger persistence_ddl_1
+IF exists (select name from sys.server_triggers where name = 'persistence_ddl_1')
+    DROP TRIGGER [persistence_ddl_1] on all server
 GO
+
 CREATE Trigger [persistence_ddl_1]
 ON ALL Server
 FOR DDL_LOGIN_EVENTS
@@ -629,7 +631,11 @@ GO
 -- Create Test Keys, Certificates, and Cert Logins
 ------------------------------------------------------------
 
+-- Select master database
+USE master
+
 -- Create a master key for the database
+IF (select count(name)  from sys.symmetric_keys where name like '%DatabaseMasterKey%') = 0
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'SuperSecretPasswordHere!';
 GO
 

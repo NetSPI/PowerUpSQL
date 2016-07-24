@@ -84,10 +84,14 @@ WITH CREDENTIAL = MyCred1;
 GO
 
 -- Create custom server role
+If not Exists (select name from sys.server_principals  where name = 'EvilServerRole')
 CREATE SERVER ROLE EvilServerRole
+GO
 
 -- Add login to role
-EXEC sp_addsrvrolemember 'test', 'EvilServerRole';
+If not Exists (select name from sys.server_principals  where name = 'EvilServerRole')
+EXEC sp_addsrvrolemember 'user', 'EvilServerRole';
+GO
 
 
 ------------------------------------------------------------

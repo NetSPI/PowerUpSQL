@@ -83,6 +83,12 @@ ALTER LOGIN credlogin
 WITH CREDENTIAL = MyCred1;
 GO
 
+-- Create custom server role
+CREATE SERVER ROLE EvilServerRole
+
+-- Add login to role
+EXEC sp_addsrvrolemember 'test', 'EvilServerRole';
+
 
 ------------------------------------------------------------
 -- Create Test Databases
@@ -163,6 +169,15 @@ If not Exists (SELECT name FROM sys.database_principals where name = 'chainlogin
 CREATE USER [chainlogin] FROM LOGIN [chainlogin];
 GO
 
+-- Select testdb
+USE testdb
+
+-- Create custom role
+CREATE ROLE EvilRole1 AUTHORIZATION db_owner;  
+GO  
+
+-- Add user to role
+EXEC sp_addrolemember 'EvilRole1','user';  
 
 ------------------------------------------------------------
 -- Create Test Tables

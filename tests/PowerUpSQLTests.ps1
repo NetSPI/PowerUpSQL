@@ -1,6 +1,9 @@
 # PowerUpSQL Pester Tests
-# Used to verify PowerUpSQL Pester tests work with pesterdb setup.
 # Tested on SQL Server 2014
+# This should use against a local SQL Server instance that meets the following criteria:
+# - Setup in mixed mode
+# - The windows user running the script hash sysadmin on the local SQL Server default instance
+# - The pesterdb.sql configuration script was run on the SQL Server by a sysadmin
 
 ######################################################
 #
@@ -242,15 +245,165 @@ Describe "Get-SQLConnectionTestThreaded" {
 #
 ######################################################
 
-<#                                                                            
-Get-SQLServerLogin                 
-Get-SQLServerPriv                  
-Get-SQLServerRole                  
-Get-SQLServerRoleMember                                          
-Get-SQLStoredProcedure                           
-Get-SQLTriggerDdl                  
-Get-SQLTriggerDml                  
-#>
+# Get-SQLTriggerDml  
+Describe "Get-SQLTriggerDml  " {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLTriggerDml    | Measure-Object).count -lt 1) {
+            Throw "Incorrect DML trigger results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLTriggerDml   -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect DML trigger results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLTriggerDml   -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect DML trigger results returned"
+        }
+    }
+    It "Should accept -TriggerName arguments" {
+        if ( (Get-SQLTriggerDml  -Instance $env:COMPUTERNAME -TriggerName "persistence_dml_1" | Measure-Object).count -lt 1) {
+            Throw "Incorrect DML trigger results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLTriggerDml  | Measure-Object).count -lt 1) {
+            Throw "Incorrect DML trigger results returned"
+        }
+    }
+}
+
+# Get-SQLTriggerDdl 
+Describe "Get-SQLTriggerDdl " {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLTriggerDdl   | Measure-Object).count -lt 1) {
+            Throw "Incorrect DDL trigger results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLTriggerDdl  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect DDL trigger results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLTriggerDdl  -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect DDL trigger results returned"
+        }
+    }
+    It "Should accept -TriggerName arguments" {
+        if ( (Get-SQLTriggerDdl -Instance $env:COMPUTERNAME -TriggerName "persistence_ddl_1" | Measure-Object).count -lt 1) {
+            Throw "Incorrect DDL trigger results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLTriggerDdl | Measure-Object).count -lt 1) {
+            Throw "Incorrect DDL trigger results returned"
+        }
+    }
+}
+
+# Get-SQLStoredProcedure  
+Describe "Get-SQLStoredProcedure  " {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLStoredProcedure    | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLStoredProcedure   -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLStoredProcedure   -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+    It "Should accept -DatabaseName arguments" {
+        if ( (Get-SQLStoredProcedure  -Instance $env:COMPUTERNAME -DatabaseName "testdb" | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+    It "Should accept -ProcedureName arguments" {
+        if ( (Get-SQLStoredProcedure  -Instance $env:COMPUTERNAME -ProcedureName "sp_findspy2" | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+    It "Should accept -NoDefaults flag" {
+        if ( (Get-SQLStoredProcedure -Instance $env:COMPUTERNAME -NoDefaults | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLStoredProcedure  | Measure-Object).count -lt 1) {
+            Throw "Incorrect procedure results returned"
+        }
+    }
+}
+
+# Get-SQLServerRole
+Describe "Get-SQLServerRole" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerRole  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server role results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerRole -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server role results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerRole -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect server role results returned"
+        }
+    }
+    It "Should accept -RolePrincipalName arguments" {
+        if ( (Get-SQLServerRole -Instance $env:COMPUTERNAME -RolePrincipalName "EvilServerRole" | Measure-Object).count -lt 1) {
+            Throw "Incorrect server role results returned"
+        }
+    }
+    It "Should accept -RoleOwner arguments" {
+        if ( (Get-SQLServerRole -Instance $env:COMPUTERNAME -RoleOwner "sa" | Measure-Object).count -lt 1) {
+            Throw "Incorrect server role results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerRole | Measure-Object).count -lt 1) {
+            Throw "Incorrect server role results returned"
+        }
+    }
+}
+
+# Get-SQLServerPriv
+Describe "Get-SQLServerPriv" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerPriv  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server priv results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerPriv -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server priv results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerPriv -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect server priv results returned"
+        }
+    }
+    It "Should accept -PermissionName arguments" {
+        if ( (Get-SQLServerPriv -Instance $env:COMPUTERNAME -PermissionName "Impersonate" | Measure-Object).count -lt 1) {
+            Throw "Incorrect server priv results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerPriv | Measure-Object).count -lt 1) {
+            Throw "Incorrect server priv results returned"
+        }
+    }
+}
 
 # Get-SQLServerLogin
 Describe "Get-SQLServerLogin" {

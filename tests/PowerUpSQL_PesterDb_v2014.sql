@@ -1,6 +1,5 @@
--- Script: PowerUpSQL_PesterDb.sql
--- Description: This is a script for setting up the local SQL Server instance for Pester Tests.
--- SQL Server Version: 2014
+-- Script: PowerUpSQL_PesterDb_v2014.sql
+-- Description: This is a script for setting up a SQL Server 2014 instance for PowerUpSQL Pester Tests.
 
 ------------------------------------------------------------
 -- Create Test SQL Logins

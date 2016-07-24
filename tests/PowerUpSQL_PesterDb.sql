@@ -52,6 +52,11 @@ If not Exists (select loginname from master.dbo.syslogins where name = 'dbouser'
 CREATE LOGIN [dbouser] WITH PASSWORD = 'dbouser', CHECK_POLICY = OFF;
 GO
 
+-- Create ownership chaining login
+If not Exists (select loginname from master.dbo.syslogins where name = 'chainlogin')
+CREATE LOGIN [chainlogin] WITH PASSWORD = 'chainlogin', CHECK_POLICY = OFF;
+GO
+
 -- Create server link login
 If not Exists (select loginname from master.dbo.syslogins where name = 'linkuser')
 CREATE LOGIN [linkuser] WITH PASSWORD = 'linkuser', CHECK_POLICY = OFF;
@@ -74,6 +79,11 @@ GO
 -- Create testdb2 for db_owner tests
 If not Exists (select name from master.dbo.sysdatabases where name = 'testdb2')
 CREATE DATABASE testdb2
+GO
+
+-- Create database db1
+If not Exists (select name from master.dbo.sysdatabases where name = 'db1')
+CREATE DATABASE DB1
 GO
 
 ------------------------------------------------------------
@@ -123,6 +133,11 @@ GO
 GRANT CREATE PROCEDURE TO [user]
 
 
+-- Create database account for the user
+ALTER LOGIN [chainlogin] with default_database = [DB1];
+CREATE USER [chainlogin] FROM LOGIN [chainlogin];
+
+
 ------------------------------------------------------------
 -- Create Test Tables
 ------------------------------------------------------------
@@ -150,6 +165,38 @@ CREATE TABLE [dbo].[secrets](
 	[password] [nchar](200) NULL
 ) ON [PRIMARY]
 GO
+
+-- Select db1 databases
+USE db1
+GO
+
+-- Create table1
+CREATE TABLE dbo.NOCList
+(SpyName text NOT NULL,RealName text NULL)
+
+-- Create table2
+CREATE TABLE dbo.NOCList2
+(SpyName text NOT NULL,RealName text NULL)
+
+
+------------------------------------------------------------
+-- Create Test Views
+------------------------------------------------------------
+
+-- Select db1 databases
+USE db1
+GO
+
+-- Create view 1
+CREATE VIEW NocView AS
+SELECT * FROM NOCList
+
+-- Grant select privilege to user
+GRANT SELECT ON OBJECT::dbo.NocView TO chainlogin
+
+-- Create view 2
+CREATE VIEW NocView2 AS
+SELECT * FROM NOCList2
 
 
 ------------------------------------------------------------
@@ -214,6 +261,28 @@ INSERT INTO [dbo].[secrets] ([password])
 VALUES ('SueprPassword123!')
 GO
 
+-- Select db1 databases
+USE db1
+GO
+
+-- Add sample records to table
+INSERT dbo.NOCList (SpyName, RealName)
+VALUES ('James Bond','Sean Connery')
+INSERT dbo.NOCList (SpyName, RealName)
+VALUES ('Ethan Hunt','Tom Cruise')
+INSERT dbo.NOCList (SpyName, RealName)
+VALUES ('Jason Bourne','Matt Damon')
+
+-- Add sample records to table
+INSERT dbo.NOCList2 (SpyName, RealName)
+VALUES ('Sydney Bristow','Jennifer Garner')
+INSERT dbo.NOCList2 (SpyName, RealName)
+VALUES ('Evelyn Salt','Angelina Jolie')
+INSERT dbo.NOCList2 (SpyName, RealName)
+VALUES ('Annie Walker','Piper Perabo')
+INSERT dbo.NOCList2 (SpyName, RealName)
+VALUES ('Perry the Platypus','Dee Bradley Baker')
+
 
 ------------------------------------------------------------
 -- Setup Test Server Configurations
@@ -263,6 +332,7 @@ GO
 If Exists (select srvname from master..sysservers where srvname = 'sqlserver1\instance1')
 EXEC sp_addlinkedsrvlogin 'sqlserver1\instance1', 'false', NULL, 'linklogin', 'linklogin';
 GO
+
 
 ------------------------------------------------------------
 -- Create Audit, Server Spec, and Database Spec
@@ -353,7 +423,6 @@ EXEC sp_procoption @ProcName = 'sp_add_backdoor',
 @OptionValue = 'on';
 GO
 
-
 -- Select testdb2 database
 USE testdb2
 GO
@@ -378,6 +447,32 @@ GO
 -- Allow members of PUBLIC to execute it
 GRANT EXECUTE ON sp_sqli2 to PUBLIC
 GO
+
+-- Select database db1
+USE db1
+
+-- Create procedure sp_findspy
+CREATE PROCEDURE sp_findspy
+@spy varchar(max)
+AS
+BEGIN
+Declare @query as varchar(max)
+SET @query = 'SELECT * FROM NOCView where SpyName like ''%'+ @spy+'%'''; 
+EXECUTE(@query)
+END
+GO
+
+-- Allow the user to execute it
+GRANT EXECUTE ON sp_findspy to chainlogin
+
+-- Create procedure 2
+CREATE PROCEDURE sp_findspy2
+AS
+SELECT * FROM NOCView2 
+GO
+
+-- Allow the user to execute it
+GRANT EXECUTE ON sp_findspy2 to chainlogin
 
 
 ------------------------------------------------------------

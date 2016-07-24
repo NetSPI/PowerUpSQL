@@ -1,4 +1,5 @@
-# PowerUpSQL Pester Tests - Baseline Tests
+# PowerUpSQL Pester Tests
+# Tested on SQL Server 2014
 
 ######################################################
 #
@@ -192,7 +193,6 @@ Describe "Get-SQLConnectionTest" {
     }
 }
 
-
 #Get-SQLConnectionTestThreaded
 Describe "Get-SQLConnectionTestThreaded" {
     It "Should return results for the local host" {
@@ -241,11 +241,7 @@ Describe "Get-SQLConnectionTestThreaded" {
 #
 ######################################################
 
-<#
-Get-SQLAuditDatabaseSpec           
-Get-SQLAuditServerSpec                
-Get-SQLServerCredential                                    
-Get-SQLServerLink                  
+<#                                                                            
 Get-SQLServerLogin                 
 Get-SQLServerPriv                  
 Get-SQLServerRole                  
@@ -254,6 +250,142 @@ Get-SQLStoredProcedure
 Get-SQLTriggerDdl                  
 Get-SQLTriggerDml                  
 #>
+
+# Get-SQLServerLink 
+Describe "Get-SQLServerLink " {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerLink   | Measure-Object).count -lt 1) {
+            Throw "Incorrect server link results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerLink  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server link results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerLink  -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect server link results returned"
+        }
+    }
+    It "Should accept -DatabaseLinkName arguments" {
+        if ( (Get-SQLServerLink  -Instance $env:COMPUTERNAME -DatabaseLinkName "sqlserver1\instance1" | Measure-Object).count -lt 1) {
+            Throw "Incorrect server link results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerLink  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server link results returned"
+        }
+    }
+}
+
+# Get-SQLAuditDatabaseSpec 
+Describe "Get-SQLAuditDatabaseSpec " {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLAuditDatabaseSpec   | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLAuditDatabaseSpec  -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLAuditDatabaseSpec  -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification results returned"
+        }
+    }
+    It "Should accept -AuditName argument" {
+        if ( (Get-SQLAuditDatabaseSpec  -Instance $env:COMPUTERNAME -AuditName "Audit_Object_Changes" | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification  results returned"
+        }
+    }
+    It "Should accept -AuditSpecification argument" {
+        if ( (Get-SQLAuditDatabaseSpec  -Instance $env:COMPUTERNAME -AuditSpecification "Audit_Database_Level_Object_Changes" | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification results returned"
+        }
+    }
+    It "Should accept -AuditAction argument" {
+        if ( (Get-SQLAuditDatabaseSpec  -Instance $env:COMPUTERNAME -AuditAction "DATABASE_OBJECT_CHANGE_GROUP" | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLAuditDatabaseSpec  | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit database specification results returned"
+        }
+    }
+}
+
+# Get-SQLAuditServerSpec
+Describe "Get-SQLAuditServerSpec" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLAuditServerSpec  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server Get-SQLAuditServerSpec results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLAuditServerSpec -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit server specification results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLAuditServerSpec -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit server specification results returned"
+        }
+    }
+    It "Should accept -AuditName argument" {
+        if ( (Get-SQLAuditServerSpec -Instance $env:COMPUTERNAME -AuditName "Audit_Object_Changes" | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit server specification results returned"
+        }
+    }
+    It "Should accept -AuditSpecification argument" {
+        if ( (Get-SQLAuditServerSpec -Instance $env:COMPUTERNAME -AuditSpecification "Audit_Server_Level_Object_Changes" | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit server specification results returned"
+        }
+    }
+    It "Should accept -AuditAction argument" {
+        if ( (Get-SQLAuditServerSpec -Instance $env:COMPUTERNAME -AuditAction "SERVER_OBJECT_CHANGE_GROUP" | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit server specification results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLAuditServerSpec | Measure-Object).count -lt 1) {
+            Throw "Incorrect audit server specification results returned"
+        }
+    }
+}
+
+# Get-SQLServerCredential
+Describe "Get-SQLServerCredential" {
+    It "Should return results for the local host with query" {
+        if ( (Get-SQLServerCredential  | Measure-Object).count -lt 1) {
+            Throw "Incorrect server credential results returned"
+        }
+    }
+    It "Should accept -Instance argument" {
+        if ( (Get-SQLServerCredential -Instance $env:COMPUTERNAME | Measure-Object).count -lt 1) {
+            Throw "Incorrect server credential results returned"
+        }
+    }
+    It "Should accept -Username and -Password arguments" {
+        if ( (Get-SQLServerCredential -Instance $env:COMPUTERNAME -Username test_login_admin -Password test_login_admin | Measure-Object).count -lt 1) {
+            Throw "Incorrect server credential results returned"
+        }
+    }
+    It "Should accept -Credential argument" {
+        if ( (Get-SQLServerCredential -Instance $env:COMPUTERNAME -CredentialName "MyCred1" | Measure-Object).count -lt 1) {
+            Throw "Incorrect server credential results returned"
+        }
+    }
+    It "Should accept pipeline input" {
+        if ( ( Get-SQLInstanceLocal | Get-SQLServerCredential    | Measure-Object).count -lt 1) {
+            Throw "Incorrect server credential results returned"
+        }
+    }
+}
 
 # Get-SQLServiceLocal
 Describe "Get-SQLServiceLocal" {

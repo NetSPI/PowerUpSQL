@@ -1,6 +1,6 @@
 # PowerUpSQL Pester Tests
 # Tested on SQL Server 2014
-# This should use against a local SQL Server instance that meets the following criteria:
+# This should used against a local SQL Server instance that meets the following criteria:
 # - Setup in mixed mode
 # - The windows user running the script hash sysadmin on the local SQL Server default instance
 # - The pesterdb.sql configuration script was run on the SQL Server by a sysadmin

@@ -375,7 +375,7 @@ USE master
 GO
 
 -- Create server link
-If Exists (select srvname from master..sysservers where srvname = 'sqlserver1\instance1')
+If not Exists (select srvname from master..sysservers where srvname = 'sqlserver1\instance1')
 EXEC master.dbo.sp_addlinkedserver 
     	@server = N'sqlserver1\instance1', 
    	@srvproduct=N'SQL Server' ;

@@ -219,8 +219,24 @@ GO
 -- Setup Test Server Configurations
 ------------------------------------------------------------
 
+-- Select master database
+USE master
+
 -- Set master as trustworthy
 ALTER DATABASE master SET TRUSTWORTHY ON
+GO
+
+-- Enable ownership chaining on the testdb
+ALTER DATABASE testdb SET DB_CHAINING ON
+GO
+
+-- Enable ownership chaining server wide
+EXECUTE sp_configure 'show advanced', 1;
+RECONFIGURE;
+GO
+
+EXECUTE sp_configure 'cross db ownership chaining', 1;
+RECONFIGURE;
 GO
 
 -- Enable xp_cmdshell

@@ -67,6 +67,23 @@ If not Exists (select loginname from master.dbo.syslogins where name = 'ddladmin
 CREATE LOGIN [ddladminuser] WITH PASSWORD = 'ddladminuser', CHECK_POLICY = OFF;
 GO
 
+-- Create  credlogin login
+If not Exists (select loginname from master.dbo.syslogins where name = 'credlogin')
+CREATE LOGIN [credlogin] WITH PASSWORD = 'credlogin', CHECK_POLICY = OFF;
+GO
+
+-- Create credential
+If not Exists (select name from sys.credentials where name = 'MyCred1')
+CREATE CREDENTIAL MyCred1 WITH IDENTITY = 'winuser',SECRET = 'password';  
+GO 
+
+-- Add credential to login
+If not Exists (select name from sys.credentials where name = 'MyCred1')
+ALTER LOGIN credlogin
+WITH CREDENTIAL = MyCred1;
+GO
+
+
 ------------------------------------------------------------
 -- Create Test Databases
 ------------------------------------------------------------
@@ -465,6 +482,7 @@ GO
 
 -- Select database db1
 USE db1
+GO
 
 -- Create procedure sp_findspy
 CREATE PROCEDURE sp_findspy
@@ -479,6 +497,7 @@ GO
 
 -- Allow the user to execute it
 GRANT EXECUTE ON sp_findspy to chainlogin
+GO
 
 -- Create procedure 2
 CREATE PROCEDURE sp_findspy2
@@ -488,6 +507,7 @@ GO
 
 -- Allow the user to execute it
 GRANT EXECUTE ON sp_findspy2 to chainlogin
+GO
 
 
 ------------------------------------------------------------

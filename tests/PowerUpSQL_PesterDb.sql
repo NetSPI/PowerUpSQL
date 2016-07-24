@@ -237,15 +237,23 @@ USE db1
 GO
 
 -- Create view nocview
-CREATE VIEW NocView AS
+IF Object_ID('NOCView') IS NOT NULL
+    DROP VIEW NocView
+GO
+CREATE VIEW NocView 
+AS
 SELECT * FROM NOCList
 GO
 
 -- Grant select privilege to chainuser
+if exists (select name from sys.views where name = 'nocview')
 GRANT SELECT ON OBJECT::dbo.NocView TO chainlogin
 GO
 
 -- Create view nocview2
+IF Object_ID('NOCView2') IS NOT NULL
+    DROP VIEW NocView2
+GO
 CREATE VIEW NocView2 
 AS
 SELECT * FROM NOCList2

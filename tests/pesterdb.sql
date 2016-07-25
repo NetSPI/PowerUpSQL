@@ -1,5 +1,9 @@
 -- Script: pesterdb.sql
+<<<<<<< HEAD
 -- Description: This is a script for setting up a SQL Server 2014 instance for PowerUpSQL Pester Tests.
+=======
+-- Description: This script can be used to configure a new SQL Server 2014 instance for PowerUpSQL Pester tests.
+>>>>>>> dev
 
 ------------------------------------------------------------
 -- Create Test SQL Logins

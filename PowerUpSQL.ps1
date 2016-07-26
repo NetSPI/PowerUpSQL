@@ -1,4 +1,4 @@
-#requires -Modules DnsClient, Microsoft.PowerShell.Utility
+#requires -Modules Microsoft.PowerShell.Utility
 #requires -version 3
 <#
         File: PowerUpSQL.ps1
@@ -10288,7 +10288,7 @@ Function Invoke-SQLAuditPrivXpDirtree
                                 Write-Verbose -Message "$Instance : - Inveigh loaded."
 
                                 # Get IP of SQL Server instance
-                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object -Property IPaddress -ExpandProperty ipaddress
+                                $InstanceIP = [System.Net.Dns]::GetHostAddresses($ComputerName)
 
                                 # Start sniffing for hashes from that IP
                                 Write-Verbose -Message "$Instance : - Start sniffing..."
@@ -10623,7 +10623,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 Write-Verbose -Message "$Instance : - Inveigh loaded."
 
                                 # Get IP of SQL Server instance
-                                $InstanceIP = Resolve-DnsName $ComputerName | Select-Object -Property IPaddress -ExpandProperty ipaddress
+                                $InstanceIP = [System.Net.Dns]::GetHostAddresses($ComputerName)
 
                                 # Start sniffing for hashes from that IP
                                 Write-Verbose -Message "$Instance : - Start sniffing..."

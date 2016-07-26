@@ -8189,7 +8189,7 @@ function Create-SQLFileXpDll
     }
     else
     {
-        Write-Information -MessageData " Found buffer offset for command: $Index"
+        Write-Verbose -Message " Found buffer offset for command: $Index"
     }
 
     # Replace target bytes
@@ -8240,7 +8240,7 @@ function Create-SQLFileXpDll
     }
     else
     {
-        Write-Information -MessageData " Found buffer offset for function name: $ProcIndex"
+        Write-Verbose -Message " Found buffer offset for function name: $ProcIndex"
     }
 
     # Convert function name to bytes
@@ -8254,7 +8254,7 @@ function Create-SQLFileXpDll
 
     # Get offset for nulls
     $NullOffset = $ProcIndex+$ExportNameLen
-    Write-Information -MessageData " Found buffer offset for buffer: $NullOffset"
+    Write-Verbose -Message " Found buffer offset for buffer: $NullOffset"
     $NullBytes = ([system.Text.Encoding]::UTF8).GetBytes($ProcNewBuffer)
 
     # Replace target bytes

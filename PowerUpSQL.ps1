@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.24
+        Version: 1.0.0.25
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.3
@@ -10558,12 +10558,12 @@ Function Invoke-SQLAuditPrivXpFileexist
 
             $IsVulnerable  = 'Yes'
             $DirTreePrivs |
-            ForEach-Object -Process {
+            ForEach-Object {
                 $PrincipalName = $DirTreePrivs.PrincipalName
 
                 # Check if current login can exploit
                 $CurrentPrincpalList |
-                ForEach-Object -Process {
+                ForEach-Object {
                     $PrincipalCheck = $_
 
                     if($PrincipalName -eq $PrincipalCheck)
@@ -10591,7 +10591,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                         if(-not $AttackerIp)
                         {
                             $AttackerIp = (Test-Connection -ComputerName 127.0.0.1 -Count 1 |
-                                Select-Object -ExpandProperty Ipv4Address |
+                            Select-Object -ExpandProperty Ipv4Address |
                             Select-Object -Property IPAddressToString -ExpandProperty IPAddressToString)
 
                             if($AttackerIp -eq '127.0.0.1')
@@ -10705,26 +10705,22 @@ Function Invoke-SQLAuditPrivXpFileexist
 
                 # Add record
                 $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
-            }
-        
-            else
-            {
-                Write-Verbose -Message "$Instance : - No logins were found with the EXECUTE privilege on xp_fileexist."
-            }
-
-            # Status User
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_fileexist"
+            }      
+        }else{
+            Write-Verbose -Message "$Instance : - No logins were found with the EXECUTE privilege on xp_fileexist."
         }
+    }
 
-        End
+    End
+    {
+        # Status User
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - xp_fileexist"
+
+        # Return data
+        if ( -not $NoOutput)
         {
-            # Return data
-            if ( -not $NoOutput)
-            {
-                Return $TblData
-            }
+            Return $TblData
         }
-
     }
 }
 # ---------------------------------------
@@ -12740,7 +12736,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 # -------------------------------------------
 # Function: Test-IsLuhnValid
 # -------------------------------------------
-# Author: ØYVIND KALLSTAD
+# Author: Ã˜YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function Test-IsLuhnValid
 {
@@ -12758,7 +12754,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ØYVIND KALLSTAD
+            Author: Ã˜YVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -12793,7 +12789,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ØYVIND KALLSTAD
+# Author: Ã˜YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits
 {
@@ -12810,7 +12806,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ØYVIND KALLSTAD
+            Author: Ã˜YVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>

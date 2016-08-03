@@ -9592,7 +9592,7 @@ Function   Get-SQLRecoverPwAutoLogon
         # Check if this can actually run with the current login
         if([int]$SQLVersionShort -ge 12 -and $IsSysadmin -ne "Yes")
         {          
-            Write-Output "This module requires a version less than 2012 or sysadmin privileges. Exiting."
+            Write-Verbose "$Instance : This function requires SQL Server 2012 (or prior), or sysadmin privileges. Done."
             Return
         }
 

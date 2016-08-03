@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.30
+        Version: 1.0.0.31
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9590,9 +9590,9 @@ Function   Get-SQLRecoverPwAutoLogon
         }
 
         # Check if this can actually run with the current login
-        if([int]$SQLVersionShort -ge 12 -and $IsSysadmin -ne "Yes")
+        if($IsSysadmin -ne "Yes")
         {          
-            Write-Verbose "$Instance : This function requires SQL Server 2012 (or prior), or sysadmin privileges. Done."
+            Write-Verbose "$Instance : This function requires sysadmin privileges. Done."
             Return
         }
 

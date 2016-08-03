@@ -255,6 +255,7 @@ These functions are used for recovering authentication tokens of varous types.  
 	Get-SQLRecoverMachineKey		
 	Get-SQLRecoverPwLsaSecrets
 	Get-SQLRecoverPwLogonOn
+	Get-SQLRecoverPwVNC
 
 ### Data Exfiltration Functions
 

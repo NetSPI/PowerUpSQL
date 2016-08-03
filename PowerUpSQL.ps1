@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.28
+        Version: 1.0.0.29
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9455,10 +9455,10 @@ Function  Get-SQLInstanceFile
 #########################################################################
 
 # ----------------------------------
-#  Get-SQLWinAutoLoginPw
+#  Get-SQLRecoverPwAutoLogon
 # ----------------------------------
 # Author: Scott Sutherland
-Function   Get-SQLWinAutoLoginPw
+Function   Get-SQLRecoverPwAutoLogon
 {
     <#
             .SYNOPSIS
@@ -9474,7 +9474,7 @@ Function   Get-SQLWinAutoLoginPw
             .PARAMETER Instance
             SQL Server instance to connection to.
             .Example
-            PS C:\> Get-SQLInstanceLocal |  Get-SQLWinAutoLoginPw -Verbose
+            PS C:\> Get-SQLInstanceLocal |  Get-SQLRecoverPwAutoLogon -Verbose
             VERBOSE: SQLServer1\SQLEXPRESS : Connection Success.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
             VERBOSE: SQLServer1 : Connection Success.
@@ -9493,7 +9493,7 @@ Function   Get-SQLWinAutoLoginPw
             Password     : KioskUserPassword!
 
             .Example
-            PS C:\> Get-SQLWinAutoLoginPw -Verbose -instance SQLServer1\STANDARDDEV2014
+            PS C:\> Get-SQLRecoverPwAutoLogon -Verbose -instance SQLServer1\STANDARDDEV2014
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
 
 

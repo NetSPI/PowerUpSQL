@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.29
+        Version: 1.0.0.30
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9630,11 +9630,16 @@ Function   Get-SQLRecoverPwAutoLogon
         SELECT Domain = @AutoLoginDomain, Username = @AutoLoginUser, Password = @AutoLoginPassword"
 
         # Execute Default Query
-        Get-SQLQuery -Instance $Instance -Query $DefaultQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |
-        ForEach-Object{
+        $DefaultResults = Get-SQLQuery -Instance $Instance -Query $DefaultQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose     
+        $DefaultUsername = $DefaultResults.Username
+        if($DefaultUsername.length -ge 2){
 
             # Add record to data table
-            $TblWinAutoCreds.Rows.Add($ComputerName, $Instance,$_.Domain,$_.Username,$_.Password) | Out-Null
+            $DefaultResults | ForEach-Object{                
+                $TblWinAutoCreds.Rows.Add($ComputerName, $Instance,$_.Domain,$_.Username,$_.Password) | Out-Null
+            }                    
+        }else{
+            Write-Verbose "$Instance : No default auto login credentials found."
         }
 
         # Get default alt auto login Query
@@ -9671,11 +9676,16 @@ Function   Get-SQLRecoverPwAutoLogon
         SELECT Domain = @AltAutoLoginDomain, Username = @AltAutoLoginUser, Password = @AltAutoLoginPassword"
 
         # Execute Default Query
-        Get-SQLQuery -Instance $Instance -Query $AltQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose |
-        ForEach-Object{
+        $AltResults = Get-SQLQuery -Instance $Instance -Query $AltQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $AltUsername = $AltResults.Username
+        if($AltUsername.length -ge 2){                            
 
-            # Add record to data table
-            $TblWinAutoCreds.Rows.Add($ComputerName, $Instance,$_.Domain,$_.Username,$_.Password) | Out-Null
+             # Add record to data table
+            $AltResults | ForEach-Object{               
+                $TblWinAutoCreds.Rows.Add($ComputerName, $Instance,$_.Domain,$_.Username,$_.Password) | Out-Null
+            }
+        }else{
+            Write-Verbose "$Instance : No alternative auto login credentials found."
         }
     }
 

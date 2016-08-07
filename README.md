@@ -34,4 +34,4 @@ PowerUpSQL was designed with six objectives in mind:
 * License: BSD 3-Clause
 * Required Dependencies: None
  
-For installation, function overviews, and common usage information check out the PowerUpSQL wiki: https://github.com/NetSPI/PowerUpSQL/wiki
+For setup instructions, function overviews, and common usage information check out the PowerUpSQL wiki: https://github.com/NetSPI/PowerUpSQL/wiki

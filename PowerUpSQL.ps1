@@ -4,7 +4,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.33
+        Version: 1.0.0.34
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9905,11 +9905,11 @@ Function   Get-SQLPersistRegDebugger
 {
     <#
             .SYNOPSIS
-            This function will use the xp_regwrite procedure to setup command 
-            to run instead of the defined FileName when it's called.  It
-            is commonly used with accessibily options to access RDP and launch
-            PowerShell payloads.  The specific registry key is.
-            HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run  
+            This function uses xp_regwrite to configure a debugger for a provided 
+            executable (utilman.exe by default), which will run another provided 
+            executable (cmd.exe by default) when it’s called. It is commonly used 
+            to create RDP backdoors. The specific registry key is 
+            HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options[EXE].  
             Sysadmin privileges are required.
             .PARAMETER Username
             SQL Server or domain account to authenticate with.

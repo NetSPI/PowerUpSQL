@@ -1262,7 +1262,8 @@ Invoke-SQLAuditWeakLoginPw
 #
 ######################################################
 
-# No function have been written yet.
+# Get-SQLPersistRegRun
+# Get-SQLPersistRegDebugger
 
 #endregion
 
@@ -1272,7 +1273,7 @@ Invoke-SQLAuditWeakLoginPw
 #
 ######################################################
 
-# No function have been written yet.
+# Get-SQLRecoverPwAutoLogon
 
 #endregion
 

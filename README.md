@@ -1,5 +1,6 @@
 
-## ![alt tag](https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/scripts/PowerUpSQL-LogoSm.png) PowerUpSQL: A PowerShell Toolkit for Attacking SQL Server
+## ![alt tag](https://github.com/NetSPI/PowerUpSQL/blob/master/scripts/powerupsql-large.png)
+### A PowerShell Toolkit for Attacking SQL Server
 
 [![licence badge]][licence]
 [![stars badge]][stars]

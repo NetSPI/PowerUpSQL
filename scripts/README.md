@@ -1,4 +1,4 @@
-### Pedning 
+### Pending 
 These are stand alone scripts that will eventually be turned into PowerUpSQL functions.
 
 ### 3rd Party Scripts

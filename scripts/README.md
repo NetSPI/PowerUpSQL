@@ -1,3 +1,15 @@
+### Stand Alone Scripts - Pending PowerUpSQL Integration
+
+	Author: Antti Rantasaari
+  	Source: Provided directly.
+  	Imported Scripts: Get-SQLServerLinkCrawl.ps1
+  	PowerUpSQL Functions: Pending Get-SQLServerLinkCrawl
+
+	Author: Scott Sutherland
+  	Source: Provided directly.
+  	Imported Scripts: Get-SQLServiceAccountPwHashes.ps1
+  	PowerUpSQL Functions: Pending - Invoke-SQLServerUncInject
+  	
 ### 3rd Party Scripts
 
 This folder contains scripts written by other authors which are used by some of the PowerUpSQL functions. Summary below.

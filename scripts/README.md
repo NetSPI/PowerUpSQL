@@ -1,4 +1,5 @@
-### Stand Alone Scripts - Pending PowerUpSQL Integration
+### Stand Alone Scripts
+These are scripting that will eventually be turned into PowerUpSQL functions.
 
 	Author: Antti Rantasaari
   	Source: Provided directly.

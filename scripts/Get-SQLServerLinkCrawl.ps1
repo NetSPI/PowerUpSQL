@@ -518,10 +518,10 @@ Function  Get-SQLConnectionObject
 }
 
 
-
-#Get-SQLCrawl -instance "NETSPI-375-ARA\SQLEXPRESS" -Query "select name from master..sysdatabases"
-#Get-SQLCrawl -instance "NETSPI-375-ARA\SQLEXPRESS" -Query "select name from master..sysdatabases" | select name,version,path,links,user,sysadmin,customquery | format-table
-#Get-SQLCrawl -instance "NETSPI-375-ARA\SQLEXPRESS" -Query "select name from master..sysdatabases" | where name -ne "Broken Link" | select name,version,path,links,user,sysadmin,customquery | format-table
-#Get-SQLCrawl -instance "NETSPI-375-ARA\SQLEXPRESS" -Query "exec master..xp_cmdshell 'whoami'" | format-table
-#Get-SQLCrawl -instance "NETSPI-375-ARA\SQLEXPRESS" -Query "exec xp_dirtree 'c:\temp'" -Export | format-table
-#Get-SQLCrawl -instance "NETSPI-375-ARA\SQLEXPRESS" -Query "select name from master..sysdatabases" -Export | where name -ne "broken link" | sort name |  Format-Table
+# Example commands
+#Get-SQLCrawl -instance "SQLSERVER1\Instance1" -Query "select name from master..sysdatabases"
+#Get-SQLCrawl -instance "SQLSERVER1\Instance1" -Query "select name from master..sysdatabases" | select name,version,path,links,user,sysadmin,customquery | format-table
+#Get-SQLCrawl -instance "SQLSERVER1\Instance1" -Query "select name from master..sysdatabases" | where name -ne "Broken Link" | select name,version,path,links,user,sysadmin,customquery | format-table
+#Get-SQLCrawl -instance "SQLSERVER1\Instance1" -Query "exec master..xp_cmdshell 'whoami'" | format-table
+#Get-SQLCrawl -instance "SQLSERVER1\Instance1" -Query "exec xp_dirtree 'c:\temp'" -Export | format-table
+#Get-SQLCrawl -instance "SQLSERVER1\Instance1" -Query "select name from master..sysdatabases" -Export | where name -ne "broken link" | sort name |  Format-Table

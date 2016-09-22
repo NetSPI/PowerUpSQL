@@ -12,7 +12,7 @@
   	Imported Scripts: Inveigh.ps1, Inveigh-BruteForce.ps1, and Inveigh-Relay.ps1 
   	PowerUpSQL Functions: Used in Invoke-SQLAuditPrivXpDirtree and Invoke-SQLAuditXpPrivFileExist
   	
-	Author: Joeseph Bailek
+	Author: Joe Bialek
   	Source: https://github.com/clymb3r/PowerShell/tree/master/Invoke-TokenManipulation
   	Imported Scripts: Invoke-TokenManipulation.ps1
   	PowerUpSQL Functions: Pending...

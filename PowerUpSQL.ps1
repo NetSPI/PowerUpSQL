@@ -11509,7 +11509,7 @@ Function Invoke-SQLAuditPrivDbChaining
             ForEach-Object -Process {
                 $DatabaseName = $_.DatabaseName
 
-                Write-Verbose -Message "$Instance : - The database $DatabaseName was found configured as trustworthy."
+                Write-Verbose -Message "$Instance : - The database $DatabaseName has ownership chaining enabled."
                 $Details = "The database $DatabaseName was found configured with ownership chaining enabled."
                 $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)
             }

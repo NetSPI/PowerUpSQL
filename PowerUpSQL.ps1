@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.35
+        Version: 1.0.0.36
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7215,7 +7215,7 @@ Function  Get-SQLStoredProcedureSQLi
 {
     <#
             .SYNOPSIS
-            Returns stored procedures using dynamic SQL that may suffer from SQL injection on target SQL Servers.
+            Returns stored procedures containing dynamic SQL and concatenations that may suffer from SQL injection on target SQL Servers.
             Note: Viewing procedure definitions requires the sysadmin role or the VIEW DEFINITION permission.
             .PARAMETER Username
             SQL Server or domain account to authenticate with.
@@ -7402,12 +7402,15 @@ Function  Get-SQLStoredProcedureSQLi
                 (ROUTINE_DEFINITION like '%sp_executesql%' OR
                 ROUTINE_DEFINITION like '%sp_sqlexec%' OR
                 ROUTINE_DEFINITION like '%exec @%' OR
+                ROUTINE_DEFINITION like '%execute @%' OR
                 ROUTINE_DEFINITION like '%exec (%' OR
                 ROUTINE_DEFINITION like '%exec(%' OR
                 ROUTINE_DEFINITION like '%execute (%' OR
                 ROUTINE_DEFINITION like '%execute(%' OR
                 ROUTINE_DEFINITION like '%''''''+%' OR
-                ROUTINE_DEFINITION like '%'''''' +%')                
+                ROUTINE_DEFINITION like '%'''''' +%') 
+                AND ROUTINE_DEFINITION like '%+%'
+                AND ROUTINE_CATALOG not like 'msdb'                               
                 $ProcedureNameFilter
                 $KeywordFilter
                 ORDER BY ROUTINE_NAME"

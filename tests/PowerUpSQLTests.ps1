@@ -1252,6 +1252,7 @@ Invoke-SQLAuditRoleDbDdlAdmin
 Invoke-SQLAuditRoleDbOwner         
 Invoke-SQLAuditSampleDataByColumn  
 Invoke-SQLAuditWeakLoginPw          
+Invoke-SQLAuditSQLiExecuteAs
 #>
 
 #endregion
@@ -1295,6 +1296,7 @@ Invoke-SQLAuditWeakLoginPw
 
 <#
 Create-SQLFileXpDll 
+Get-SQLStoredProcedureSQLi
 #>
 
 # Get-SQLFuzzDatabaseName

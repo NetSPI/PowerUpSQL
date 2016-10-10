@@ -1,4 +1,3 @@
-#requires -Modules Microsoft.PowerShell.Utility
 #requires -version 2
 <#
         File: PowerUpSQL.ps1
@@ -207,7 +206,7 @@ Function  Get-SQLConnectionTest
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline,
+                ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
@@ -354,7 +353,7 @@ Function  Get-SQLConnectionTestThreaded
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline,
+                ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
@@ -707,7 +706,7 @@ Function  Get-SQLQueryThreaded
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline,
+                ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
@@ -977,7 +976,7 @@ Function  Invoke-SQLOSCmd
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipeline,
+                ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
@@ -9026,7 +9025,7 @@ function Get-SQLInstanceScanUDP
     param(
 
         [Parameter(Mandatory = $true,
-                ValueFromPipeline,
+                ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name or IP address to enumerate SQL Instance from.')]
         [string]$ComputerName,
@@ -9211,7 +9210,7 @@ function Get-SQLInstanceScanUDPThreaded
     param(
 
         [Parameter(Mandatory = $true,
-                ValueFromPipeline,
+                ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Computer name or IP address to enumerate SQL Instance from.')]
         [string]$ComputerName,

@@ -24,7 +24,7 @@ PowerUpSQL was designed with six objectives in mind:
 * Easy Server Exploitation: The Invoke-SQLEscalatePriv function attempts to obtain sysadmin privileges using identified vulnerabilities. 
 * Scalability: Multi-threading is supported on core functions so they can be executed against many SQL Servers quickly.
 * Flexibility: PowerUpSQL functions support the PowerShell pipeline so they can be used together, and with other scripts.
-* Portability: Default .net libraries are used and there are no dependencies on SQLPS or the SMO libraries. Functions have also been designed so they can be run independently. As a result, it's easy to use on any Windows system with PowerShell v3 installed.
+* Portability: Default .net libraries are used and there are no dependencies on SQLPS or the SMO libraries. Functions have also been designed so they can be run independently. As a result, it's easy to use on any Windows system with PowerShell v2 installed.
 
 
 ### Module Information

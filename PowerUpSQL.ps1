@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.34
+        Version: 1.0.0.35
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7018,10 +7018,12 @@ Function  Get-SQLStoredProcedure
             Database name to filter for.
             .PARAMETER ProcedureName
             Procedure name to filter for.
+            .PARAMETER Keyword
+            Filter for procedures that include the keyword.
             .PARAMETER NoDefaults
             Filter out results from default databases.
             .EXAMPLE
-            PS C:\> Get-SQLStoredProcure -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
+            PS C:\> Get-SQLStoredProcedure -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
 
             ComputerName        : SQLServer1
             Instance            : SQLServer1\STANDARDDEV2014
@@ -7036,7 +7038,7 @@ Function  Get-SQLStoredProcedure
             select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin
             end
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcure -Verbose -NoDefaults
+            PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedure -Verbose -NoDefaults
     #>
 
     [CmdletBinding()]
@@ -7066,8 +7068,13 @@ Function  Get-SQLStoredProcedure
 
         [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
-        HelpMessage = 'Trigger name.')]
+        HelpMessage = 'Procedure name.')]
         [string]$ProcedureName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter for procedures that include the keyword.')]
+        [string]$Keyword,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't select tables from default databases.")]
@@ -7083,7 +7090,7 @@ Function  Get-SQLStoredProcedure
         # Table for output
         $TblProcs = New-Object -TypeName System.Data.DataTable
 
-        # Setup login filter
+        # Setup routine name filter
         if ($ProcedureName)
         {
             $ProcedureNameFilter = " AND ROUTINE_NAME like '$ProcedureName'"
@@ -7091,6 +7098,16 @@ Function  Get-SQLStoredProcedure
         else
         {
             $ProcedureNameFilter = ''
+        }
+
+        # Setup ROUTINE_DEFINITION filter
+        if ($Keyword)
+        {
+            $KeywordFilter = " AND ROUTINE_DEFINITION like '%$Keyword%'"
+        }
+        else
+        {
+            $KeywordFilter = ''
         }
     }
 
@@ -7166,7 +7183,8 @@ Function  Get-SQLStoredProcedure
                 CREATED,
                 LAST_ALTERED
                 FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE 1=1
-            $ProcedureNameFilter"
+            $ProcedureNameFilter
+            $KeywordFilter"
 
             # Execute Query
             $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -7183,6 +7201,235 @@ Function  Get-SQLStoredProcedure
     }
 }
 
+
+# ----------------------------------
+#  Get-SQLStoredProcedureSQLi
+# ----------------------------------
+# Author: Scott Sutherland
+# Todo: Add column owner
+# Todo: Add column owner is sysadmin
+# Todo: Add column is_ms_shipped
+# Todo: Add column is_auto_excuted
+# select * from sys.procedures
+Function  Get-SQLStoredProcedureSQLi
+{
+    <#
+            .SYNOPSIS
+            Returns stored procedures using dynamic SQL that may suffer from SQL injection on target SQL Servers.
+            Note: Viewing procedure definitions requires the sysadmin role or the VIEW DEFINITION permission.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DatabaseName
+            Database name to filter for.
+            .PARAMETER ProcedureName
+            Procedure name to filter for.
+            .PARAMETER Keyword
+            Filter for procedures that include the keyword.
+            .PARAMETER NoDefaults
+            Filter out results from default databases.
+            .EXAMPLE
+            PS C:\> Get-SQLStoredProcedureSqli -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
+
+            ComputerName        : SQLServer1
+            Instance            : SQLServer1\STANDARDDEV2014
+            DatabaseName        : testdb
+            SchemaName          : dbo
+            ProcedureName       : sp_sqli
+            ProcedureType       : PROCEDURE
+            ProcedureDefinition : -- Create procedure
+                                CREATE PROCEDURE sp_sqli
+                                @DbName varchar(max)
+                                WITH EXECUTE AS OWNER
+                                AS
+                                BEGIN
+                                Declare @query as varchar(max)
+                                SET @query = 'SELECT name FROM master..sysdatabases where name like ''%'+ @DbName+'%'' OR name=''tempdb''';
+                                EXECUTE(@query)
+                                END
+                                GO
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedureSqli -Verbose -NoDefaults
+    #>
+
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server database name.')]
+        [string]$DatabaseName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Procedure name.')]
+        [string]$ProcedureName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter for procedures that include the keyword.')]
+        [string]$Keyword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't select tables from default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblProcs = New-Object -TypeName System.Data.DataTable
+
+        # Setup routine name filter
+        if ($ProcedureName)
+        {
+            $ProcedureNameFilter = " AND ROUTINE_NAME like '$ProcedureName'"
+        }
+        else
+        {
+            $ProcedureNameFilter = ''
+        }
+
+        # Setup ROUTINE_DEFINITION filter
+        if ($Keyword)
+        {
+            $KeywordFilter = " AND ROUTINE_DEFINITION like '%$Keyword%'"
+        }
+        else
+        {
+            $KeywordFilter = ''
+        }
+    }
+
+    Process
+    {
+        # Parse ComputerName
+        If ($Instance)
+        {
+            $ComputerName = $Instance.split('\')[0].split(',')[0]
+            $Instance = $Instance
+        }
+        else
+        {
+            $ComputerName = $env:COMPUTERNAME
+            $Instance = '.\'
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+                Write-Verbose -Message "$Instance : Checking databases below for vulnerable stored procedures:"
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Setup NoDefault filter
+        if($NoDefaults)
+        {
+            # Get list of databases
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
+        }
+        else
+        {
+            # Get list of databases
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
+        }
+
+        # Get role for each database
+        $TblDatabases |
+        ForEach-Object -Process {
+            # Get database name
+            $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : - Checking $DbName database..."
+            }
+
+            # Define Query
+            $Query = "  use [$DbName];
+                SELECT  '$ComputerName' as [ComputerName],
+                '$Instance' as [Instance],
+                ROUTINE_CATALOG AS [DatabaseName],
+                ROUTINE_SCHEMA AS [SchemaName],
+                ROUTINE_NAME as [ProcedureName],
+                ROUTINE_TYPE as [ProcedureType],
+                ROUTINE_DEFINITION as [ProcedureDefinition],
+                SQL_DATA_ACCESS,
+                ROUTINE_BODY,
+                CREATED,
+                LAST_ALTERED
+                FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE 1=1 AND               
+                (ROUTINE_DEFINITION like '%sp_executesql%' OR
+                ROUTINE_DEFINITION like '%sp_sqlexec%' OR
+                ROUTINE_DEFINITION like '%exec @%' OR
+                ROUTINE_DEFINITION like '%exec (%' OR
+                ROUTINE_DEFINITION like '%exec(%' OR
+                ROUTINE_DEFINITION like '%execute (%' OR
+                ROUTINE_DEFINITION like '%execute(%' OR
+                ROUTINE_DEFINITION like '%''''''+%' OR
+                ROUTINE_DEFINITION like '%'''''' +%')                
+                $ProcedureNameFilter
+                $KeywordFilter
+                ORDER BY ROUTINE_NAME"
+
+            # Execute Query
+            $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+            # Count results
+            $TblProcsCount = $TblProcsTemp.rows.count
+            Write-Verbose "$Instance : - $TblProcsCount found in $DbName database"
+
+            # Append results
+            $TblProcs = $TblProcs + $TblProcsTemp
+        }
+    }
+
+    End
+    {
+        # Return data
+        $TblProcs
+    }
+}
 
 
 #endregion
@@ -10222,6 +10469,197 @@ Function Invoke-SQLAuditTemplate
 
         # Status User
         Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: [VULNERABILITY NAME]"
+    }
+
+    End
+    {
+        # Return data
+        if ( -not $NoOutput)
+        {
+            Return $TblData
+        }
+    }
+}
+
+
+# ---------------------------------------
+# Invoke-SQLAuditSQLiExecuteAs
+# ---------------------------------------
+# Author: Scott Sutherland
+# Todo: Get list of input parameters for each affected sp and determine if they are used in lines using dynamic SQL to increase likelhood of exploitation.
+# Todo: Check for the ownership and determine if it is a sysadmin. List in details.
+Function Invoke-SQLAuditSQLiExecuteAs
+{
+    <#
+            .SYNOPSIS
+            This will return stored procedures using dynamic SQL and the EXECUTE AS OWNER clause that may suffer from SQL injection.
+            There is also an options to check for 
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Exploit
+            Exploit vulnerable issues.
+            .EXAMPLE
+            PS C:\> Invoke-SQLAuditSQLiExecuteAs -Instance SQLServer1\STANDARDDEV2014
+
+            ComputerName  : SQLServer1
+            Instance      : SQLServer1\STANDARDDEV2014
+            Vulnerability : Potential SQL Injection
+            Description   : The affected procedure is using dynamic SQL and the "EXECUTE AS OWNER" clause.  As a result, it may be possible to impersonate the procedure owner if SQL injection is possible.
+            server.
+            Remediation   : Consider using parameterized queries instead of concatenated strings, and use signed procedures instead of the "EXECUTE AS OWNER" clause.'
+            Severity      : High
+            IsVulnerable  : Yes
+            IsExploitable : No
+            Exploited     : No
+            ExploitCmd    : No automated exploitation option has been provided, but to view the procedure code use: Get-SQLStoredProcedureSQLi -Verbose -Instance SQLServer1\STANDARDDEV2014 -Keyword "EXECUTE AS OWNER" 
+            Details       : The testdb.dbo.sp_vulnerable stored procedure is affected.
+            Reference     : https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation
+            Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditSQLiExecuteAs -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't output anything.")]
+        [string]$NoOutput,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Exploit vulnerable issues.')]
+        [switch]$Exploit
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
+        $null = $TblData.Columns.Add('ComputerName')
+        $null = $TblData.Columns.Add('Instance')
+        $null = $TblData.Columns.Add('Vulnerability')
+        $null = $TblData.Columns.Add('Description')
+        $null = $TblData.Columns.Add('Remediation')
+        $null = $TblData.Columns.Add('Severity')
+        $null = $TblData.Columns.Add('IsVulnerable')
+        $null = $TblData.Columns.Add('IsExploitable')
+        $null = $TblData.Columns.Add('Exploited')
+        $null = $TblData.Columns.Add('ExploitCmd')
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
+    }
+
+    Process
+    {
+        # Status User
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Potential SQL Injection - EXECUTE AS OWNER"
+
+        # Test connection to server
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if(-not $TestConnection)
+        {
+            # Status user
+            Write-Verbose -Message "$Instance : CONNECTION FAILED."
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - EXECUTE AS OWNER."
+            Return
+        }
+
+        # Grab server information
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------
+        # Set function meta data for report output
+        # --------------------------------------------
+        if($Exploit)
+        {
+            $TestMode  = 'Exploit'
+        }
+        else
+        {
+            $TestMode  = 'Audit'
+        }
+        $Vulnerability = 'Potential SQL Injection - EXECUTE AS OWNER'
+        $Description   = 'The affected procedure is using dynamic SQL and the "EXECUTE AS OWNER" clause.  As a result, it may be possible to impersonate the procedure owner if SQL injection is possible.'
+        $Remediation   = 'Consider using parameterized queries instead of concatenated strings, and use signed procedures instead of the "EXECUTE AS OWNER" clause.'
+        $Severity      = 'High'
+        $IsVulnerable  = 'No'
+        $IsExploitable = 'No'
+        $Exploited     = 'No'
+        $ExploitCmd    = "No automated exploitation option has been provided, but to view the procedure code use: Get-SQLStoredProcedureSQLi -Verbose -Instance $Instance -Keyword `"EXECUTE AS OWNER`"'"
+        $Details       = ''
+        $Reference     = 'https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------
+        # $IsVulnerable  = "No" or $IsVulnerable  = "Yes"
+                
+        # Get SP with dynamic sql and execute as owner
+        $SQLiResults = Get-SQLStoredProcedureSQLi -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Keyword "EXECUTE AS OWNER" 
+        
+        # Check for results
+        if($SQLiResults.rows.count -ge 1){
+            
+            # Confirmed vulnerable
+            $IsVulnerable = "Yes"
+            $IsExploitable = "Unknown"
+
+            # Add information to finding for each instance of potential sqli
+            $SQLiResults |
+            ForEach-Object{
+            
+                # Set instance values
+                $DatabaseName = $_.DatabaseName 
+                $SchemaName = $_.SchemaName
+                $ProcedureName = $_.ProcedureName
+                $ObjectName = "$DatabaseName.$SchemaName.$ProcedureName"
+                $Details =  "The $ObjectName stored procedure is affected."
+                
+                # Add to report 
+                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)        
+            }
+        }    
+
+        # ------------------------------------------------------------------
+        # Exploit Vulnerability
+        if($Exploit){
+            Write-Verbose "$Instance : No automatic exploitation option has been provided. Uninformed exploitation of SQLi can have a negative impact on production environments."
+        }
+
+        # Status User
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - EXECUTE AS OWNER"
     }
 
     End
@@ -14292,6 +14730,7 @@ Function Invoke-SQLAudit
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbDdlAdmin','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbOwner','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSampleDataByColumn','Database')
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiExecuteAs','Database')        
 
         Write-Verbose -Message 'RUNNING VULNERABILITY CHECKS.'
     }

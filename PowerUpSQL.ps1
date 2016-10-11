@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.36
+        Version: 1.0.0.37
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7231,6 +7231,8 @@ Function  Get-SQLStoredProcedureSQLi
             Procedure name to filter for.
             .PARAMETER Keyword
             Filter for procedures that include the keyword.
+            .PARAMETER OnlySigned
+            Filter for signed procedures.
             .PARAMETER NoDefaults
             Filter out results from default databases.
             .EXAMPLE
@@ -7291,6 +7293,11 @@ Function  Get-SQLStoredProcedureSQLi
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Filter for procedures that include the keyword.')]
         [string]$Keyword,
+        
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter for signed procedures.')]
+        [switch]$OnlySigned,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't select tables from default databases.")]
@@ -7414,6 +7421,44 @@ Function  Get-SQLStoredProcedureSQLi
                 $ProcedureNameFilter
                 $KeywordFilter
                 ORDER BY ROUTINE_NAME"
+
+             # Define query for signed procedures
+            if($OnlySigned){
+                $Query = "  use [$DbName];
+                SELECT  '$ComputerName' as [ComputerName],
+                '$Instance' as [Instance],
+                spr.ROUTINE_CATALOG as DB_NAME,
+                spr.SPECIFIC_SCHEMA as SCHEMA_NAME,
+                spr.ROUTINE_NAME as SP_NAME,
+                spr.ROUTINE_DEFINITION as SP_CODE,
+                CASE cp.crypt_type
+                when 'SPVC' then cer.name
+                when 'CPVC' then Cer.name
+                when 'SPVA' then ak.name
+                when 'CPVA' then ak.name
+                END as CERT_NAME,
+                sp.name as CERT_LOGIN,
+                sp.sid as CERT_SID
+                FROM sys.crypt_properties cp
+                JOIN sys.objects o ON cp.major_id = o.object_id
+                LEFT JOIN sys.certificates cer ON cp.thumbprint = cer.thumbprint
+                LEFT JOIN sys.asymmetric_keys ak ON cp.thumbprint = ak.thumbprint
+                LEFT JOIN INFORMATION_SCHEMA.ROUTINES spr on spr.ROUTINE_NAME = o.name
+                LEFT JOIN sys.server_principals sp on sp.sid = cer.sid
+                WHERE o.type_desc = 'SQL_STORED_PROCEDURE'AND
+                (ROUTINE_DEFINITION like '%sp_executesql%' OR
+                ROUTINE_DEFINITION like '%sp_sqlexec%' OR
+                ROUTINE_DEFINITION like '%exec @%' OR
+                ROUTINE_DEFINITION like '%exec (%' OR
+                ROUTINE_DEFINITION like '%exec(%' OR
+                ROUTINE_DEFINITION like '%execute @%' OR
+                ROUTINE_DEFINITION like '%execute (%' OR
+                ROUTINE_DEFINITION like '%execute(%' OR
+                ROUTINE_DEFINITION like '%''''''+%' OR
+                ROUTINE_DEFINITION like '%'''''' +%') AND
+                ROUTINE_CATALOG not like 'msdb' AND 
+                ROUTINE_DEFINITION like '%+%'"
+            }
 
             # Execute Query
             $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

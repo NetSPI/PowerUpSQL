@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.38
+        Version: 1.0.0.39
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -10730,7 +10730,7 @@ Function Invoke-SQLAuditSQLiSpSigned
 {
     <#
             .SYNOPSIS
-            This will return stored procedures using dynamic SQL and the EXECUTE AS OWNER clause that may suffer from SQL injection.
+            This will return stored procedures using dynamic SQL and are signed by a cert login that may suffer from SQL injection.
             There is also an options to check for 
             .PARAMETER Username
             SQL Server or domain account to authenticate with.
@@ -15557,4 +15557,3 @@ Function Invoke-SQLDumpInfo
 }
 
 #endregion
-

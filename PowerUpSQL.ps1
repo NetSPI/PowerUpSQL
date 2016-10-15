@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.37
+        Version: 1.0.0.38
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7389,7 +7389,9 @@ Function  Get-SQLStoredProcedureSQLi
 
             if( -not $SuppressVerbose)
             {
+
                 Write-Verbose -Message "$Instance : - Checking $DbName database..."
+
             }
 
             # Define Query
@@ -7427,10 +7429,10 @@ Function  Get-SQLStoredProcedureSQLi
                 $Query = "  use [$DbName];
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                spr.ROUTINE_CATALOG as DB_NAME,
-                spr.SPECIFIC_SCHEMA as SCHEMA_NAME,
-                spr.ROUTINE_NAME as SP_NAME,
-                spr.ROUTINE_DEFINITION as SP_CODE,
+                spr.ROUTINE_CATALOG as [DatabaseName],
+                spr.SPECIFIC_SCHEMA as [SchemaName],
+                spr.ROUTINE_NAME as [ProcedureName],
+                spr.ROUTINE_DEFINITION as [ProcedureDefinition],
                 CASE cp.crypt_type
                 when 'SPVC' then cer.name
                 when 'CPVC' then Cer.name
@@ -10531,12 +10533,10 @@ Function Invoke-SQLAuditTemplate
 
 
 # ---------------------------------------
-# Invoke-SQLAuditSQLiExecuteAs
+# Invoke-SQLAuditSQLiSpExecuteAs
 # ---------------------------------------
 # Author: Scott Sutherland
-# Todo: Get list of input parameters for each affected sp and determine if they are used in lines using dynamic SQL to increase likelhood of exploitation.
-# Todo: Check for the ownership and determine if it is a sysadmin. List in details.
-Function Invoke-SQLAuditSQLiExecuteAs
+Function Invoke-SQLAuditSQLiSpExecuteAs
 {
     <#
             .SYNOPSIS
@@ -10553,7 +10553,7 @@ Function Invoke-SQLAuditSQLiExecuteAs
             .PARAMETER Exploit
             Exploit vulnerable issues.
             .EXAMPLE
-            PS C:\> Invoke-SQLAuditSQLiExecuteAs -Instance SQLServer1\STANDARDDEV2014
+            PS C:\> Invoke-SQLAuditSQLiSpExecuteAs -Instance SQLServer1\STANDARDDEV2014
 
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
@@ -10570,7 +10570,7 @@ Function Invoke-SQLAuditSQLiExecuteAs
             Reference     : https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation
             Author        : Scott Sutherland (@_nullbind), NetSPI 2016
             .EXAMPLE
-            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditSQLiExecuteAs -Verbose
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditSQLiSpExecuteAs -Verbose
     #>
     [CmdletBinding()]
     Param(
@@ -10702,12 +10702,203 @@ Function Invoke-SQLAuditSQLiExecuteAs
 
         # ------------------------------------------------------------------
         # Exploit Vulnerability
+        # ------------------------------------------------------------------
         if($Exploit){
             Write-Verbose "$Instance : No automatic exploitation option has been provided. Uninformed exploitation of SQLi can have a negative impact on production environments."
         }
 
         # Status User
         Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - EXECUTE AS OWNER"
+    }
+
+    End
+    {
+        # Return data
+        if ( -not $NoOutput)
+        {
+            Return $TblData
+        }
+    }
+}
+
+
+# ---------------------------------------
+# Invoke-SQLAuditSQLiSpSigned
+# ---------------------------------------
+# Author: Scott Sutherland
+Function Invoke-SQLAuditSQLiSpSigned
+{
+    <#
+            .SYNOPSIS
+            This will return stored procedures using dynamic SQL and the EXECUTE AS OWNER clause that may suffer from SQL injection.
+            There is also an options to check for 
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Exploit
+            Exploit vulnerable issues.
+            .EXAMPLE
+            PS C:\> Invoke-SQLAuditSQLiSpSigned -Instance SQLServer1\STANDARDDEV2014
+
+            ComputerName  : SQLServer1
+            Instance      : SQLServer1\STANDARDDEV2014
+            Vulnerability : Potential SQL Injection
+            Description   : The affected procedure is using dynamic SQL and the "EXECUTE AS OWNER" clause.  As a result, it may be possible to impersonate the procedure owner if SQL injection is possible.
+            server.
+            Remediation   : Consider using parameterized queries instead of concatenated strings, and use signed procedures instead of the "EXECUTE AS OWNER" clause.'
+            Severity      : High
+            IsVulnerable  : Yes
+            IsExploitable : No
+            Exploited     : No
+            ExploitCmd    : No automated exploitation option has been provided, but to view the procedure code use: Get-SQLStoredProcedureSQLi -Verbose -Instance SQLServer1\STANDARDDEV2014 -Keyword "EXECUTE AS OWNER" 
+            Details       : The testdb.dbo.sp_vulnerable stored procedure is affected.
+            Reference     : https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation
+            Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditSQLiSpSigned -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't output anything.")]
+        [string]$NoOutput,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Exploit vulnerable issues.')]
+        [switch]$Exploit
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
+        $null = $TblData.Columns.Add('ComputerName')
+        $null = $TblData.Columns.Add('Instance')
+        $null = $TblData.Columns.Add('Vulnerability')
+        $null = $TblData.Columns.Add('Description')
+        $null = $TblData.Columns.Add('Remediation')
+        $null = $TblData.Columns.Add('Severity')
+        $null = $TblData.Columns.Add('IsVulnerable')
+        $null = $TblData.Columns.Add('IsExploitable')
+        $null = $TblData.Columns.Add('Exploited')
+        $null = $TblData.Columns.Add('ExploitCmd')
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
+    }
+
+    Process
+    {
+        # Status User
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Potential SQL Injection - Signed by Certificate Login"
+
+        # Test connection to server
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if(-not $TestConnection)
+        {
+            # Status user
+            Write-Verbose -Message "$Instance : CONNECTION FAILED."
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - Signed by Certificate Login."
+            Return
+        }
+
+        # Grab server information
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------
+        # Set function meta data for report output
+        # --------------------------------------------
+        if($Exploit)
+        {
+            $TestMode  = 'Exploit'
+        }
+        else
+        {
+            $TestMode  = 'Audit'
+        }
+        $Vulnerability = 'Potential SQL Injection - Signed by Certificate Login'
+        $Description   = 'The affected procedure is using dynamic SQL and has been signed by a certificate login.  As a result, it may be possible to impersonate signer if SQL injection is possible.'
+        $Remediation   = 'Consider using parameterized queries instead of concatenated strings.'
+        $Severity      = 'High'
+        $IsVulnerable  = 'No'
+        $IsExploitable = 'No'
+        $Exploited     = 'No'
+        $ExploitCmd    = "No automated exploitation option has been provided, but to view the procedure code use: Get-SQLStoredProcedureSQLi -Verbose -Instance $Instance -OnlySigned"
+        $Details       = ''
+        $Reference     = 'https://blog.netspi.com/hacking-sql-server-stored-procedures-part-3-sqli-and-user-impersonation'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------
+        # $IsVulnerable  = "No" or $IsVulnerable  = "Yes"
+                
+        # Get SP with dynamic sql and execute as owner
+        $SQLiResults = Get-SQLStoredProcedureSQLi -Instance $Instance -Username $Username -Password $Password -Credential $Credential -OnlySigned
+        
+        # Check for results
+        if($SQLiResults.rows.count -ge 0){
+            
+            # Confirmed vulnerable
+            $IsVulnerable = "Yes"
+            $IsExploitable = "Unknown"
+
+            # Add information to finding for each instance of potential sqli
+            $SQLiResults |
+            ForEach-Object{
+            
+                # Set instance values
+                $DatabaseName = $_.DatabaseName 
+                $SchemaName = $_.SchemaName
+                $ProcedureName = $_.ProcedureName
+                $ObjectName = "$DatabaseName.$SchemaName.$ProcedureName"
+                $Details =  "The $ObjectName stored procedure is affected."
+                
+                # Add to report 
+                $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)        
+            }
+        }    
+
+        # ------------------------------------------------------------------
+        # Exploit Vulnerability
+        # ------------------------------------------------------------------
+        if($Exploit){
+            Write-Verbose "$Instance : No automatic exploitation option has been provided. Uninformed exploitation of SQLi can have a negative impact on production environments."
+        }
+
+        # Status User
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - Signed by Certificate Login"
     }
 
     End
@@ -15366,3 +15557,4 @@ Function Invoke-SQLDumpInfo
 }
 
 #endregion
+

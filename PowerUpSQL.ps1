@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.39
+        Version: 1.0.0.40
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -6978,7 +6978,7 @@ Function  Get-SQLTriggerDml
                 is_not_for_replication,
                 is_instead_of_trigger
                 FROM [$DbName].[sys].[triggers] WHERE 1=1
-            $TriggerNameFilter"
+                $TriggerNameFilter"
 
             # Execute Query
             $TblDmlTriggersTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -7020,6 +7020,8 @@ Function  Get-SQLStoredProcedure
             Procedure name to filter for.
             .PARAMETER Keyword
             Filter for procedures that include the keyword.
+            .PARAMETER AutoExec
+            Only select procedures that execute when the SQL Server service starts.
             .PARAMETER NoDefaults
             Filter out results from default databases.
             .EXAMPLE
@@ -7032,11 +7034,18 @@ Function  Get-SQLStoredProcedure
             ProcedureName       : MyTestProc
             ProcedureType       : PROCEDURE
             ProcedureDefinition : CREATE PROC MyTestProc
-            WITH EXECUTE AS OWNER
-            as
-            begin
-            select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin
-            end
+                                  WITH EXECUTE AS OWNER
+                                  as
+                                  begin
+                                  select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin
+                                  end
+            SQL_DATA_ACCESS     : MODIFIES
+            ROUTINE_BODY        : SQL
+            CREATED             : 7/24/2016 3:16:29 PM
+            LAST_ALTERED        : 7/24/2016 3:16:29 PM
+            is_ms_shipped       : False
+            is_auto_executed    : False
+
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedure -Verbose -NoDefaults
     #>
@@ -7077,6 +7086,10 @@ Function  Get-SQLStoredProcedure
         [string]$Keyword,
 
         [Parameter(Mandatory = $false,
+        HelpMessage = "Only include procedures configured to execute when SQL Server service starts.")]
+        [switch]$AutoExec,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = "Don't select tables from default databases.")]
         [switch]$NoDefaults,
 
@@ -7108,6 +7121,16 @@ Function  Get-SQLStoredProcedure
         else
         {
             $KeywordFilter = ''
+        }
+
+        # Setup AutoExec filter
+        if ($AutoExec)
+        {
+            $AutoExecFilter = " AND is_auto_executed = 1"
+        }
+        else
+        {
+            $AutoExecFilter = ''
         }
     }
 
@@ -7181,10 +7204,16 @@ Function  Get-SQLStoredProcedure
                 SQL_DATA_ACCESS,
                 ROUTINE_BODY,
                 CREATED,
-                LAST_ALTERED
-                FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE 1=1
-            $ProcedureNameFilter
-            $KeywordFilter"
+                LAST_ALTERED,
+                b.is_ms_shipped,
+                b.is_auto_executed
+                FROM [INFORMATION_SCHEMA].[ROUTINES] a
+                JOIN [sys].[procedures]  b
+                ON a.ROUTINE_NAME = b.name
+                WHERE 1=1
+                $AutoExecFilter
+                $ProcedureNameFilter
+                $KeywordFilter"
 
             # Execute Query
             $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -7206,11 +7235,9 @@ Function  Get-SQLStoredProcedure
 #  Get-SQLStoredProcedureSQLi
 # ----------------------------------
 # Author: Scott Sutherland
-# Todo: Add column owner
-# Todo: Add column owner is sysadmin
-# Todo: Add column is_ms_shipped
-# Todo: Add column is_auto_excuted
-# select * from sys.procedures
+# Todo: Add column Procedure_Owner_Name
+# Todo: Add column owner Owner_Is_Sysadmin
+# Todo: Add is_ms_shipped and is_auto_executed to signed proc query
 Function  Get-SQLStoredProcedureSQLi
 {
     <#
@@ -7233,6 +7260,8 @@ Function  Get-SQLStoredProcedureSQLi
             Filter for procedures that include the keyword.
             .PARAMETER OnlySigned
             Filter for signed procedures.
+            .PARAMETER AutoExec
+            Only select procedures that execute when the SQL Server service starts.
             .PARAMETER NoDefaults
             Filter out results from default databases.
             .EXAMPLE
@@ -7255,6 +7284,13 @@ Function  Get-SQLStoredProcedureSQLi
                                 EXECUTE(@query)
                                 END
                                 GO
+            SQL_DATA_ACCESS     : MODIFIES
+            ROUTINE_BODY        : SQL
+            CREATED             : 7/24/2016 3:16:29 PM
+            LAST_ALTERED        : 7/24/2016 3:16:29 PM
+            is_ms_shipped       : False
+            is_auto_executed    : False
+
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedureSqli -Verbose -NoDefaults
     #>
@@ -7300,6 +7336,10 @@ Function  Get-SQLStoredProcedureSQLi
         [switch]$OnlySigned,
 
         [Parameter(Mandatory = $false,
+        HelpMessage = "Only include procedures configured to execute when SQL Server service starts.")]
+        [switch]$AutoExec,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = "Don't select tables from default databases.")]
         [switch]$NoDefaults,
 
@@ -7331,6 +7371,16 @@ Function  Get-SQLStoredProcedureSQLi
         else
         {
             $KeywordFilter = ''
+        }
+
+        # Setup AutoExec filter
+        if ($AutoExec)
+        {
+            $AutoExecFilter = " AND is_auto_executed = 1"
+        }
+        else
+        {
+            $AutoExecFilter = ''
         }
     }
 
@@ -7406,8 +7456,13 @@ Function  Get-SQLStoredProcedureSQLi
                 SQL_DATA_ACCESS,
                 ROUTINE_BODY,
                 CREATED,
-                LAST_ALTERED
-                FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE 1=1 AND               
+                LAST_ALTERED,
+                b.is_ms_shipped,
+                b.is_auto_executed
+                FROM [INFORMATION_SCHEMA].[ROUTINES] a
+                JOIN [sys].[procedures]  b
+                ON a.ROUTINE_NAME = b.name
+                WHERE 1=1 AND               
                 (ROUTINE_DEFINITION like '%sp_executesql%' OR
                 ROUTINE_DEFINITION like '%sp_sqlexec%' OR
                 ROUTINE_DEFINITION like '%exec @%' OR
@@ -7419,20 +7474,21 @@ Function  Get-SQLStoredProcedureSQLi
                 ROUTINE_DEFINITION like '%''''''+%' OR
                 ROUTINE_DEFINITION like '%'''''' +%') 
                 AND ROUTINE_DEFINITION like '%+%'
-                AND ROUTINE_CATALOG not like 'msdb'                               
+                AND ROUTINE_CATALOG not like 'msdb' 
+                $AutoExecFilter                              
                 $ProcedureNameFilter
                 $KeywordFilter
                 ORDER BY ROUTINE_NAME"
 
-             # Define query for signed procedures
+            # Define query for signed procedures
             if($OnlySigned){
                 $Query = "  use [$DbName];
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                spr.ROUTINE_CATALOG as [DatabaseName],
-                spr.SPECIFIC_SCHEMA as [SchemaName],
-                spr.ROUTINE_NAME as [ProcedureName],
-                spr.ROUTINE_DEFINITION as [ProcedureDefinition],
+                spr.ROUTINE_CATALOG as DB_NAME,
+                spr.SPECIFIC_SCHEMA as SCHEMA_NAME,
+                spr.ROUTINE_NAME as SP_NAME,
+                spr.ROUTINE_DEFINITION as SP_CODE,
                 CASE cp.crypt_type
                 when 'SPVC' then cer.name
                 when 'CPVC' then Cer.name
@@ -10730,7 +10786,7 @@ Function Invoke-SQLAuditSQLiSpSigned
 {
     <#
             .SYNOPSIS
-            This will return stored procedures using dynamic SQL and are signed by a cert login that may suffer from SQL injection.
+            This will return stored procedures using dynamic SQL and the EXECUTE AS OWNER clause that may suffer from SQL injection.
             There is also an options to check for 
             .PARAMETER Username
             SQL Server or domain account to authenticate with.
@@ -10865,10 +10921,10 @@ Function Invoke-SQLAuditSQLiSpSigned
         # $IsVulnerable  = "No" or $IsVulnerable  = "Yes"
                 
         # Get SP with dynamic sql and execute as owner
-        $SQLiResults = Get-SQLStoredProcedureSQLi -Instance $Instance -Username $Username -Password $Password -Credential $Credential -OnlySigned
+        $SQLiResults = Get-SQLStoredProcedureSQLi -Instance $Instance -Username $Username -Password $Password -Credential $Credential -OnlySig
         
         # Check for results
-        if($SQLiResults.rows.count -ge 0){
+        if($SQLiResults.rows.count -ge 1){
             
             # Confirmed vulnerable
             $IsVulnerable = "Yes"
@@ -15557,3 +15613,4 @@ Function Invoke-SQLDumpInfo
 }
 
 #endregion
+

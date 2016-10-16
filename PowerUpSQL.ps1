@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.40
+        Version: 1.0.0.41
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7524,6 +7524,197 @@ Function  Get-SQLStoredProcedureSQLi
             # Count results
             $TblProcsCount = $TblProcsTemp.rows.count
             Write-Verbose "$Instance : - $TblProcsCount found in $DbName database"
+
+            # Append results
+            $TblProcs = $TblProcs + $TblProcsTemp
+        }
+    }
+
+    End
+    {
+        # Return data
+        $TblProcs
+    }
+}
+
+# ----------------------------------
+#  Get-SQLStoredProcedureAutoExec
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLStoredProcedureAutoExec
+{
+    <#
+            .SYNOPSIS
+            Returns stored procedures from target SQL Servers.
+            Note: Viewing procedure definitions requires the sysadmin role or the VIEW DEFINITION permission.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER ProcedureName
+            Procedure name to filter for.
+            .PARAMETER Keyword
+            Filter for procedures that include the keyword.
+            .EXAMPLE
+            PS C:\> Get-SQLStoredProcedureAutoExec -Instance SQLServer1\STANDARDDEV2014 -NoDefaults -DatabaseName testdb
+
+            ComputerName        : SQLServer1
+            Instance            : SQLServer1\STANDARDDEV2014
+            DatabaseName        : testdb
+            SchemaName          : dbo
+            ProcedureName       : MyTestProc
+            ProcedureType       : PROCEDURE
+            ProcedureDefinition : CREATE PROC MyTestProc
+                                  WITH EXECUTE AS OWNER
+                                  as
+                                  begin
+                                  select SYSTEM_USER as currentlogin, ORIGINAL_LOGIN() as originallogin
+                                  end
+            SQL_DATA_ACCESS     : MODIFIES
+            ROUTINE_BODY        : SQL
+            CREATED             : 7/24/2016 3:16:29 PM
+            LAST_ALTERED        : 7/24/2016 3:16:29 PM
+            is_ms_shipped       : False
+            is_auto_executed    : TRUE
+
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedureAutoExec -Verbose -NoDefaults
+    #>
+
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Procedure name.')]
+        [string]$ProcedureName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter for procedures that include the keyword.')]
+        [string]$Keyword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblProcs = New-Object -TypeName System.Data.DataTable
+
+        # Setup routine name filter
+        if ($ProcedureName)
+        {
+            $ProcedureNameFilter = " AND ROUTINE_NAME like '$ProcedureName'"
+        }
+        else
+        {
+            $ProcedureNameFilter = ''
+        }
+
+        # Setup ROUTINE_DEFINITION filter
+        if ($Keyword)
+        {
+            $KeywordFilter = " AND ROUTINE_DEFINITION like '%$Keyword%'"
+        }
+        else
+        {
+            $KeywordFilter = ''
+        }
+    }
+
+    Process
+    {
+        # Parse ComputerName
+        If ($Instance)
+        {
+            $ComputerName = $Instance.split('\')[0].split(',')[0]
+            $Instance = $Instance
+        }
+        else
+        {
+            $ComputerName = $env:COMPUTERNAME
+            $Instance = '.\'
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+                Write-Verbose -Message "$Instance : Checking for autoexec stored procedures..."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Get role for each database
+        $TblDatabases |
+        ForEach-Object -Process {
+            # Get database name
+            $DbName = $_.DatabaseName
+
+            # Define Query
+            $Query = "  use [master];
+                SELECT  '$ComputerName' as [ComputerName],
+                '$Instance' as [Instance],
+                ROUTINE_CATALOG AS [DatabaseName],
+                ROUTINE_SCHEMA AS [SchemaName],
+                ROUTINE_NAME as [ProcedureName],
+                ROUTINE_TYPE as [ProcedureType],
+                ROUTINE_DEFINITION as [ProcedureDefinition],
+                SQL_DATA_ACCESS,
+                ROUTINE_BODY,
+                CREATED,
+                LAST_ALTERED,
+                b.is_ms_shipped,
+                b.is_auto_executed
+                FROM [INFORMATION_SCHEMA].[ROUTINES] a
+                JOIN [sys].[procedures]  b
+                ON a.ROUTINE_NAME = b.name
+                WHERE 1=1
+                AND is_auto_executed = 1
+                $ProcedureNameFilter
+                $KeywordFilter"
+
+            # Execute Query
+            $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+            if(-not $TblProcsTemp){
+                Write-Verbose -Message "$Instance : No autoexec procedures found."
+            }
 
             # Append results
             $TblProcs = $TblProcs + $TblProcsTemp
@@ -15613,4 +15804,3 @@ Function Invoke-SQLDumpInfo
 }
 
 #endregion
-

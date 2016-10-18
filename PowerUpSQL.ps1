@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.48
+        Version: 1.0.0.49
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8928,7 +8928,7 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null
 
         $PwCount = $DefaultPasswords | measure | select count -ExpandProperty count
-        Write-Verbose "Loaded $PwCount default passwords."
+        # Write-Verbose "Loaded $PwCount default passwords."
     }
 
     Process
@@ -11535,6 +11535,177 @@ Function Invoke-SQLAuditPrivServerLink
 
 
 # ---------------------------------------
+# Invoke-SQLAuditDefaultLoginPw
+# ---------------------------------------
+# Author: Scott Sutherland
+# Reference: https://github.com/pwnwiki/pwnwiki.github.io/blob/master/tech/db/mssql.md
+Function  Invoke-SQLAuditDefaultLoginPw
+{
+    <#
+            .SYNOPSIS
+            Based on the instance name, test if SQL Server is configured with default passwords.
+            There is also an options to check for 
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Exploit
+            Exploit vulnerable issues.
+            .EXAMPLE
+            PS C:\> Invoke-SQLAuditDefaultLoginPw -Instance SQLServer1\STANDARDDEV2014
+
+            ComputerName  : SQLServer1
+            Instance      : SQLServer1\STANDARDDEV2014
+            Vulnerability : Default SQL Server Login Password
+            Description   : The target SQL Server instance is configured with a default SQL login and password.
+            Remediation   : Ensure all SQL Server logins are required to use a strong password. Considered inheriting the OS password policy.
+            Severity      : High
+            IsVulnerable  : Yes
+            IsExploitable : No
+            Exploited     : No
+            ExploitCmd    : Get-SQLQuery -Verbose -Instance SQLServer1\STANDARDDEV2014 -Q "Select @@Version" -Username test -Password test. 
+            Details       : Affected credentials: test/test.
+            Reference     : https://github.com/pwnwiki/pwnwiki.github.io/blob/master/tech/db/mssql.md
+            Author        : Scott Sutherland (@_nullbind), NetSPI 2016
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Invoke-SQLAuditDefaultLoginPw -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't output anything.")]
+        [string]$NoOutput,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Exploit vulnerable issues.')]
+        [switch]$Exploit
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
+        $null = $TblData.Columns.Add('ComputerName')
+        $null = $TblData.Columns.Add('Instance')
+        $null = $TblData.Columns.Add('Vulnerability')
+        $null = $TblData.Columns.Add('Description')
+        $null = $TblData.Columns.Add('Remediation')
+        $null = $TblData.Columns.Add('Severity')
+        $null = $TblData.Columns.Add('IsVulnerable')
+        $null = $TblData.Columns.Add('IsExploitable')
+        $null = $TblData.Columns.Add('Exploited')
+        $null = $TblData.Columns.Add('ExploitCmd')
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
+    }
+
+    Process
+    {
+        # Status User
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Default SQL Server Login Password"
+
+        # Test connection to server
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if(-not $TestConnection)
+        {
+            # Status user
+            Write-Verbose -Message "$Instance : CONNECTION FAILED."
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - EXECUTE AS OWNER."
+            Return
+        }
+
+        # Grab server information
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------
+        # Set function meta data for report output
+        # --------------------------------------------
+        if($Exploit)
+        {
+            $TestMode  = 'Exploit'
+        }
+        else
+        {
+            $TestMode  = 'Audit'
+        }
+        $Vulnerability = 'Default SQL Server Login Password'
+        $Description   = 'The target SQL Server instance is configured with a default SQL login and password used by a common application.'
+        $Remediation   = 'Ensure all SQL Server logins are required to use a strong password. Consider inheriting the OS password policy.'
+        $Severity      = 'High'
+        $IsVulnerable  = 'No'
+        $IsExploitable = 'No'
+        $Exploited     = 'No'
+        $ExploitCmd    = "Get-SQLQuery -Verbose -Instance $Instance -Q `"Select @@Version`" -Username test -Password test."
+        $Details       = ''
+        $Reference     = 'https://github.com/pwnwiki/pwnwiki.github.io/blob/master/tech/db/mssql.md'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # Check for default passwords
+        $Results = Get-SQLServerLoginDefaultPw -Verbose -Instance $Instance 
+
+        if($Results){
+            $IsVulnerable = "Yes"
+            $IsExploitable = "Yes"
+        }
+
+        # Create report records
+        $Results | 
+        ForEach-Object {
+            $DefaultComputer = $_.Computer
+            $DefaultInstance = $_.Instance
+            $DefaultUsername = $_.Username
+            $DefaultPassword = $_.Password
+
+            # Check if sysadmin
+            
+            # Add record            
+            $Details = "Default credentials found: $DefaultUsername / $DefaultPassword."
+            $ExploitCmd    = "Get-SQLQuery -Verbose -Instance $DefaultInstance -Q `"Select @@Version`" -Username $DefaultUsername -Password $DefaultPassword"
+            $null = $TblData.Rows.Add($DefaultComputer, $DefaultInstance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)            
+        }        
+    }
+    End
+    {
+        # Return data
+        if ( -not $NoOutput)
+        {
+            Return $TblData
+        }
+    }
+}
+
+
+# ---------------------------------------
 # Invoke-SQLAuditPrivTrustworthy
 # ---------------------------------------
 # Author: Scott Sutherland
@@ -13346,7 +13517,7 @@ Function Invoke-SQLAuditWeakLoginPw
         }
         $Vulnerability = 'Weak Login Password'
         $Description   = 'One or more SQL Server logins is configured with a weak password.  This may provide unauthorized access to resources the affected logins have access to.'
-        $Remediation   = 'Ensure all SQL Server logins are required to use a strong password. Considered inheriting the OS password policy.'
+        $Remediation   = 'Ensure all SQL Server logins are required to use a strong password. Consider inheriting the OS password policy.'
         $Severity      = 'High'
         $IsVulnerable  = 'No'
         $IsExploitable = 'No'
@@ -15641,6 +15812,7 @@ Function Invoke-SQLAudit
         Write-Verbose -Message 'LOADING VULNERABILITY CHECKS.'
 
         # Load list of vulnerability check functions - Server / database
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditDefaultLoginPw ','Server')   
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditWeakLoginPw','Server')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivImpersonateLogin','Server')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivServerLink','Server')
@@ -15654,8 +15826,8 @@ Function Invoke-SQLAudit
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSampleDataByColumn','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiSpExecuteAs','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiSpSigned','Database')
-        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivAutoExecSp','Database')       
-
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivAutoExecSp','Database') 
+         
         Write-Verbose -Message 'RUNNING VULNERABILITY CHECKS.'
     }
 

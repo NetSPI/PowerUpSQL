@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.46
+        Version: 1.0.0.47
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -12185,9 +12185,28 @@ Function Invoke-SQLAuditPrivXpDirtree
         if($DirTreePrivs)
         {
             # Status user
-            Write-Verbose -Message "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_dirtree."
+            Write-Verbose -Message "$Instance : - At least one principal has EXECUTE privileges on xp_dirtree."
 
             $IsVulnerable  = 'Yes'
+
+            if($Exploit){
+                # Check if the current process has elevated privs
+                # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
+                $CurrentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+                $prp = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($CurrentIdentity)
+                $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+                $IsAdmin = $prp.IsInRole($adm)
+            
+                if(-not $IsAdmin)
+                {
+                    Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
+                    $IAMADMIN = 'No'
+                }else{
+                    Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
+                    $IAMADMIN = 'Yes'
+                }
+            }
+            
             $DirTreePrivs |
             ForEach-Object -Process {
                 $PrincipalName = $DirTreePrivs.PrincipalName
@@ -12199,27 +12218,10 @@ Function Invoke-SQLAuditPrivXpDirtree
 
                     if($PrincipalName -eq $PrincipalCheck -or $PrincipalName -eq 'public')
                     {
-                        $IsExploitable  = 'Yes'
-
-                        # Check if the current process has elevated privs
-                        # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
-                        $CurrentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-                        $prp = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($CurrentIdentity)
-                        $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
-                        $IsAdmin = $prp.IsInRole($adm)
-                        if (-not $IsAdmin)
-                        {
-                            Write-Verbose -Message "$Instance : - You do not have Administrator rights. Run this function as an Administrator in order to load Inveigh."
-                            $IAMADMIN = 'No'
-                        }
-                        else
-                        {
-                            Write-Verbose -Message "$Instance : - You have Administrator rights. Inveigh will be loaded."
-                            $IAMADMIN = 'Yes'
-                        }
+                        $IsExploitable  = 'Yes'                      
 
                         # Check for exploit flag
-                        if($IAMADMIN -eq 'Yes')
+                        if(($IAMADMIN -eq 'Yes') -and ($Exploit))
                         {
                             # Attempt to load Inveigh from file
                             #$InveighSrc = Get-Content .\scripts\Inveigh.ps1 -ErrorAction SilentlyContinue | Out-Null
@@ -15650,7 +15652,7 @@ Function Invoke-SQLAudit
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbDdlAdmin','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbOwner','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSampleDataByColumn','Database')
-        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiExecuteAs','Database')
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiSpExecuteAs','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiSpSigned','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivAutoExecSp','Database')       
 

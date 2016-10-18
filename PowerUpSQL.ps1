@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.47
+        Version: 1.0.0.48
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -11484,9 +11484,9 @@ Function Invoke-SQLAuditPrivServerLink
             $LinkedServers |
             ForEach-Object -Process {
                 $Details = 
-                $LinkName = $LinkedServers.DatabaseLinkName
-                $LinkUser = $LinkedServers.RemoteLoginName
-                $LinkAccess = $LinkedServers.is_data_access_enabled
+                $LinkName = $_.DatabaseLinkName
+                $LinkUser = $_.RemoteLoginName
+                $LinkAccess = $_.is_data_access_enabled
                 $ExploitCmd = "Example query: SELECT * FROM OPENQUERY([$LinkName],'Select ''Server: '' + @@Servername +'' '' + ''Login: '' + SYSTEM_USER')"
 
                 if($LinkUser -and $LinkAccess -eq 'True')
@@ -11692,7 +11692,7 @@ Function Invoke-SQLAuditPrivTrustworthy
             $IsVulnerable  = 'Yes'
             $TrustedDatabases |
             ForEach-Object -Process {
-                $DatabaseName = $TrustedDatabases.DatabaseName
+                $DatabaseName = $_.DatabaseName
 
                 Write-Verbose -Message "$Instance : - The database $DatabaseName was found configured as trustworthy."
                 $Details = "The database $DatabaseName was found configured as trustworthy."

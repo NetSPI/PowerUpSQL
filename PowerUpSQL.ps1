@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.42
+        Version: 1.0.0.43
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15486,7 +15486,9 @@ Function Invoke-SQLAudit
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbDdlAdmin','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditRoleDbOwner','Database')
         $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSampleDataByColumn','Database')
-        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiExecuteAs','Database')        
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiExecuteAs','Database')
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditSQLiSpSigned','Database')
+        $null = $TblVulnFunc.Rows.Add('Invoke-SQLAuditPrivAutoExecSp','Database')       
 
         Write-Verbose -Message 'RUNNING VULNERABILITY CHECKS.'
     }

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.41
+        Version: 1.0.0.42
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7713,7 +7713,7 @@ Function  Get-SQLStoredProcedureAutoExec
             # Execute Query
             $TblProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
             if(-not $TblProcsTemp){
-                Write-Verbose -Message "$Instance : No autoexec procedures found."
+                #Write-Verbose -Message "$Instance : No autoexec procedures found."
             }
 
             # Append results
@@ -10995,7 +10995,7 @@ Function Invoke-SQLAuditSQLiSpSigned
             ComputerName  : SQLServer1
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : Potential SQL Injection
-            Description   : The affected procedure is using dynamic SQL and the "EXECUTE AS OWNER" clause.  As a result, it may be possible to impersonate the procedure owner if SQL injection is possible.
+            Description   : The affected procedure is using dynamic SQL and is signed.  As a result, it may be possible to impersonate the procedure owner if SQL injection is possible.
             server.
             Remediation   : Consider using parameterized queries instead of concatenated strings, and use signed procedures instead of the "EXECUTE AS OWNER" clause.'
             Severity      : High
@@ -11573,6 +11573,276 @@ Function Invoke-SQLAuditPrivTrustworthy
     }
 }
 
+
+# ---------------------------------------
+# Invoke-SQLAuditPrivAutoExecSp
+# ---------------------------------------
+# Author: Scott Sutherland
+Function  Invoke-SQLAuditPrivAutoExecSp
+{
+    <#
+            .SYNOPSIS
+            Check if any databases have been configured as trustworthy.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Exploit
+            Exploit vulnerable issues.
+            .EXAMPLE
+            PS C:\>  Invoke-SQLAuditPrivAutoExecSp -Instance SQLServer1\STANDARDDEV2014
+
+            .EXAMPLE
+            PS C:\>  Invoke-SQLInstanceLocal | Invoke-SQLAuditPrivAutoExecSp -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't output anything.")]
+        [string]$NoOutput,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Exploit vulnerable issues.')]
+        [switch]$Exploit
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblAutoExecPrivs = new-object System.Data.DataTable 
+        $TblAutoExecPrivs.Columns.add('ComputerName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('Instance') | Out-Null
+        $TblAutoExecPrivs.Columns.add('DatabaseName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('SchemaName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('ProcedureName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('ProcedureType') | Out-Null
+        $TblAutoExecPrivs.Columns.add('ProcedureDefinition') | Out-Null
+        $TblAutoExecPrivs.Columns.add('SQL_DATA_ACCESS') | Out-Null
+        $TblAutoExecPrivs.Columns.add('ROUTINE_BODY') | Out-Null    
+        $TblAutoExecPrivs.Columns.add('CREATED') | Out-Null         
+        $TblAutoExecPrivs.Columns.add('LAST_ALTERED') | Out-Null    
+        $TblAutoExecPrivs.Columns.add('is_ms_shipped') | Out-Null   
+        $TblAutoExecPrivs.Columns.add('is_auto_executed') | Out-Null 
+        $TblAutoExecPrivs.Columns.add('PrincipalName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('PrincipalType') | Out-Null
+        $TblAutoExecPrivs.Columns.add('PermissionName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('PermissionType') | Out-Null
+        $TblAutoExecPrivs.Columns.add('StateDescription') | Out-Null
+        $TblAutoExecPrivs.Columns.add('ObjectName') | Out-Null
+        $TblAutoExecPrivs.Columns.add('ObjectType') | Out-Null
+
+        # Table for output
+        $TblData = New-Object -TypeName System.Data.DataTable
+        $null = $TblData.Columns.Add('ComputerName')
+        $null = $TblData.Columns.Add('Instance')
+        $null = $TblData.Columns.Add('Vulnerability')
+        $null = $TblData.Columns.Add('Description')
+        $null = $TblData.Columns.Add('Remediation')
+        $null = $TblData.Columns.Add('Severity')
+        $null = $TblData.Columns.Add('IsVulnerable')
+        $null = $TblData.Columns.Add('IsExploitable')
+        $null = $TblData.Columns.Add('Exploited')
+        $null = $TblData.Columns.Add('ExploitCmd')
+        $null = $TblData.Columns.Add('Details')
+        $null = $TblData.Columns.Add('Reference')
+        $null = $TblData.Columns.Add('Author')
+    }
+
+    Process
+    {
+        # Status User
+        Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Excessive Privilege - Auto Execute Stored Procedure"
+
+        # Test connection to server
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if(-not $TestConnection)
+        {
+            # Status user
+            Write-Verbose -Message "$Instance : CONNECTION FAILED."
+            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Auto Execute Stored Procedure."
+            Return
+        }
+
+        # Grab server information
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $CurrentLogin = $ServerInfo.CurrentLogin
+        $ComputerName = $ServerInfo.ComputerName
+
+        # --------------------------------------------
+        # Set function meta data for report output
+        # --------------------------------------------
+        if($Exploit)
+        {
+            $TestMode  = 'Exploit'
+        }
+        else
+        {
+            $TestMode  = 'Audit'
+        }
+        $Vulnerability = 'Excessive Privilege - Auto Execute Stored Procedure'
+        $Description   = 'A stored procedured is configured for automatic execution and has explicit permissions assigned.  This may allow non sysadmin logins to execute queries as "sa" when the SQL Server service is restarted.'
+        $Remediation   = "Ensure that non sysadmin logins do not have privileges to ALTER stored procedures configured with the is_auto_executed settting set to 1."
+        $Severity      = 'Low'
+        $IsVulnerable  = 'No'
+        $IsExploitable = 'No'
+        $Exploited     = 'No'
+        $ExploitCmd    = 'There is not exploit available at this time.'
+        $Details       = ''
+        $Reference     = 'https://msdn.microsoft.com/en-us/library/ms187861.aspx'
+        $Author        = 'Scott Sutherland (@_nullbind), NetSPI 2016'
+
+        # -----------------------------------------------------------------
+        # Check for the Vulnerability
+        # Note: Typically a missing patch or weak configuration
+        # -----------------------------------------------------------------
+        $IsVulnerable  = 'Yes'
+
+        # Get list of autoexec stored procedures
+        $AutoProcs = Get-SQLStoredProcedureAutoExec -Verbose -Instance $Instance -Username $username -Password $password -Credential $credential 
+
+        # Get count
+        $AutoCount = $AutoProcs | measure | select count -ExpandProperty count
+
+        if($AutoCount -eq 0){
+            Write-Verbose "$Instance : No stored procedures were found configured to auto execute."
+            return
+        }
+
+        # Get permissions for procs
+        Write-Verbose "$Instance : Checking permissions..."
+        $AutoProcs | 
+        foreach-object {
+    
+            # Grab autoexec proc info
+            $ComputerName = $_.ComputerName
+            $Instance = $_.Instance
+            $DatabaseName = $_.DatabaseName
+            $SchemaName = $_.SchemaName
+            $ProcedureName = $_.ProcedureName
+            $ProcedureType = $_.ProcedureType
+            $ProcedureDefinition = $_.ProcedureDefinition
+            $SQL_DATA_ACCESS = $_.SQL_DATA_ACCESS
+            $ROUTINE_BODY = $_.ROUTINE_BODY
+            $CREATED = $_.CREATED
+            $LAST_ALTERED = $_.LAST_ALTERED
+            $is_ms_shipped = $_.is_ms_shipped
+            $is_auto_executed = $_.is_auto_executed    
+
+            # Get a list of explicit permissions 
+	        $Results = Get-SQLDatabasePriv -Verbose -DatabaseName master -SuppressVerbose -Instance $Instance -Username $username -Password $password -Credential $credential | 
+            Where-Object {$_.objectname -like "$ProcedureName"}
+
+            # Check if any permisssions exist
+            $PermCount = $Results | measure | select count -ExpandProperty count
+
+            # Add record
+            if($PermCount -ge 1){
+
+                # Itererate through each permission
+                $Results | 
+                ForEach-Object {
+
+                    # Grab permission info
+                    $PrincipalName = $_.PrincipalName
+                    $PrincipalType = $_.PrincipalType
+                    $PermissionName = $_.PermissionName
+                    $PermissionType = $_.PermissionType
+                    $StateDescription = $_.StateDescription
+                    $ObjectType = $_.ObjectType
+                    $ObjectName = $_.ObjectName
+
+                    $FullSpName = "$DatabaseName.$SchemaName.$ProcedureName"
+        
+                    # Add row to results
+                    $TblAutoExecPrivs.Rows.Add(
+                        $ComputerName,
+                        $Instance,
+                        $DatabaseName,
+                        $SchemaName,
+                        $ProcedureName,
+                        $ProcedureType,
+                        $ProcedureDefinition,
+                        $SQL_DATA_ACCESS,
+                        $ROUTINE_BODY,
+                        $CREATED,
+                        $LAST_ALTERED,
+                        $is_ms_shipped,
+                        $is_auto_executed,
+                        $PrincipalName,
+                        $PrincipalType,
+                        $PermissionName,
+                        $PermissionType,
+                        $StateDescription,
+                        $ObjectName,
+                        $ObjectType
+                    ) | Out-Null
+
+                    Write-Verbose -Message "$Instance : - $PrincipalName has $StateDescription $PermissionName on $FullSpName."
+                    $Details = "$PrincipalName has $StateDescription $PermissionName on $FullSpName."
+                    $null = $TblData.Rows.Add($ComputerName, $Instance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)            
+                }
+            }
+        }
+
+        #$TblAutoExecPrivs       
+
+        # -----------------------------------------------------------------
+        # Check for exploit dependancies
+        # Note: Typically secondary configs required for dba/os execution
+        # -----------------------------------------------------------------
+        # $IsExploitable = "No" or $IsExploitable = "Yes"
+        # Check if the link is alive and verify connection + check if sysadmin
+        $IsExploitable = "Unknown"
+
+        # -----------------------------------------------------------------
+        # Exploit Vulnerability
+        # Note: Add the current user to sysadmin fixed server role
+        # -----------------------------------------------------------------
+        # $Exploited = "No" or $Exploited     = "Yes"
+        # select * from openquery("server\intance",'EXEC xp_cmdshell whoami WITH RESULT SETS ((output VARCHAR(MAX)))')
+        # Also, recommend link crawler module
+
+
+        # Status User
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Excessive Privilege - Trusted Database"
+    }
+
+    End
+    {
+        # Return data
+        if ( -not $NoOutput)
+        {
+            Return $TblData
+        }
+    }
+}
 
 # ---------------------------------------
 # Invoke-SQLAuditPrivXpDirtree

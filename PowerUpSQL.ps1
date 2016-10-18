@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.45
+        Version: 1.0.0.46
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -13157,7 +13157,9 @@ Function Invoke-SQLAuditWeakLoginPw
 {
     <#
             .SYNOPSIS
-            Check if the current login has the db_owner role in any databases.
+            Perform dictionary attack for common passwords. By default, it will enumerate
+            SQL Server logins and the current login and test for "username" as password
+            for each enumerated login.
             .PARAMETER Username
             Known SQL Server login to obtain a list of logins with for testing.
             .PARAMETER TestUsername
@@ -13241,7 +13243,7 @@ Function Invoke-SQLAuditWeakLoginPw
         [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server password to attempt to login with.')]
-        [string]$TestPassword = 'password',
+        [string]$TestPassword,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Path to list of passwords to use.  One per line.')]
@@ -13451,9 +13453,9 @@ Function Invoke-SQLAuditWeakLoginPw
         }
 
         # Check for provided passwords
-        if($PasswordList.count -eq 0 -and (-not $UserAsPass))
+        if($PasswordList.count -eq 0 -and ($NoUserAsPass))
         {
-            Write-Verbose -Message "$Instance - No password have been provided."
+            Write-Verbose -Message "$Instance - No passwords have been provided."
             return
         }
 

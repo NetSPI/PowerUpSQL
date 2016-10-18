@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.43
+        Version: 1.0.0.44
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8829,6 +8829,166 @@ function Create-SQLFileXpDll
     Write-Verbose -Message " - Register xp via UNC path: sp_addextendedproc `'$ExportName`', `'\\servername\pathtofile\myxp.dll`'"
     Write-Verbose -Message " - Unregister xp: sp_dropextendedproc `'$ExportName`'"
 }
+
+# ----------------------------------
+#  Get-SQLServerLoginDefaultPw
+# ----------------------------------
+# Author: Scott Sutherland
+# Reference: https://github.com/pwnwiki/pwnwiki.github.io/blob/master/tech/db/mssql.md
+Function  Get-SQLServerLoginDefaultPw
+{
+    <#
+            .SYNOPSIS
+            Based on the instance name, test if SQL Server is configured with default passwords.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLServerLoginDefaultPw -Instance SQLServer1\STANDARDDEV2014
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLServerLoginDefaultPw -Verbose
+            VERBOSE: SQLServer1\SQLEXPRESS : Confirmed instance match.
+            VERBOSE: SQLServer1\SQLEXPRESS : No credential matches were found.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Confirmed instance match.
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Confirmed default credentials - test/test
+            VERBOSE: SQLServer1 : No instance match found.
+
+            Computer       Instance                       Username Password
+            --------       --------                       -------- --------
+            SQLServer1     SQLServer1\STANDARDDEV2014     test     test 
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLDomain | Get-SQLServerLoginDefaultPw -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $TblResults.Columns.Add('Computer') | Out-Null
+        $TblResults.Columns.Add('Instance') | Out-Null
+        $TblResults.Columns.Add('Username') | Out-Null
+        $TblResults.Columns.Add('Password') | Out-Null 
+
+        # Create table for database of defaults
+        $DefaultPasswords = New-Object System.Data.DataTable
+        $DefaultPasswords.Columns.Add('Instance') | Out-Null
+        $DefaultPasswords.Columns.Add('Username') | Out-Null
+        $DefaultPasswords.Columns.Add('Password') | Out-Null        
+
+        # Populate DefaultPasswords data table
+        $DefaultPasswords.Rows.Add("ACS","ej","ej") | Out-Null
+        $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null
+        $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null
+        $DefaultPasswords.Rows.Add("INTRAVET","sa","Webster#1") | Out-Null
+        $DefaultPasswords.Rows.Add("CDRDICOM","sa","CDRDicom50!") | Out-Null
+        $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
+        $DefaultPasswords.Rows.Add("ECC","sa","Webgility2011") | Out-Null
+        $DefaultPasswords.Rows.Add("BOSCHSQL","sa","RPSsql12345") | Out-Null
+        $DefaultPasswords.Rows.Add("HDPS","sa","sa") | Out-Null
+        $DefaultPasswords.Rows.Add("DVTEL","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("SALESLOGIX","sa","SLXMaster") | Out-Null
+        $DefaultPasswords.Rows.Add("ACT7","sa","sage") | Out-Null
+        $DefaultPasswords.Rows.Add("BKUPEXEC","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("CSSQL05","ELNAdmin","ELNAdmin") | Out-Null
+        $DefaultPasswords.Rows.Add("CSSQL05","sa","CambridgeSoft_SA") | Out-Null
+        $DefaultPasswords.Rows.Add("INSERTGT","msi","keyboa5") | Out-Null
+        $DefaultPasswords.Rows.Add("INSERTGT","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("RTCLOCAL","sa","mypassword") | Out-Null
+        $DefaultPasswords.Rows.Add("PCAMERICA","sa","PCAmerica") | Out-Null
+        $DefaultPasswords.Rows.Add("PCAMERICA","sa","pcAmer1ca") | Out-Null
+        $DefaultPasswords.Rows.Add("VSDOTNET","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("HPDSS","sa","Hpdsdb000001") | Out-Null
+        $DefaultPasswords.Rows.Add("HPDSS","sa","hpdss") | Out-Null
+        $DefaultPasswords.Rows.Add("MYMOVIES","sa","t9AranuHA7") | Out-Null
+        $DefaultPasswords.Rows.Add("CODEPAL","sa","Cod3p@l") | Out-Null
+        $DefaultPasswords.Rows.Add("CODEPAL08","sa","Cod3p@l") | Out-Null
+        $DefaultPasswords.Rows.Add("VSQL","sa","111") | Out-Null
+        $DefaultPasswords.Rows.Add("EASYSHIP","sa","DHLadmin@1") | Out-Null
+        $DefaultPasswords.Rows.Add("DHLEASYSHIP","sa","DHLadmin@1") | Out-Null
+        $DefaultPasswords.Rows.Add("ECOPYDB","sa","ecopy") | Out-Null
+        $DefaultPasswords.Rows.Add("ECOPYDB","e+C0py2007_@x","e+C0py2007_@x") | Out-Null
+        $DefaultPasswords.Rows.Add("TEW_SQLEXPRESS","tew","tew") | Out-Null
+        $DefaultPasswords.Rows.Add("AutodeskVault","sa","AutodeskVault@26200") | Out-Null      
+        $DefaultPasswords.Rows.Add("Emerson2012","sa","42Emerson42Eme") | Out-Null
+        $DefaultPasswords.Rows.Add("RMSQLDATA","Super","Orange") | out-null
+        $DefaultPasswords.Rows.Add("CounterPoint","sa","CounterPoint8") | Out-Null
+        $DefaultPasswords.Rows.Add("SQLEXPRESS","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("AOM2","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("DPM","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("ARIS","ARIS9","*ARIS!1dm9n#") | out-null
+        $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null
+
+        $PwCount = $DefaultPasswords | measure | select count -ExpandProperty count
+        Write-Verbose "Loaded $PwCount default passwords."
+    }
+
+    Process
+    {
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+       
+        # Grab only the instance name
+        $TargetInstance = $Instance.Split("\")[1]
+
+        # Bypass ports and default instances
+        if(-not $TargetInstance){
+            Write-Verbose "$Instance : No instance match found."
+            return
+        }
+
+        # Check if instance is in list
+        $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -like "$TargetInstance"}        
+
+        if($TblResultsTemp){
+            Write-Verbose "$Instance : Confirmed instance match."
+        }
+
+        # Attempt login
+        $CurrentUsername = $TblResultsTemp.username
+        $CurrentPassword = $TblResultsTemp.password
+
+        # Test login
+        $LoginTest = Get-SQLConnectionTest -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose | Where-Object {$_.status -like "Accessible"} | Select Status -ExpandProperty Status
+        if($LoginTest -eq "Accessible"){
+
+            Write-Verbose "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"
+
+            # Append if successful                      
+            $TblResults.Rows.Add(
+                $ComputerName,
+                $Instance,
+                $CurrentUsername,
+                $CurrentPassword
+            ) | Out-Null
+        }else{
+            Write-Verbose "$Instance : No credential matches were found."
+        }
+    }
+
+    End
+    {
+        # Return data
+        $TblResults
+    }
+}
+
+
 #endregion
 
 #########################################################################

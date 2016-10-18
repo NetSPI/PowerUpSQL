@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.44
+        Version: 1.0.0.45
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8898,7 +8898,6 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("DVTEL","sa","") | Out-Null
         $DefaultPasswords.Rows.Add("SALESLOGIX","sa","SLXMaster") | Out-Null
         $DefaultPasswords.Rows.Add("ACT7","sa","sage") | Out-Null
-        $DefaultPasswords.Rows.Add("BKUPEXEC","sa","") | Out-Null
         $DefaultPasswords.Rows.Add("CSSQL05","ELNAdmin","ELNAdmin") | Out-Null
         $DefaultPasswords.Rows.Add("CSSQL05","sa","CambridgeSoft_SA") | Out-Null
         $DefaultPasswords.Rows.Add("INSERTGT","msi","keyboa5") | Out-Null
@@ -8953,18 +8952,21 @@ Function  Get-SQLServerLoginDefaultPw
         }
 
         # Check if instance is in list
-        $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -like "$TargetInstance"}        
+        $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -eq "$TargetInstance"}        
 
         if($TblResultsTemp){
-            Write-Verbose "$Instance : Confirmed instance match."
+            Write-Verbose "$Instance : Confirmed instance match."            
+        }else{
+            Write-Verbose "$Instance : No instance match found."
+            return  
         }
 
-        # Attempt login
+        # Grab username and password
         $CurrentUsername = $TblResultsTemp.username
         $CurrentPassword = $TblResultsTemp.password
 
         # Test login
-        $LoginTest = Get-SQLConnectionTest -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose | Where-Object {$_.status -like "Accessible"} | Select Status -ExpandProperty Status
+        $LoginTest = Get-SQLConnectionTest -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose -TimeOut 2 | Where-Object {$_.status -like "Accessible"} | Select Status -ExpandProperty Status
         if($LoginTest -eq "Accessible"){
 
             Write-Verbose "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"

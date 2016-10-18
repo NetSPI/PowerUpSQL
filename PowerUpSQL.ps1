@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.49
+        Version: 1.0.0.50
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8852,9 +8852,9 @@ Function  Get-SQLServerLoginDefaultPw
             VERBOSE: SQLServer1\STANDARDDEV2014 : Confirmed default credentials - test/test
             VERBOSE: SQLServer1 : No instance match found.
 
-            Computer       Instance                       Username Password
-            --------       --------                       -------- --------
-            SQLServer1     SQLServer1\STANDARDDEV2014     test     test 
+            Computer       Instance                       Username Password IsSysadmin
+            --------       --------                       -------- -------- --------
+            SQLServer1     SQLServer1\STANDARDDEV2014     test     test      No
             .EXAMPLE
             PS C:\> Get-SQLInstanceLDomain | Get-SQLServerLoginDefaultPw -Verbose
     #>
@@ -8878,6 +8878,7 @@ Function  Get-SQLServerLoginDefaultPw
         $TblResults.Columns.Add('Instance') | Out-Null
         $TblResults.Columns.Add('Username') | Out-Null
         $TblResults.Columns.Add('Password') | Out-Null 
+        $TblResults.Columns.Add('IsSysAdmin') | Out-Null
 
         # Create table for database of defaults
         $DefaultPasswords = New-Object System.Data.DataTable
@@ -8966,17 +8967,20 @@ Function  Get-SQLServerLoginDefaultPw
         $CurrentPassword = $TblResultsTemp.password
 
         # Test login
-        $LoginTest = Get-SQLConnectionTest -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose -TimeOut 2 | Where-Object {$_.status -like "Accessible"} | Select Status -ExpandProperty Status
-        if($LoginTest -eq "Accessible"){
+        $LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose
+        if($LoginTest){
 
             Write-Verbose "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"
+
+            $SysadminStatus = $LoginTest | select IsSysadmin -ExpandProperty IsSysadmin
 
             # Append if successful                      
             $TblResults.Rows.Add(
                 $ComputerName,
                 $Instance,
                 $CurrentUsername,
-                $CurrentPassword
+                $CurrentPassword,
+                $SysadminStatus
             ) | Out-Null
         }else{
             Write-Verbose "$Instance : No credential matches were found."
@@ -11685,11 +11689,12 @@ Function  Invoke-SQLAuditDefaultLoginPw
             $DefaultInstance = $_.Instance
             $DefaultUsername = $_.Username
             $DefaultPassword = $_.Password
+            $DefaultIsSysadmin = $_.IsSysadmin
 
             # Check if sysadmin
             
             # Add record            
-            $Details = "Default credentials found: $DefaultUsername / $DefaultPassword."
+            $Details = "Default credentials found: $DefaultUsername / $DefaultPassword (sysadmin: $DefaultIsSysadmin)."
             $ExploitCmd    = "Get-SQLQuery -Verbose -Instance $DefaultInstance -Q `"Select @@Version`" -Username $DefaultUsername -Password $DefaultPassword"
             $null = $TblData.Rows.Add($DefaultComputer, $DefaultInstance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)            
         }        

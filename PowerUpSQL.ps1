@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.50
+        Version: 1.0.0.51
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -21,6 +21,8 @@
 # ----------------------------------
 # Author: Scott Sutherland
 # Reference: https://msdn.microsoft.com/en-us/library/ms188247.aspx
+# Reference: https://raw.githubusercontent.com/sqlcollaborative/dbatools/master/functions/SharedFunctions.ps1
+# Reference: https://blogs.msdn.microsoft.com/spike/2008/11/14/connectionstrings-mixing-usernames-and-windows-authentication-who-goes-first/
 Function  Get-SQLConnectionObject
 {
     <#
@@ -116,36 +118,32 @@ Function  Get-SQLConnectionObject
         # Create connection object
         $Connection = New-Object -TypeName System.Data.SqlClient.SqlConnection
 
-        # Check for username and password
-        if($Username -and $Password)
-        {
-            # Setup connection string with SQL Server credentials
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"
-        }
-        else
-        {
-            # Get connecting user
-            $UserDomain = [Environment]::UserDomainName
-            $Username = [Environment]::UserName
-            $ConnectionectUser = "$UserDomain\$Username"
+        # Set authentcation type - current windows user
+        if(-not $Username){
 
-            # Status user
-            Write-Debug -Message "Attempting to authenticate to $DacConn$Instance as current Windows user ($ConnectionectUser)..."
+            # Set authentication type
+            $AuthenticationType = "Current Windows Credentials"
 
-            # Setup connection string with trusted connection
+            # Set connection string
             $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1"
+        }
+        
+        # Set authentcation type - provided windows user
+        if ($username -like "*\*"){
+            $AuthenticationType = "Provided Windows Credentials"
 
-            <#
-                    # Check for provided credential
-                    if ($Credential){
+            # Setup connection string 
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;uid=$Username;pwd=$Password;Connection Timeout=$TimeOut"
+        }
 
-                    $Username = $credential.Username
-                    $Password = $Credential.GetNetworkCredential().Password
+        # Set authentcation type - provided sql login
+        if (($username) -and ($username -notlike "*\*")){
 
-                    # Setup connection string with SQL Server credentials
-                    $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"
-                    }
-            #>
+            # Set authentication type
+            $AuthenticationType = "Provided SQL Login"
+
+            # Setup connection string 
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"
         }
 
         # Return the connection object

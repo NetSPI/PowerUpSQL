@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.51
+        Version: 1.0.0.52
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8886,45 +8886,48 @@ Function  Get-SQLServerLoginDefaultPw
 
         # Populate DefaultPasswords data table
         $DefaultPasswords.Rows.Add("ACS","ej","ej") | Out-Null
-        $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null
-        $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null
-        $DefaultPasswords.Rows.Add("INTRAVET","sa","Webster#1") | Out-Null
-        $DefaultPasswords.Rows.Add("CDRDICOM","sa","CDRDicom50!") | Out-Null
-        $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
-        $DefaultPasswords.Rows.Add("ECC","sa","Webgility2011") | Out-Null
-        $DefaultPasswords.Rows.Add("BOSCHSQL","sa","RPSsql12345") | Out-Null
-        $DefaultPasswords.Rows.Add("HDPS","sa","sa") | Out-Null
-        $DefaultPasswords.Rows.Add("DVTEL","sa","") | Out-Null
-        $DefaultPasswords.Rows.Add("SALESLOGIX","sa","SLXMaster") | Out-Null
         $DefaultPasswords.Rows.Add("ACT7","sa","sage") | Out-Null
-        $DefaultPasswords.Rows.Add("CSSQL05","ELNAdmin","ELNAdmin") | Out-Null
-        $DefaultPasswords.Rows.Add("CSSQL05","sa","CambridgeSoft_SA") | Out-Null
-        $DefaultPasswords.Rows.Add("INSERTGT","msi","keyboa5") | Out-Null
-        $DefaultPasswords.Rows.Add("INSERTGT","sa","") | Out-Null
-        $DefaultPasswords.Rows.Add("RTCLOCAL","sa","mypassword") | Out-Null
-        $DefaultPasswords.Rows.Add("PCAMERICA","sa","PCAmerica") | Out-Null
-        $DefaultPasswords.Rows.Add("PCAMERICA","sa","pcAmer1ca") | Out-Null
-        $DefaultPasswords.Rows.Add("VSDOTNET","sa","") | Out-Null
-        $DefaultPasswords.Rows.Add("HPDSS","sa","Hpdsdb000001") | Out-Null
-        $DefaultPasswords.Rows.Add("HPDSS","sa","hpdss") | Out-Null
-        $DefaultPasswords.Rows.Add("MYMOVIES","sa","t9AranuHA7") | Out-Null
+        $DefaultPasswords.Rows.Add("AOM2","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("ARIS","ARIS9","*ARIS!1dm9n#") | out-null
+        $DefaultPasswords.Rows.Add("AutodeskVault","sa","AutodeskVault@26200") | Out-Null      
+        $DefaultPasswords.Rows.Add("BOSCHSQL","sa","RPSsql12345") | Out-Null
+        $DefaultPasswords.Rows.Add("BPASERVER9","sa","AutoMateBPA9") | Out-Null
+        $DefaultPasswords.Rows.Add("CDRDICOM","sa","CDRDicom50!") | Out-Null
         $DefaultPasswords.Rows.Add("CODEPAL","sa","Cod3p@l") | Out-Null
         $DefaultPasswords.Rows.Add("CODEPAL08","sa","Cod3p@l") | Out-Null
-        $DefaultPasswords.Rows.Add("VSQL","sa","111") | Out-Null
-        $DefaultPasswords.Rows.Add("EASYSHIP","sa","DHLadmin@1") | Out-Null
-        $DefaultPasswords.Rows.Add("DHLEASYSHIP","sa","DHLadmin@1") | Out-Null
-        $DefaultPasswords.Rows.Add("ECOPYDB","sa","ecopy") | Out-Null
-        $DefaultPasswords.Rows.Add("ECOPYDB","e+C0py2007_@x","e+C0py2007_@x") | Out-Null
-        $DefaultPasswords.Rows.Add("TEW_SQLEXPRESS","tew","tew") | Out-Null
-        $DefaultPasswords.Rows.Add("AutodeskVault","sa","AutodeskVault@26200") | Out-Null      
-        $DefaultPasswords.Rows.Add("Emerson2012","sa","42Emerson42Eme") | Out-Null
-        $DefaultPasswords.Rows.Add("RMSQLDATA","Super","Orange") | out-null
         $DefaultPasswords.Rows.Add("CounterPoint","sa","CounterPoint8") | Out-Null
-        $DefaultPasswords.Rows.Add("SQLEXPRESS","admin","ca_admin") | out-null
-        $DefaultPasswords.Rows.Add("AOM2","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("CSSQL05","ELNAdmin","ELNAdmin") | Out-Null
+        $DefaultPasswords.Rows.Add("CSSQL05","sa","CambridgeSoft_SA") | Out-Null
+        $DefaultPasswords.Rows.Add("CADSQL","CADSQLAdminUser","Cr41g1sth3M4n!") | Out-Null
+        $DefaultPasswords.Rows.Add("DHLEASYSHIP","sa","DHLadmin@1") | Out-Null
         $DefaultPasswords.Rows.Add("DPM","admin","ca_admin") | out-null
-        $DefaultPasswords.Rows.Add("ARIS","ARIS9","*ARIS!1dm9n#") | out-null
-        $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null
+        $DefaultPasswords.Rows.Add("DVTEL","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("EASYSHIP","sa","DHLadmin@1") | Out-Null
+        $DefaultPasswords.Rows.Add("ECC","sa","Webgility2011") | Out-Null
+        $DefaultPasswords.Rows.Add("ECOPYDB","e+C0py2007_@x","e+C0py2007_@x") | Out-Null
+        $DefaultPasswords.Rows.Add("ECOPYDB","sa","ecopy") | Out-Null
+        $DefaultPasswords.Rows.Add("Emerson2012","sa","42Emerson42Eme") | Out-Null
+        $DefaultPasswords.Rows.Add("HDPS","sa","sa") | Out-Null
+        $DefaultPasswords.Rows.Add("HPDSS","sa","Hpdsdb000001") | Out-Null
+        $DefaultPasswords.Rows.Add("HPDSS","sa","hpdss") | Out-Null
+        $DefaultPasswords.Rows.Add("INSERTGT","msi","keyboa5") | Out-Null
+        $DefaultPasswords.Rows.Add("INSERTGT","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("INTRAVET","sa","Webster#1") | Out-Null
+        $DefaultPasswords.Rows.Add("MYMOVIES","sa","t9AranuHA7") | Out-Null
+        $DefaultPasswords.Rows.Add("PCAMERICA","sa","pcAmer1ca") | Out-Null
+        $DefaultPasswords.Rows.Add("PCAMERICA","sa","PCAmerica") | Out-Null
+        $DefaultPasswords.Rows.Add("PRISM","sa","SecurityMaster08") | Out-Null
+        $DefaultPasswords.Rows.Add("RMSQLDATA","Super","Orange") | out-null
+        $DefaultPasswords.Rows.Add("RTCLOCAL","sa","mypassword") | Out-Null
+        $DefaultPasswords.Rows.Add("SALESLOGIX","sa","SLXMaster") | Out-Null
+        $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
+        $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null
+        $DefaultPasswords.Rows.Add("SQLEXPRESS","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null 
+        $DefaultPasswords.Rows.Add("TEW_SQLEXPRESS","tew","tew") | Out-Null
+        $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null
+        $DefaultPasswords.Rows.Add("VSDOTNET","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("VSQL","sa","111") | Out-Null
 
         $PwCount = $DefaultPasswords | measure | select count -ExpandProperty count
         # Write-Verbose "Loaded $PwCount default passwords."

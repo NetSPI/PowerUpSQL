@@ -36,7 +36,7 @@ PowerUpSQL was designed with six objectives in mind:
  
 For setup instructions, function overviews, and common usage information check out the PowerUpSQL wiki: https://github.com/NetSPI/PowerUpSQL/wiki
 
-### Hacking SQL Server on Scale with PowerShell Presentation
+### Hacking SQL Server on Scale with PowerShell Presentations
 * 2016 Arcticcon slides: http://www.slideshare.net/nullbind/2016-arcticcon-hacking-sql-server-on-scale-with-powershell-v2
 * 2016 PASS OCT Webinar Video: https://youtu.be/npoORzfP7rw
 * DerbyCon 6.0 Slides: http://www.slideshare.net/nullbind/derbycon2016-hacking-sql-server-on-scale-with-powershell

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.52
+        Version: 1.0.0.53
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8134,12 +8134,8 @@ Function  Get-SQLFuzzServerLogin
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
-        HelpMessage = 'Principal ID to start fuzzing with.')]
-        [string]$StartId = 1,
-
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Principal ID to stop fuzzing on.')]
-        [string]$EndId = 300,
+        HelpMessage = 'Number of Principal IDs to fuzz.')]
+        [string]$FuzzNum = 10000,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Try to determine if the principal type is role, SQL login, or Windows account via error analysis of sp_defaultdb.')]
@@ -8196,21 +8192,30 @@ Function  Get-SQLFuzzServerLogin
             return
         }
 
-        # Fuzz from StartId to EndId
-        $StartId..$EndId |
-        ForEach-Object -Process {
-            # Define Query
-            $Query = "SELECT    '$ComputerName' as [ComputerName],
+        # Define Query
+        # Reference: https://gist.github.com/ConstantineK/c6de5d398ec43bab1a29ef07e8c21ec7
+        $Query = "
+                SELECT 
+                '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                '$_' as [PrincipalId],
-            SUSER_NAME($_) as [PrincipleName]"
+                n [PrincipalId], SUSER_NAME(n) as [PrincipleName]
+                from ( 
+                select top $FuzzNum row_number() over(order by t1.number) as N
+                from   master..spt_values t1 
+                       cross join master..spt_values t2
+                ) a
+                where SUSER_NAME(n) is not null"
 
-            # Execute Query
-            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        # Execute Query
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+        # Process results
+        $TblResults |
+        ForEach-Object {
 
             # check if principal is role, sql login, or windows account
-            $PrincipalName = $TblResults.PrincipleName
-            $PrincipalId = $TblResults.PrincipalId
+            $PrincipalName = $_.PrincipleName
+            $PrincipalId = $_.PrincipalId
 
             if($GetPrincipalType)
             {
@@ -8220,7 +8225,7 @@ Function  Get-SQLFuzzServerLogin
                 # Check the error message for a signature that means the login is real
                 if (($RoleCheckResults -like '*NOTAREALDATABASE*') -or ($RoleCheckResults -like '*alter the login*'))
                 {
-                    #
+
                     if($PrincipalName -like '*\*')
                     {
                         $PrincipalType = 'Windows Account'
@@ -8236,21 +8241,7 @@ Function  Get-SQLFuzzServerLogin
                 }
             }
 
-            # Output for user
-            if(-not $SuppressVerbose)
-            {
-                if($PrincipalName.length -ge 2)
-                {
-                    Write-Verbose -Message "$Instance : - Principal ID $_ resolved to: $PrincipalName ($PrincipalType)"
-                }
-                else
-                {
-                    Write-Verbose -Message "$Instance : - Principal ID $_ resolved to: "
-                }
-            }
-
-            # Append results
-            #$TblFuzzedLogins = $TblFuzzedLogins + $TblResults
+            # Add to result set
             if($GetPrincipalType)
             {
                 $null = $TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $PrincipalId, $PrincipalName, $PrincipalType)
@@ -8259,6 +8250,7 @@ Function  Get-SQLFuzzServerLogin
             {
                 $null = $TblFuzzedLogins.Rows.Add($ComputerName, $Instance, $PrincipalId, $PrincipalName)
             }
+
         }
     }
 
@@ -8267,6 +8259,11 @@ Function  Get-SQLFuzzServerLogin
         # Return data
         $TblFuzzedLogins | Where-Object -FilterScript {
             $_.PrincipleName.length -ge 2
+        }
+        
+        if( -not $SuppressVerbose)
+        {
+            Write-Verbose -Message "$Instance : Complete."
         }
     }
 }
@@ -13448,12 +13445,8 @@ Function Invoke-SQLAuditWeakLoginPw
         [switch]$NoUserEnum,
 
         [Parameter(Mandatory = $false,
-        HelpMessage = 'Start id for fuzzing login IDs.')]
-        [int]$StartId = 1,
-
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'End id for fuzzing login IDss.')]
-        [int]$EndId = 500,
+        HelpMessage = 'Number of Principal IDs to fuzz.')]
+        [string]$FuzzNum = 10000,
 
         [Parameter(Mandatory = $false,
         HelpMessage = "Don't output anything.")]
@@ -13587,7 +13580,7 @@ Function Invoke-SQLAuditWeakLoginPw
                 {
                     # Fuzz logins
                     Write-Verbose -Message "$Instance - Fuzzing principal IDs $StartId to $EndId..."
-                    Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -StartId $StartId -EndId $EndId -SuppressVerbose |
+                    Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -FuzzNum $FuzzNum -SuppressVerbose |
                     Where-Object -FilterScript {
                         $_.PrincipleType -eq 'SQL Login'
                     } |

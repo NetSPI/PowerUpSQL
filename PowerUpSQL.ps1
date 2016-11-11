@@ -9135,7 +9135,7 @@ function Get-DomainSpn
             $SpnResults | ForEach-Object -Process {
                 [string]$SidBytes = [byte[]]"$($_.Properties.objectsid)".split(' ')
                 [string]$SidString = $SidBytes -replace ' ', ''
-                $Spn = $_.properties.serviceprincipalname.split(',')
+                $Spn = $_.properties.serviceprincipalname[0].split(',')
 
                 foreach ($item in $Spn)
                 {

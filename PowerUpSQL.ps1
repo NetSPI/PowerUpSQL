@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.56
+        Version: 1.0.0.57
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4864,7 +4864,7 @@ Function  Get-SQLAgentJob
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .EXAMPLE
-             PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'Password123!' | select Instance, Job_name, Step_name, SubSystem, Command | ft
+             PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'abc$123!' | select Instance, Job_name, Step_name, SubSystem, Command | ft
             VERBOSE: SQL Server Agent Job Search Starting...
             VERBOSE: MSSQLSRV04\BOSCHSQL : Connection Failed.
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
@@ -4930,17 +4930,20 @@ Function  Get-SQLAgentJob
         $TblResults = New-Object -TypeName System.Data.DataTable
         $null = $TblResults.Columns.Add('ComputerName')
         $null = $TblResults.Columns.Add('Instance')     
-        $null = $TblResults.Columns.Add('database_name')
-        $null = $TblResults.Columns.Add('JOB_ID')                                                                                                                                                                                        
-        $null = $TblResults.Columns.Add('JOB_NAME')                                                                                                                                                                                                 
-        $null = $TblResults.Columns.Add('JOB_DESCRIPTION')  
-        $null = $TblResults.Columns.Add('JOB_OWNER')                                                                                                                                                                                            
-        $null = $TblResults.Columns.Add('date_created')                                                                                                                                                                                  
-        $null = $TblResults.Columns.Add('enabled')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
-        $null = $TblResults.Columns.Add('server')                                                                                                                                                                                        
-        $null = $TblResults.Columns.Add('step_name')
-        $null = $TblResults.Columns.Add('subsystem')
-        $null = $TblResults.Columns.Add('command')                                                                                                                                                                                
+        $null = $TblResults.Columns.Add('DatabaseName')
+        $null = $TblResults.Columns.Add('Job_Id')                                                                                                                                                                                        
+        $null = $TblResults.Columns.Add('Job_Name')                                                                                                                                                                                                 
+        $null = $TblResults.Columns.Add('Job_Description')  
+        $null = $TblResults.Columns.Add('Job_Owner')
+        $null = $TblResults.Columns.Add('Proxy_Id')  
+        $null = $TblResults.Columns.Add('Proxy_Credential')                                                                                                                                                                                                          
+        $null = $TblResults.Columns.Add('Date_Created') 
+        $null = $TblResults.Columns.Add('Last_Run_Date')
+        $null = $TblResults.Columns.Add('Enabled')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+        $null = $TblResults.Columns.Add('Server')                                                                                                                                                                                        
+        $null = $TblResults.Columns.Add('Step_Name')
+        $null = $TblResults.Columns.Add('SubSystem')
+        $null = $TblResults.Columns.Add('Command')                                                                                                                                                                                
     }
 
     Process
@@ -5004,21 +5007,25 @@ Function  Get-SQLAgentJob
 
 
                 # Reference: https://msdn.microsoft.com/en-us/library/ms189817.aspx
-                $Query = "SELECT 	SUSER_SNAME(owner_sid) as [JOB_OWNER], 
+                $Query = "SELECT 	steps.database_name,
 	                            job.job_id as [JOB_ID],
-	                            name as [JOB_NAME],
-	                            description as [JOB_DESCRIPTION],
-	                            step_name,
-	                            command,
-	                            enabled,
-	                            server,
-	                            database_name,
-	                            date_created,
-                                subsystem
+	                            job.name as [JOB_NAME],
+	                            job.description as [JOB_DESCRIPTION],
+								SUSER_SNAME(job.owner_sid) as [JOB_OWNER],
+								steps.proxy_id,
+								proxies.name as [proxy_account],
+	                            job.enabled,
+	                            steps.server,
+	                            job.date_created,   
+                                steps.last_run_date,								                             
+								steps.step_name,
+								steps.subsystem,
+	                            steps.command
                             FROM [msdb].[dbo].[sysjobs] job
                             INNER JOIN [msdb].[dbo].[sysjobsteps] steps        
 	                            ON job.job_id = steps.job_id
-                            ORDER BY JOB_OWNER,JOB_NAME"
+							left join [msdb].[dbo].[sysproxies] proxies
+							 on steps.proxy_id = proxies.proxy_id"
 
                 # Execute Query
                 $result = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
@@ -5043,8 +5050,11 @@ Function  Get-SQLAgentJob
                     $_.JOB_ID,                                                                                                                                                                                        
                     $_.JOB_NAME, 
                     $_.JOB_DESCRIPTION,                                                                                                                                                                                                         
-                    $_.JOB_OWNER,    
-                    $_.date_created,                                                                                                                                                                                  
+                    $_.JOB_OWNER,
+                    $_.proxy_id,    
+                    $_.proxy_account, 
+                    $_.date_created,
+                    $_.last_run_date,                                                                                                                                                                                  
                     $_.enabled,                                                                                                                                                                                                     
                     $_.server,                                                                                                                                                                                        
                     $_.step_name,
@@ -5079,12 +5089,43 @@ Function  Get-SQLAgentJob
 
     End
     {
+        Write-Verbose -Message "SQL Server Agent Job Search Complete."
 
         # Get total count of jobs
         $TotalAgentCount = $TblResults.rows.Count
 
-        Write-Verbose -Message "$TotalAgentCount agents jobs were found in total."
-        Write-Verbose -Message "SQL Server Agent Job Search Complete."
+        # Get subsystem summary data
+        $SummarySubSystem = $TblResults | Group-Object SubSystem | Select Name, Count | Sort-Object Count -Descending
+
+        # Get proxy summary data
+        $SummaryProxyAccount = $TblResults | Select-Object proxy_credential -Unique | Measure-Object | Select-Object Count -ExpandProperty Count
+
+        # Get system summary data
+        $SummaryServer = $TblResults | Select-Object ComputerName -Unique | Measure-Object |  Select-Object Count -ExpandProperty Count
+
+        # Get instance summary data
+        $SummaryInstance = $TblResults | Select-Object Instance -Unique | Measure-Object |  Select-Object Count -ExpandProperty Count
+
+        Write-Verbose -Message "---------------------------------"
+        Write-Verbose -Message "Agent Job Summary" 
+        Write-Verbose -Message "---------------------------------"
+        Write-Verbose -Message " $TotalAgentCount jobs found"
+        Write-Verbose -Message " $SummaryServer affected systems"
+        Write-Verbose -Message " $SummaryInstance affected SQL Server instances"
+        Write-Verbose -Message " $SummaryProxyAccount proxy credentials used"
+
+        Write-Verbose -Message "---------------------------------"
+        Write-Verbose -Message "Agent Job Summary by SubSystem" 
+        Write-Verbose -Message "---------------------------------"
+        $SummarySubSystem | 
+        ForEach-Object {
+            $SubSystem_Name = $_.Name
+            $SubSystem_Count = $_.Count
+            Write-Verbose -Message " $SubSystem_Count $SubSystem_Name Jobs"
+        }
+        Write-Verbose -Message " $TotalAgentCount Total"
+        Write-Verbose -Message "---------------------------------"
+       
 
         # Return data
         $TblResults

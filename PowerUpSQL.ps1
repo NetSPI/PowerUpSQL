@@ -4864,30 +4864,29 @@ Function  Get-SQLAgentJob
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .EXAMPLE
-            PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'Password123!' | select Instance, Job_name, Step_name, Command
-            VERBOSE: SQL Server Agent Job Search starting...
+             PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'Password123!' | select Instance, Job_name, Step_name, SubSystem, Command | ft
+            VERBOSE: SQL Server Agent Job Search Starting...
             VERBOSE: MSSQLSRV04\BOSCHSQL : Connection Failed.
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
-            VERBOSE: MSSQLSRV04\SQLSERVER2014 : SQL Server Agent service enabled.
-            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Attempting to list existing agent jobs as sa.
-            VERBOSE: MSSQLSRV04\SQLSERVER2014 : 3 agent jobs found.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : - SQL Server Agent service enabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : - Attempting to list existing agent jobs as sa.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : - 4 agent jobs found.
             VERBOSE: MSSQLSRV04\SQLSERVER2016 : Connection Success.
-            VERBOSE: MSSQLSRV04\SQLSERVER2016 : SQL Server Agent service has not been started.
-            VERBOSE: MSSQLSRV04\SQLSERVER2016 : Attempting to list existing agent jobs as sa.
-            VERBOSE: MSSQLSRV04\SQLSERVER2016 : 3 agent jobs found.
-            VERBOSE: 6 agents jobs were found in total.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : - SQL Server Agent service has not been started.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : - Attempting to list existing agent jobs as sa.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : - 3 agent jobs found.
+            VERBOSE: 7 agents jobs were found in total.
             VERBOSE: SQL Server Agent Job Search Complete.
 
-            Instance                                        JOB_NAME                                        step_name                                       command                                       
-            --------                                        --------                                        ---------                                       -------                                       
-            MSSQLSRV04\SQLSERVER2014                        syspolicy_purge_history                         Verify that automation is enabled.              IF (msdb.dbo.fn_syspolicy_is_automation_ena...
-            MSSQLSRV04\SQLSERVER2014                        syspolicy_purge_history                         Purge history.                                  EXEC msdb.dbo.sp_syspolicy_purge_history      
-            MSSQLSRV04\SQLSERVER2014                        syspolicy_purge_history                         Erase Phantom System Health Records.            if ('$(ESCAPE_SQUOTE(INST))' -eq 'MSSQLSERV...
-            MSSQLSRV04\SQLSERVER2016                        syspolicy_purge_history                         Verify that automation is enabled.              IF (msdb.dbo.fn_syspolicy_is_automation_ena...
-            MSSQLSRV04\SQLSERVER2016                        syspolicy_purge_history                         Purge history.                                  EXEC msdb.dbo.sp_syspolicy_purge_history      
-            MSSQLSRV04\SQLSERVER2016                        syspolicy_purge_history                         Erase Phantom System Health Records.            if ('$(ESCAPE_SQUOTE(INST))' -eq 'MSSQLSERV...
-
-
+            Instance                               JOB_NAME                              step_name                             subsystem                             command                              
+            --------                               --------                              ---------                             ---------                             -------                              
+            MSSQLSRV04\SQLSERVER2014               syspolicy_purge_history               Verify that automation is enabled.    TSQL                                  IF (msdb.dbo.fn_syspolicy_is_autom...
+            MSSQLSRV04\SQLSERVER2014               syspolicy_purge_history               Purge history.                        TSQL                                  EXEC msdb.dbo.sp_syspolicy_purge_h...
+            MSSQLSRV04\SQLSERVER2014               syspolicy_purge_history               Erase Phantom System Health Records.  PowerShell                            if ('$(ESCAPE_SQUOTE(INST))' -eq '...
+            MSSQLSRV04\SQLSERVER2014               test                                  test1                                 CmdExec                               whoami                               
+            MSSQLSRV04\SQLSERVER2016               syspolicy_purge_history               Verify that automation is enabled.    TSQL                                  IF (msdb.dbo.fn_syspolicy_is_autom...
+            MSSQLSRV04\SQLSERVER2016               syspolicy_purge_history               Purge history.                        TSQL                                  EXEC msdb.dbo.sp_syspolicy_purge_h...
+            MSSQLSRV04\SQLSERVER2016               syspolicy_purge_history               Erase Phantom System Health Records.  PowerShell                            if ('$(ESCAPE_SQUOTE(INST))' -eq '...
     #>
     [CmdletBinding()]
     Param(
@@ -4940,6 +4939,7 @@ Function  Get-SQLAgentJob
         $null = $TblResults.Columns.Add('enabled')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
         $null = $TblResults.Columns.Add('server')                                                                                                                                                                                        
         $null = $TblResults.Columns.Add('step_name')
+        $null = $TblResults.Columns.Add('subsystem')
         $null = $TblResults.Columns.Add('command')                                                                                                                                                                                
     }
 
@@ -5013,7 +5013,8 @@ Function  Get-SQLAgentJob
 	                            enabled,
 	                            server,
 	                            database_name,
-	                            date_created
+	                            date_created,
+                                subsystem
                             FROM [msdb].[dbo].[sysjobs] job
                             INNER JOIN [msdb].[dbo].[sysjobsteps] steps        
 	                            ON job.job_id = steps.job_id
@@ -5047,6 +5048,7 @@ Function  Get-SQLAgentJob
                     $_.enabled,                                                                                                                                                                                                     
                     $_.server,                                                                                                                                                                                        
                     $_.step_name,
+                    $_.subsystem,
                     $_.command)
                 }
             }

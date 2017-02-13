@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.55
+        Version: 1.0.0.56
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4839,6 +4839,255 @@ Function  Get-SQLServiceAccount
     }
 }
 
+# ----------------------------------
+#  Get-SQLAgentJob
+# ----------------------------------
+# Author: Leo Loobeek and Scott Sutherland
+Function  Get-SQLAgentJob
+{
+    <#
+            .SYNOPSIS
+            This function will check the current login's privileges and return a list
+            of the jobs they have privileges to view.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER TimeOut
+            Connection time out.
+            .PARAMETER SuppressVerbose
+            Suppress verbose errors.  Used when function is wrapped.
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'Password123!' | select Instance, Job_name, Step_name, Command
+            VERBOSE: SQL Server Agent Job Search starting...
+            VERBOSE: MSSQLSRV04\BOSCHSQL : Connection Failed.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : SQL Server Agent service enabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Attempting to list existing agent jobs as sa.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : 3 agent jobs found.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : SQL Server Agent service has not been started.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : Attempting to list existing agent jobs as sa.
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : 3 agent jobs found.
+            VERBOSE: 6 agents jobs were found in total.
+            VERBOSE: SQL Server Agent Job Search Complete.
+
+            Instance                                        JOB_NAME                                        step_name                                       command                                       
+            --------                                        --------                                        ---------                                       -------                                       
+            MSSQLSRV04\SQLSERVER2014                        syspolicy_purge_history                         Verify that automation is enabled.              IF (msdb.dbo.fn_syspolicy_is_automation_ena...
+            MSSQLSRV04\SQLSERVER2014                        syspolicy_purge_history                         Purge history.                                  EXEC msdb.dbo.sp_syspolicy_purge_history      
+            MSSQLSRV04\SQLSERVER2014                        syspolicy_purge_history                         Erase Phantom System Health Records.            if ('$(ESCAPE_SQUOTE(INST))' -eq 'MSSQLSERV...
+            MSSQLSRV04\SQLSERVER2016                        syspolicy_purge_history                         Verify that automation is enabled.              IF (msdb.dbo.fn_syspolicy_is_automation_ena...
+            MSSQLSRV04\SQLSERVER2016                        syspolicy_purge_history                         Purge history.                                  EXEC msdb.dbo.sp_syspolicy_purge_history      
+            MSSQLSRV04\SQLSERVER2016                        syspolicy_purge_history                         Erase Phantom System Health Records.            if ('$(ESCAPE_SQUOTE(INST))' -eq 'MSSQLSERV...
+
+
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connect using Dedicated Admin Connection.')]
+        [Switch]$DAC,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connection timeout.')]
+        [string]$TimeOut,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        Write-Verbose -Message "SQL Server Agent Job Search Starting..."
+
+        # Setup data table for output
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $null = $TblResults.Columns.Add('ComputerName')
+        $null = $TblResults.Columns.Add('Instance')     
+        $null = $TblResults.Columns.Add('database_name')
+        $null = $TblResults.Columns.Add('JOB_ID')                                                                                                                                                                                        
+        $null = $TblResults.Columns.Add('JOB_NAME')                                                                                                                                                                                                 
+        $null = $TblResults.Columns.Add('JOB_DESCRIPTION')  
+        $null = $TblResults.Columns.Add('JOB_OWNER')                                                                                                                                                                                            
+        $null = $TblResults.Columns.Add('date_created')                                                                                                                                                                                  
+        $null = $TblResults.Columns.Add('enabled')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+        $null = $TblResults.Columns.Add('server')                                                                                                                                                                                        
+        $null = $TblResults.Columns.Add('step_name')
+        $null = $TblResults.Columns.Add('command')                                                                                                                                                                                
+    }
+
+    Process
+    {
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Setup DAC string
+        if($DAC)
+        {
+            # Create connection object
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+        }
+        else
+        {
+            # Create connection object
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+        }
+
+        # Attempt connection
+        try
+        {
+            # Open connection
+            $Connection.Open()
+            if(-not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."                
+            }
+
+            # Get some information about current context
+            $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+            $CurrentLogin = $ServerInfo.CurrentLogin
+            $ComputerName = $ServerInfo.ComputerName
+            $Sysadmin = $ServerInfo.IsSysadmin
+
+            # Check if Agent Job service is running
+            $IsAgentServiceEnabled = Get-SQLQuery -Instance $Instance -Query "SELECT 1 FROM sysprocesses WHERE LEFT(program_name, 8) = 'SQLAgent'" -Username $Username -Password $Password -SuppressVerbose
+            if ($IsAgentServiceEnabled)
+            {
+                Write-Verbose -Message "$Instance : - SQL Server Agent service enabled."
+            }
+            else
+            {
+                Write-Verbose -Message "$Instance : - SQL Server Agent service has not been started."
+            }
+
+            # Get logins that have SQL Agent roles
+            # https://msdn.microsoft.com/en-us/library/ms188283.aspx
+            $AddJobPrivs = Get-SQLDatabaseRoleMember -Username $Username -Password $Password -Instance $Instance -DatabaseName msdb  -SuppressVerbose| ForEach-Object { 
+                if($_.RolePrincipalName -match "SQLAgentUserRole|SQLAgentReaderRole|SQLAgentOperatorRole") {
+                    if ($_.PrincipalName -eq $CurrentLogin) { $_ }
+                }
+            }
+
+            if($AgentJobPrivs -or ($Sysadmin -eq "Yes"))
+            {
+                Write-Verbose -Message "$Instance : - Attempting to list existing agent jobs as $CurrentLogin."
+
+
+                # Reference: https://msdn.microsoft.com/en-us/library/ms189817.aspx
+                $Query = "SELECT 	SUSER_SNAME(owner_sid) as [JOB_OWNER], 
+	                            job.job_id as [JOB_ID],
+	                            name as [JOB_NAME],
+	                            description as [JOB_DESCRIPTION],
+	                            step_name,
+	                            command,
+	                            enabled,
+	                            server,
+	                            database_name,
+	                            date_created
+                            FROM [msdb].[dbo].[sysjobs] job
+                            INNER JOIN [msdb].[dbo].[sysjobsteps] steps        
+	                            ON job.job_id = steps.job_id
+                            ORDER BY JOB_OWNER,JOB_NAME"
+
+                # Execute Query
+                $result = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
+                
+                # Check the results                                
+                if(!($result)) {
+                    Write-Verbose -Message "$Instance : - Either no jobs exist or the current login ($CurrentLogin) doesn't have the privileges to view them."
+                    return
+                }
+
+                # Get number of results
+                $AgentJobCount = $result.rows.count
+                Write-Verbose -Message "$Instance : - $AgentJobCount agent jobs found."
+                
+
+                # Update data table
+                $result | 
+                ForEach-Object{
+                    $null = $TblResults.Rows.Add($ComputerName,
+                    $Instance,
+                    $_.database_name,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+                    $_.JOB_ID,                                                                                                                                                                                        
+                    $_.JOB_NAME, 
+                    $_.JOB_DESCRIPTION,                                                                                                                                                                                                         
+                    $_.JOB_OWNER,    
+                    $_.date_created,                                                                                                                                                                                  
+                    $_.enabled,                                                                                                                                                                                                     
+                    $_.server,                                                                                                                                                                                        
+                    $_.step_name,
+                    $_.command)
+                }
+            }
+            else
+            {
+                Write-Verbose -Message "$Instance : - The current login ($CurrentLogin) does not have any agent privileges."
+                return
+            }
+
+            # Close connection
+            $Connection.Close()
+
+            # Dispose connection
+            $Connection.Dispose()
+
+        }
+        catch
+        {
+            # Connection failed
+            if(-not $SuppressVerbose)
+            {
+                $ErrorMessage = $_.Exception.Message
+                Write-Verbose -Message "$Instance : Connection Failed."
+                #Write-Verbose  " Error: $ErrorMessage"
+            }
+        }        
+    }
+
+    End
+    {
+
+        # Get total count of jobs
+        $TotalAgentCount = $TblResults.rows.Count
+
+        Write-Verbose -Message "$TotalAgentCount agents jobs were found in total."
+        Write-Verbose -Message "SQL Server Agent Job Search Complete."
+
+        # Return data
+        $TblResults
+    }
+}
 
 # ----------------------------------
 #  Get-SQLAuditDatabaseSpec

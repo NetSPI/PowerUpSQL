@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.57
+        Version: 1.0.0.58
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4857,6 +4857,14 @@ Function  Get-SQLAgentJob
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER ProxyCredential
+            Only return SQL Agent jobs using a specific proxy credential.
+            .PARAMETER UsingProxyCredential
+            Only return SQL Agent jobs using a proxy credentials.
+            .PARAMETER SubSystem
+            Only return SQL Agent jobs for specific subsystems.
+            .PARAMETER Keyword
+            Only return SQL Agent jobs that have a command that includes a specific keyword.
             .PARAMETER DAC
             Connect using Dedicated Admin Connection.
             .PARAMETER TimeOut
@@ -4864,7 +4872,7 @@ Function  Get-SQLAgentJob
             .PARAMETER SuppressVerbose
             Suppress verbose errors.  Used when function is wrapped.
             .EXAMPLE
-             PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'abc$123!' | select Instance, Job_name, Step_name, SubSystem, Command | ft
+             PS C:\> Get-SQLInstanceLocal | Get-SQLAgentJob -Verbose -Username sa -Password 'Password123!' | select Instance, Job_name, Step_name, SubSystem, Command | ft
             VERBOSE: SQL Server Agent Job Search Starting...
             VERBOSE: MSSQLSRV04\BOSCHSQL : Connection Failed.
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
@@ -4910,6 +4918,23 @@ Function  Get-SQLAgentJob
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Only return SQL Agent jobs for specific subsystems.')]
+         [ValidateSet("TSQL","PowerShell","CMDEXEC","PowerShell","ActiveScripting","ANALYSISCOMMAND","ANALYSISQUERY","Snapshot","Distribution","LogReader","Merge","QueueReader")]
+        [String]$SubSystem,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Only return SQL Agent jobs that have a command that includes a specific keyword.')]
+        [String]$Keyword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Only return SQL Agent jobs using a proxy credentials.')]
+        [Switch]$UsingProxyCredential,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Only return SQL Agent jobs using a specific proxy credential.')]
+        [String]$ProxyCredential,
+        
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
         [Switch]$DAC,
 
@@ -4943,7 +4968,47 @@ Function  Get-SQLAgentJob
         $null = $TblResults.Columns.Add('Server')                                                                                                                                                                                        
         $null = $TblResults.Columns.Add('Step_Name')
         $null = $TblResults.Columns.Add('SubSystem')
-        $null = $TblResults.Columns.Add('Command')                                                                                                                                                                                
+        $null = $TblResults.Columns.Add('Command')          
+        
+        # Setup SubSystem filter
+        if($SubSystem)
+        {
+            $SubSystemFilter = " and steps.subsystem like '$SubSystem'"
+        }
+        else
+        {
+            $SubSustemFilter = ''
+        }    
+        
+        # Setup Command Keyword filter
+        if($Keyword)
+        {
+            $KeywordFilter = " and steps.command like '%$Keyword%'"
+        }
+        else
+        {
+            $KeywordFilter = ''
+        }   
+
+        # Setup filter to only return jobs with proxy cred
+        if($UsingProxyCredential)
+        {
+            $UsingProxyCredFilter = " and steps.proxy_id > 0"
+        }
+        else
+        {
+            $UsingProxyCredFilter = ''
+        } 
+        
+        # Setup filter to only return jobs with specific proxy cred
+        if($ProxyCredential)
+        {
+            $ProxyCredFilter = " and proxies.name like '$ProxyCredential'"
+        }
+        else
+        {
+            $ProxyCredFilter = ''
+        }                                                                                                                                                                                                 
     }
 
     Process
@@ -5025,7 +5090,12 @@ Function  Get-SQLAgentJob
                             INNER JOIN [msdb].[dbo].[sysjobsteps] steps        
 	                            ON job.job_id = steps.job_id
 							left join [msdb].[dbo].[sysproxies] proxies
-							 on steps.proxy_id = proxies.proxy_id"
+							 on steps.proxy_id = proxies.proxy_id
+                            WHERE 1=1
+                            $KeywordFilter
+                            $SubSystemFilter
+                            $ProxyCredFilter
+                            $UsingProxyCredFilter"
 
                 # Execute Query
                 $result = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose

@@ -246,6 +246,9 @@ Describe "Get-SQLConnectionTestThreaded" {
 ######################################################
 
 # Get-SQLAgentJob
+# Get-SQLServerLinkCrawl
+# Get-SQLServerLinkData
+# Get-SQLServerLinkQuery
 
 # Get-SQLTriggerDml  
 Describe "Get-SQLTriggerDml  " {

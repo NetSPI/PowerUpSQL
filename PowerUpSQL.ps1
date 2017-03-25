@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.60
+        Version: 1.0.0.61
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8649,10 +8649,14 @@ Function  Get-SQLFuzzDomainAccount
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER Domain
+            Set a custom domain for user enumeration. Typically used to target trusted domains.
             .PARAMETER StartId
             RID to start fuzzing with.
             .PARAMETER EndId
             RID to stop fuzzing with.
+            .EXAMPLE
+            PS C:\> Get-SQLFuzzDomainAccount -Instance SQLServer1\STANDARDDEV2014 -Verbose -StartId 500 -EndId 1500 -Domain TrustedDomainName
             .EXAMPLE
             PS C:\> Get-SQLFuzzDomainAccount -Instance SQLServer1\STANDARDDEV2014 -Verbose -StartId 500 -EndId 1500
 
@@ -8720,7 +8724,7 @@ Function  Get-SQLFuzzDomainAccount
         [string]$EndId = 1000,
 
         [Parameter(Mandatory = $false,
-        HelpMessage = 'Set a custom domain to enumerate domain objects from.')]
+        HelpMessage = 'Set a custom domain for user enumeration. Typically used to target trusted domains.')]
         [string]$Domain,
         
         [Parameter(Mandatory = $false,

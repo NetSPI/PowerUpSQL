@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.59
+        Version: 1.0.0.60
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8720,6 +8720,10 @@ Function  Get-SQLFuzzDomainAccount
         [string]$EndId = 1000,
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Set a custom domain to enumerate domain objects from.')]
+        [string]$Domain,
+        
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8749,8 +8753,7 @@ Function  Get-SQLFuzzDomainAccount
         {
             if( -not $SuppressVerbose)
             {
-                Write-Verbose -Message "$Instance : Connection Success."
-                Write-Verbose -Message "$Instance : Enumerating Domain accounts from the SQL Server's default domain..."
+                Write-Verbose -Message "$Instance : Connection Success."                
             }
         }
         else
@@ -8762,17 +8765,29 @@ Function  Get-SQLFuzzDomainAccount
             return
         }
 
-        # Grab server information
+        # Grab server and domain information
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $ComputerName = $ServerInfo.ComputerName
         $Instance = $ServerInfo.Instance
-        $Domain = $ServerInfo.DomainName
-        $DomainGroup = "$Domain\Domain Admins"
-        $DomainGroupSid = Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-        $DomainGroupSidBytes = $DomainGroupSid | Select-Object -Property domaingroupsid -ExpandProperty domaingroupsid
-        $DomainGroupSidString = [System.BitConverter]::ToString($DomainGroupSidBytes).Replace('-','').Substring(0,48)
+        if(-not $Domain){
+            $Domain = $ServerInfo.DomainName
+        }
 
-        # Fuzz from StartId to EndId
+        # Status the user
+        Write-Verbose -Message "$Instance : Enumerating Active Directory accounts for the `"$Domain`" domain..."        
+
+        # Grab the domain SID
+        $DomainGroup = "$Domain\Domain Admins"         
+        $DomainGroupSid = Get-SQLQuery -Instance $Instance -Query "select SUSER_SID('$DomainGroup') as DomainGroupSid" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose            
+        $DomainGroupSidBytes = $DomainGroupSid | Select-Object -Property domaingroupsid -ExpandProperty domaingroupsid       
+        try{
+            $DomainGroupSidString = [System.BitConverter]::ToString($DomainGroupSidBytes).Replace('-','').Substring(0,48)
+        }catch{
+            Write-Warning "The provided domain did not resolve correctly."
+            return
+        }
+
+        # Fuzz the domain object SIDs from StartId to EndId
         $StartId..$EndId |
         ForEach-Object -Process {
             # Convert to Principal ID to hex
@@ -11204,7 +11219,7 @@ Function   Get-SQLPersistRegDebugger
             .SYNOPSIS
             This function uses xp_regwrite to configure a debugger for a provided 
             executable (utilman.exe by default), which will run another provided 
-            executable (cmd.exe by default) when it’s called. It is commonly used 
+            executable (cmd.exe by default) when itâ€™s called. It is commonly used 
             to create RDP backdoors. The specific registry key is 
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options[EXE].  
             Sysadmin privileges are required.
@@ -15477,7 +15492,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 # -------------------------------------------
 # Function: Test-IsLuhnValid
 # -------------------------------------------
-# Author: ÃƒËœYVIND KALLSTAD
+# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function Test-IsLuhnValid
 {
@@ -15495,7 +15510,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ÃƒËœYVIND KALLSTAD
+            Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -15530,7 +15545,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ÃƒËœYVIND KALLSTAD
+# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits
 {
@@ -15547,7 +15562,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ÃƒËœYVIND KALLSTAD
+            Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>

@@ -4324,6 +4324,228 @@ Function  Get-SQLServerLogin
     }
 }
 
+# ----------------------------------
+#  Get-SQLServerPasswordHash
+# ----------------------------------
+Function  Get-SQLServerPasswordHash
+{
+    <#
+            .SYNOPSIS
+            Returns logins from target SQL Servers.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER PrincipalName
+            Pincipal name to filter for.
+			.PARAMETER
+			Migrate to SQL Server process.
+            .EXAMPLE
+            PS C:\> Get-SQLServerPasswordHash -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
+
+			ComputerName        : SQLServer1
+			Instance            : SQLServer1\STANDARDDEV2014
+			PrincipalId         : 1
+			PrincipalName       : sa
+			PrincipalSid        : 7F883D1B...
+			PrincipalType       : SQL_LOGIN
+			CreateDate          : 19/03/2017 08:16:57
+			DefaultDatabaseName : master
+			PasswordHash        : 0x0200c8...
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLServerPasswordHash -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Principal name to filter for.')]
+        [string]$PrincipalName,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Migrate to SQL Server process.')]
+        [switch]$Migrate,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblPasswordHashes = New-Object -TypeName System.Data.DataTable
+        $null = $TblPasswordHashes.Columns.Add('ComputerName')
+        $null = $TblPasswordHashes.Columns.Add('Instance')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalId')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalName')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalSid')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalType')
+        $null = $TblPasswordHashes.Columns.Add('CreateDate')
+        $null = $TblPasswordHashes.Columns.Add('DefaultDatabaseName')
+        $null = $TblPasswordHashes.Columns.Add('PasswordHash')
+
+        # Setup CredentialName filter
+        if($PrincipalName)
+        {
+            $PrincipalNameFilter = " and name like '$PrincipalName'"
+        }
+        else
+        {
+            $PrincipalNameFilter = ''
+        }
+    }
+
+    Process
+    {
+        # Note: Tables queried by this function typically require sysadmin privileges.
+
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }            
+
+        # Get sysadmin status
+        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+        if($IsSysadmin -eq 'Yes')
+        {
+            Write-Verbose -Message "$Instance : You are a sysadmin."
+        }
+        else
+        {
+            Write-Verbose -Message "$Instance : You are not a sysadmin."
+            if($Migrate)
+            {
+                Write-Verbose -Message "$Instance : Attempt to impersonate SQL Server process." 
+                $migrated = Get-Process "sqlservr" | Invoke-TokenManipulation -ImpersonateUser
+            }
+        
+        }
+
+
+        # Check version
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
+        if($SQLVersionFull)
+        {
+            $SQLVersionShort = $SQLVersionFull.Split('.')[0]
+        }
+
+        if([int]$SQLVersionShort -le 8)
+        {
+
+            # Define Query
+            $Query = "USE master;
+                SELECT '$ComputerName' as [ComputerName],'$Instance' as [Instance],
+                name as [PrincipalName],
+                createdate as [CreateDate],
+			    dbname as [DefaultDatabaseName],
+			    password as [PasswordHash]
+                FROM [sysxlogins]"
+        }
+		else
+        {
+            # Define Query
+            $Query = "USE master;
+                SELECT '$ComputerName' as [ComputerName],'$Instance' as [Instance],
+                name as [PrincipalName],
+			    principal_id as [PrincipalId],
+			    type_desc as [PrincipalType],
+                sid as [PrincipalSid],
+                create_date as [CreateDate],
+			    default_database_name as [DefaultDatabaseName],
+			    [sys].fn_varbintohexstr(password_hash) as [PasswordHash]
+                FROM [sys].[sql_logins]"
+        }
+
+
+
+        # Execute Query
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+        # Update sid formatting for each record
+        $TblResults |
+        ForEach-Object -Process {
+            # Format principal sid
+            $NewSid = [System.BitConverter]::ToString($_.PrincipalSid).Replace('-','')
+            if ($NewSid.length -le 10)
+            {
+                $Sid = [Convert]::ToInt32($NewSid,16)
+            }
+            else
+            {
+                $Sid = $NewSid
+            }
+
+            # Add results to table
+            $null = $TblPasswordHashes.Rows.Add(
+                [string]$_.ComputerName,
+                [string]$_.Instance,
+                [string]$_.PrincipalId,
+                [string]$_.PrincipalName,
+                $Sid,
+                [string]$_.PrincipalType,
+                $_.CreateDate,
+                [string]$_.DefaultDatabaseName,
+            [string]$_.PasswordHash)
+        }
+    }
+
+    End
+    {
+        # Return data
+        $TblPasswordHashes
+    }
+}
 
 # ----------------------------------
 #  Get-SQLSession
@@ -18812,6 +19034,20 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
+        # Getting Server Password Hashes
+        Write-Verbose -Message "$Instance - Getting server hashes..."
+        $Results = Get-SQLServerPasswordHash -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_hashes.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_hashes.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+		
         # Getting Server Privs
         Write-Verbose -Message "$Instance - Getting server privileges..."
         $Results = Get-SQLServerPriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

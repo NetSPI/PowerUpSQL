@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.62
+        Version: 1.0.0.63
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9887,7 +9887,19 @@ function Get-DomainObject
         # Create Create the connection to LDAP
         if ($DomainController)
         {
-            $objDomain = (New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController", $Credential.UserName, $Credential.GetNetworkCredential().Password).distinguishedname
+           
+            # Verify credentials were provided
+            if(-not $Username){
+                Write-Output "A username and password must be provided when setting a specific domain controller."
+                Break
+            }
+
+            # Test credentials and grab domain
+            try {
+                $objDomain = (New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController", $Credential.UserName, $Credential.GetNetworkCredential().Password).distinguishedname
+            }catch{
+                Write-Output "Authentication failed."
+            }
 
             # add ldap path
             if($LdapPath)
@@ -11224,7 +11236,7 @@ Function   Get-SQLPersistRegDebugger
             .SYNOPSIS
             This function uses xp_regwrite to configure a debugger for a provided 
             executable (utilman.exe by default), which will run another provided 
-            executable (cmd.exe by default) when itâ€™s called. It is commonly used 
+            executable (cmd.exe by default) when itÃ¢â‚¬â„¢s called. It is commonly used 
             to create RDP backdoors. The specific registry key is 
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options[EXE].  
             Sysadmin privileges are required.
@@ -15488,7 +15500,7 @@ Function Invoke-SQLAuditSampleDataByColumn
 # -------------------------------------------
 # Function: Test-IsLuhnValid
 # -------------------------------------------
-# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
+# Author: ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function Test-IsLuhnValid
 {
@@ -15506,7 +15518,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
+            Author: ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œYVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -15541,7 +15553,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
+# Author: ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits
 {
@@ -15558,7 +15570,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ÃƒÆ’Ã‹Å“YVIND KALLSTAD
+            Author: ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œYVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>

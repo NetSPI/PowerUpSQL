@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.61
+        Version: 1.0.0.62
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9322,24 +9322,25 @@ Function  Get-SQLServerLoginDefaultPw
             $Instance = $env:COMPUTERNAME
         }
        
-        # Grab only the instance name
+        # Grab only the instance name       
         $TargetInstance = $Instance.Split("\")[1]
 
         # Bypass ports and default instances
         if(-not $TargetInstance){
-            Write-Verbose "$Instance : No instance match found."
+            Write-Verbose "$Instance : No named instance found."
             return
         }
-
+       
         # Check if instance is in list
+        $TblResultsTemp = ""
         $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -eq "$TargetInstance"}        
 
-        if($TblResultsTemp){
-            Write-Verbose "$Instance : Confirmed instance match."            
+        if($TblResultsTemp){    
+            Write-Verbose "$Instance : Confirmed instance match." 
         }else{
             Write-Verbose "$Instance : No instance match found."
-            return  
-        }
+            return 
+        }        
 
         # Grab username and password
         $CurrentUsername = $TblResultsTemp.username
@@ -12241,18 +12242,6 @@ Function  Invoke-SQLAuditDefaultLoginPw
         # Status User
         Write-Verbose -Message "$Instance : START VULNERABILITY CHECK: Default SQL Server Login Password"
 
-        # Test connection to server
-        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
-            $_.Status -eq 'Accessible'
-        }
-        if(-not $TestConnection)
-        {
-            # Status user
-            Write-Verbose -Message "$Instance : CONNECTION FAILED."
-            Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Potential SQL Injection - EXECUTE AS OWNER."
-            Return
-        }
-
         # Grab server information
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $CurrentLogin = $ServerInfo.CurrentLogin
@@ -12303,11 +12292,14 @@ Function  Invoke-SQLAuditDefaultLoginPw
             # Add record            
             $Details = "Default credentials found: $DefaultUsername / $DefaultPassword (sysadmin: $DefaultIsSysadmin)."
             $ExploitCmd    = "Get-SQLQuery -Verbose -Instance $DefaultInstance -Q `"Select @@Version`" -Username $DefaultUsername -Password $DefaultPassword"
-            $null = $TblData.Rows.Add($DefaultComputer, $DefaultInstance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)            
+            $null = $TblData.Rows.Add($DefaultComputer, $DefaultInstance, $Vulnerability, $Description, $Remediation, $Severity, $IsVulnerable, $IsExploitable, $Exploited, $ExploitCmd, $Details, $Reference, $Author)                        
         }        
+        
+        #Status user
+        Write-Verbose -Message "$Instance : COMPLETED VULNERABILITY CHECK: Default SQL Server Login Password"
     }
     End
-    {
+    {           
         # Return data
         if ( -not $NoOutput)
         {

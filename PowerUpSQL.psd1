@@ -78,7 +78,8 @@
         'Invoke-SQLAuditPrivAutoExecSp',     
         'Invoke-SQLDumpInfo', 
         'Invoke-SQLEscalatePriv', 
-        'Invoke-SQLOSCmd'		
+        'Invoke-SQLOSCmd',
+        'Invoke-SQLAgentJob'	
     )
     FileList          = 'PowerUpSQL.psm1', 'PowerUpSQL.ps1', 'README.md'
 }

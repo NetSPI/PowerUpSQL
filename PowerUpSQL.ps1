@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.64
+        Version: 1.0.0.65
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8964,6 +8964,7 @@ Function  Get-SQLServiceLocal
         $null = $TblLocalInstances.Columns.Add('ServicePath')
         $null = $TblLocalInstances.Columns.Add('ServiceAccount')
         $null = $TblLocalInstances.Columns.Add('ServiceState')
+        $null = $TblLocalInstances.Columns.Add('ServiceProcessId')
     }
 
     Process
@@ -8973,7 +8974,7 @@ Function  Get-SQLServiceLocal
         Where-Object -FilterScript {
             $_.pathname -like '*Microsoft SQL Server*'
         } |
-        Select-Object -Property DisplayName, PathName, Name, StartName, State, SystemName
+        Select-Object -Property DisplayName, PathName, Name, StartName, State, SystemName, ProcessId
 
         # Add records to SQL Server instance table
         $SqlServices |
@@ -9012,6 +9013,13 @@ Function  Get-SQLServiceLocal
                 
             }
             
+            # Setup process id
+            if($_.ProcessId -eq 0){
+                $ServiceProcessId = ""
+            }else{
+                $ServiceProcessId = $_.ProcessId
+            }
+
             # Add row
             $null = $TblLocalInstances.Rows.Add(
                 [string]$_.SystemName,
@@ -9020,7 +9028,8 @@ Function  Get-SQLServiceLocal
                 [string]$_.Name,
                 [string]$_.PathName,
                 [string]$_.StartName,
-                [string]$_.State)            
+                [string]$_.State,
+                [string]$ServiceProcessId)            
         }
     }
 

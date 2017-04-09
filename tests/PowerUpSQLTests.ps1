@@ -1307,6 +1307,7 @@ Create-SQLFileXpDll
 Get-SQLStoredProcedureSQLi
 Get-SQLServerLoginDefaultPw
 Get-SQLStoredProcedureAutoExec
+Invoke-SQLImpersonateServiceCmd
 #>
 
 # Get-SQLFuzzDatabaseName

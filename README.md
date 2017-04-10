@@ -30,7 +30,7 @@ PowerUpSQL was designed with six objectives in mind:
 ### Module Information
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2016
 * Major Contributors: Antti Rantasaari and Eric Gruber (@egru)
-* Contributors: Alexander Leary, @leoloobeek, and @ktaranov
+* Contributors: Alexander Leary, @leoloobeek, Mike Manzotti (@mmanzo_), and @ktaranov
 * License: BSD 3-Clause
 * Required Dependencies: None
  

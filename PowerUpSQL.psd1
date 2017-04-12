@@ -1,4 +1,4 @@
-#requires -Version 1
+7#requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
     ModuleVersion     = '1.0.0.66'

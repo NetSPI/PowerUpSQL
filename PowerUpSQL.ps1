@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.69
+        Version: 1.0.0.70
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -1247,6 +1247,7 @@ Function  Get-SQLServerInfo
             ComputerName           : SQLServer1
             Instance               : SQLServer1\STANDARDDEV2014
             DomainName             : Domain
+            ServiceProcessId       : 6758
             ServiceName            : MSSQL$STANDARDDEV2014
             ServiceAccount         : LocalSystem
             AuthenticationMode     : Windows and SQL Server Authentication
@@ -1403,6 +1404,7 @@ Function  Get-SQLServerInfo
             SELECT  '$ComputerName' as [ComputerName],
             @@servername as [Instance],
             DEFAULT_DOMAIN() as [DomainName],
+            SERVERPROPERTY('processid') as ServiceProcessID,
             @SQLServerServiceName as [ServiceName],
             @ServiceAccountName as [ServiceAccount],
             (SELECT CASE @AuthenticationMode

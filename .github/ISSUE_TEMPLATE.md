@@ -6,4 +6,4 @@
 
 **What is the expected behavior?**
 
-**Which versions of Powershell and which OS are affected by this issue? Did this work in previous versions of our scripts?**
+**Which versions of Powershell, OS, or SQL Server are affected by this issue? Did this work in previous versions of our scripts?**

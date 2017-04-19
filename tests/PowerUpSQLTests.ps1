@@ -18,6 +18,7 @@ Get-SQLInstanceFile
 Get-SQLInstanceLocal               
 Get-SQLInstanceScanUDP             
 Get-SQLInstanceScanUDPThreaded  
+Invoke-SQLOSCmdCLR
 #>
 
 #endregion

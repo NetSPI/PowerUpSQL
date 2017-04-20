@@ -19,6 +19,7 @@ Get-SQLInstanceLocal
 Get-SQLInstanceScanUDP             
 Get-SQLInstanceScanUDPThreaded  
 Invoke-SQLOSCmdCLR
+Create-SQLFileCLRDll
 #>
 
 #endregion

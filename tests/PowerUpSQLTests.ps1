@@ -18,6 +18,8 @@ Get-SQLInstanceFile
 Get-SQLInstanceLocal               
 Get-SQLInstanceScanUDP             
 Get-SQLInstanceScanUDPThreaded  
+Invoke-SQLOSCmdCLR
+Create-SQLFileCLRDll
 #>
 
 #endregion
@@ -244,6 +246,11 @@ Describe "Get-SQLConnectionTestThreaded" {
 #region           Common Function Tests
 #
 ######################################################
+
+# Get-SQLAgentJob
+# Get-SQLServerLinkCrawl
+# Get-SQLServerLinkData
+# Get-SQLServerLinkQuery
 
 # Get-SQLTriggerDml  
 Describe "Get-SQLTriggerDml  " {
@@ -1302,6 +1309,7 @@ Create-SQLFileXpDll
 Get-SQLStoredProcedureSQLi
 Get-SQLServerLoginDefaultPw
 Get-SQLStoredProcedureAutoExec
+Invoke-SQLImpersonateServiceCmd
 #>
 
 # Get-SQLFuzzDatabaseName

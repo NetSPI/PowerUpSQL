@@ -1,7 +1,7 @@
 #requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
-    ModuleVersion     = '1.0.0.55'
+    ModuleVersion     = '1.0.0.76'
     GUID              = 'dd1fe106-2226-4869-9363-44469e930a4a'
     Author            = 'Scott Sutherland'
     Copyright         = 'BSD 3-Clause'
@@ -9,6 +9,8 @@
     PowerShellVersion = '2.0'
     FunctionsToExport = @(  
         'Create-SQLFileXpDll', 
+        'Create-SQLFileCLRDll', 
+        'Get-SQLAgentJob',
         'Get-SQLAuditDatabaseSpec', 
         'Get-SQLAuditServerSpec', 
         'Get-SQLColumn', 
@@ -32,6 +34,7 @@
         'Get-SQLInstanceLocal', 
         'Get-SQLInstanceScanUDP', 
         'Get-SQLInstanceScanUDPThreaded', 
+        'Get-SQLLocalAdminCheck',
         'Get-SQLQuery', 
         'Get-SQLQueryThreaded', 
         'Get-SQLRecoverPwAutoLogon',
@@ -40,8 +43,12 @@
         'Get-SQLServerInfo', 
         'Get-SQLServerInfoThreaded', 
         'Get-SQLServerLink', 
+        'Get-SQLServerLinkCrawl',
+        'Get-SQLServerLinkData',
+        'Get-SQLServerLinkQuery',
         'Get-SQLServerLogin', 
-        'Get-SQLServerLoginDefaultPw',        
+        'Get-SQLServerLoginDefaultPw', 
+        'Get-SQLServerPasswordHash',
         'Get-SQLServerPriv', 
         'Get-SQLServerRole', 
         'Get-SQLServerRoleMember', 
@@ -74,9 +81,12 @@
         'Invoke-SQLAuditPrivAutoExecSp',     
         'Invoke-SQLDumpInfo', 
         'Invoke-SQLEscalatePriv', 
-        'Invoke-SQLOSCmd'		
+        'Invoke-SQLImpersonateService',
+        'Invoke-SQLImpersonateServiceCmd',
+        'Invoke-SQLOSCmd',
+        'Invoke-SQLOSCmdCLR',
+        'Invoke-TokenManipulation'
     )
     FileList          = 'PowerUpSQL.psm1', 'PowerUpSQL.ps1', 'README.md'
 }
-
 

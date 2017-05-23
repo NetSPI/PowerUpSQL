@@ -20,6 +20,7 @@ Get-SQLInstanceScanUDP
 Get-SQLInstanceScanUDPThreaded  
 Invoke-SQLOSCmdCLR
 Create-SQLFileCLRDll
+Get-SQLAssemblyFile
 #>
 
 #endregion

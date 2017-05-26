@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.77
+        Version: 1.0.0.78
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8498,6 +8498,8 @@ Function  Get-SQLAssemblyFile
             Database user to filter for.            
             .PARAMETER NoDefaults
             Only show information for non default databases.
+            .PARAMETER AssemblyName
+            Filter for assembly names that contain the provided word.
 
             .EXAMPLE
             PS C:\> Get-SQLAssemblyFile -Verbose -Instance SQLServer1\Instance1 | ft -AutoSize
@@ -8540,6 +8542,11 @@ Function  Get-SQLAssemblyFile
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server database name.')]
         [string]$DatabaseName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter for filenames.')]
+        [string]$AssemblyName,
 
         [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
@@ -8608,6 +8615,13 @@ Function  Get-SQLAssemblyFile
             $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
         }
 
+        # Setup assembly name filter
+        if($AssemblyName){
+            $AssemblyNameQuery = "WHERE name LIKE '%$AssemblyName%'"
+        }else{
+            $AssemblyNameQuery = ""
+        }
+
         # Get the privs for each database
         $TblDatabases |
         ForEach-Object -Process {
@@ -8621,7 +8635,8 @@ Function  Get-SQLAssemblyFile
 
             # Define Query
             $Query = "USE $DbName;
-                      SELECT * FROM sys.assembly_files"
+                      SELECT * FROM sys.assembly_files
+                      $AssemblyNameQuery"
 
             # Execute Query
             $TblAssemblyFilesTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

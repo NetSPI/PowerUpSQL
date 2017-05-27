@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.79
+        Version: 1.0.0.80
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8498,6 +8498,8 @@ Function  Get-SQLAssemblyFile
             Database user to filter for.            
             .PARAMETER NoDefaults
             Only show information for non default databases.
+            .PARAMETER ExportFolder
+            Folder to export CLR DLL files to.
             .PARAMETER AssemblyName
             Filter for assembly names that contain the provided word.
 
@@ -8547,6 +8549,11 @@ Function  Get-SQLAssemblyFile
                 ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Filter for filenames.')]
         [string]$AssemblyName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Folder to export DLLs to.')]
+        [string]$ExportFolder,
 
         [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
@@ -8655,6 +8662,31 @@ Function  Get-SQLAssemblyFile
                     [string]$_.name,
                     [string]$_.file_id,
                     [string]$_.content)
+                
+                # Export dll 
+                if($ExportFolder){
+                    
+                    # Create server subfolder if it doesnt exist
+                    $ServerPath = "$ExportFolder\$ComputerName"
+                    If ((test-path $Serverpath) -eq $False){
+                        Write-Verbose "$instance : Creating server folder: $ServerPath"
+                        $null = New-Item -Path "$ServerPath" -type directory
+                    }                   
+
+                    # Create database subfolder if it doesnt exist
+                    $Databasepath = "$ServerPath\$DbName"
+                    If ((test-path $Databasepath) -eq $False){
+                        Write-Verbose "$instance : Creating database folder: $Databasepath"
+                        $null = New-Item $Databasepath -type directory
+                    } 
+
+                    # Create dll file if it doesnt exist
+                    $CLRFilename = $_.name
+                    Write-Verbose "$instance : - Exporting $CLRFilename.dll"
+                    $FullExportPath = "$Databasepath\$CLRFilename.dll"
+                    $_.content | Set-Content -Encoding Byte $FullExportPath
+
+                }                     
             }
         }
     }

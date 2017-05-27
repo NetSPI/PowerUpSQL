@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.81
+        Version: 1.0.0.82
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8683,9 +8683,17 @@ Function  Get-SQLAssemblyFile
                 
                 # Export dll 
                 if($ExportFolder){
+
+                    # Create export folder
+                    $ExportOutputFolder = "$ExportFolder\CLRExports"
+                    If ((test-path $ExportOutputFolder) -eq $False){
+                        Write-Verbose "$instance : Creating export folder: $ExportOutputFolder"
+                        $null = New-Item -Path "$ExportOutputFolder" -type directory
+                    }  
                     
-                    # Create server subfolder if it doesnt exist
-                    $ServerPath = "$ExportFolder\$ComputerName"
+                    # Create instance subfolder if it doesnt exist
+                    $InstanceClean = $Instance -replace('\\','_')
+                    $ServerPath = "$ExportOutputFolder\$InstanceClean"
                     If ((test-path $Serverpath) -eq $False){
                         Write-Verbose "$instance : Creating server folder: $ServerPath"
                         $null = New-Item -Path "$ServerPath" -type directory

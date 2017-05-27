@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.78
+        Version: 1.0.0.79
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8617,7 +8617,7 @@ Function  Get-SQLAssemblyFile
 
         # Setup assembly name filter
         if($AssemblyName){
-            $AssemblyNameQuery = "WHERE name LIKE '%$AssemblyName%'"
+            $AssemblyNameQuery = "WHERE af.name LIKE '%$AssemblyName%'"
         }else{
             $AssemblyNameQuery = ""
         }
@@ -8635,7 +8635,8 @@ Function  Get-SQLAssemblyFile
 
             # Define Query
             $Query = "USE $DbName;
-                      SELECT * FROM sys.assembly_files
+                      SELECT af.assembly_id,af.name,af.file_id,af.content FROM sys.assemblies 
+                      a INNER JOIN sys.assembly_files af ON a.assembly_id = af.assembly_id 
                       $AssemblyNameQuery"
 
             # Execute Query

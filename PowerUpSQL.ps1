@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.80
+        Version: 1.0.0.81
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8574,8 +8574,13 @@ Function  Get-SQLAssemblyFile
         $null = $TblAssemblyFiles.Columns.Add('DatabaseName')
         $null = $TblAssemblyFiles.Columns.Add('assembly_id')
         $null = $TblAssemblyFiles.Columns.Add('name')
+        $null = $TblAssemblyFiles.Columns.Add('clr_name')
         $null = $TblAssemblyFiles.Columns.Add('file_id')
         $null = $TblAssemblyFiles.Columns.Add('content')
+        $null = $TblAssemblyFiles.Columns.Add('permission_set_desc')
+        $null = $TblAssemblyFiles.Columns.Add('create_date')
+        $null = $TblAssemblyFiles.Columns.Add('modify_date')
+        $null = $TblAssemblyFiles.Columns.Add('is_user_defined')
     }
 
     Process
@@ -8642,8 +8647,16 @@ Function  Get-SQLAssemblyFile
 
             # Define Query
             $Query = "USE $DbName;
-                      SELECT af.assembly_id,af.name,af.file_id,af.content FROM sys.assemblies 
-                      a INNER JOIN sys.assembly_files af ON a.assembly_id = af.assembly_id 
+                      SELECT af.assembly_id,
+                      af.name,
+                      a.clr_name,
+                      af.file_id,
+                      af.content, 
+                      a.permission_set_desc,
+                      a.create_date,
+                      a.modify_date,
+                      a.is_user_defined
+                      FROM sys.assemblies a INNER JOIN sys.assembly_files af ON a.assembly_id = af.assembly_id 
                       $AssemblyNameQuery"
 
             # Execute Query
@@ -8660,8 +8673,13 @@ Function  Get-SQLAssemblyFile
                     [string]$DbName,
                     [string]$_.assembly_id,
                     [string]$_.name,
+                    [string]$_.clr_name,
                     [string]$_.file_id,
-                    [string]$_.content)
+                    [string]$_.content,
+                    [string]$_.permission_set_desc,
+                    [string]$_.create_date,
+                    [string]$_.modify_date,
+                    [string]$_.is_user_defined)
                 
                 # Export dll 
                 if($ExportFolder){

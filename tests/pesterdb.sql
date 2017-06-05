@@ -2,6 +2,48 @@
 -- Description: This script can be used to configure a new SQL Server 2014 instance for PowerUpSQL Pester tests.
 
 ------------------------------------------------------------
+-- Create Logins, Database Users, and Grant Assembly Privs
+------------------------------------------------------------
+
+-- Create db_ddladmin login
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_ddladmin')
+CREATE LOGIN [test_login_ddladmin] WITH PASSWORD = 'test_login_ddladmin', CHECK_POLICY = OFF;
+
+-- Create db_ddladmin database user
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_ddladmin')
+CREATE USER [test_login_ddladmin] FROM LOGIN [test_login_ddladmin];
+GO
+
+-- Add test_login_ddladmin to db_ddladmin role
+EXEC sp_addrolemember [db_ddladmin], [test_login_ddladmin];
+GO
+
+-- Create login with the CREATE ASSEMBLY database privilege
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_createassembly')
+CREATE LOGIN [test_login_createassembly] WITH PASSWORD = 'test_login_createassembly', CHECK_POLICY = OFF;
+
+-- Create test_login_createassembly database user
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_createassembly')
+CREATE USER [test_login_createassembly] FROM LOGIN [test_login_createassembly];
+GO
+
+-- Add privilege
+GRANT CREATE ASSEMBLY to [test_login_createassembly];
+GO
+
+-- Create login with the ALTER ANY ASSEMBLY database privilege
+If not Exists (select loginname from master.dbo.syslogins where name = 'test_login_alterassembly')
+CREATE LOGIN [test_login_alterassembly] WITH PASSWORD = 'test_login_alterassembly', CHECK_POLICY = OFF;
+
+-- Create test_login_alterassembly database user
+If not Exists (SELECT name FROM sys.database_principals where name = 'test_login_alterassembly')
+CREATE USER [test_login_alterassembly] FROM LOGIN [test_login_alterassembly];
+GO
+
+-- Add privilege
+GRANT ALTER ANY ASSEMBLY to [test_login_alterassembly];
+GO
+------------------------------------------------------------
 -- Create Test SQL Logins
 ------------------------------------------------------------
 

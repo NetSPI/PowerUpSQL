@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.86
+        Version: 1.0.0.87
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -1482,7 +1482,7 @@ Function  Invoke-SQLOSCmdR
                     $DisableExternalScripts = 1
 
                     # Try to enable Ole Automation Procedures
-                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'external scripts enabled',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'external scripts enabled',1;RECONFIGURE WITH OVERRIDE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
 
                     # Check if configuration change worked
                     $IsExternalScriptsEnabled2 = Get-SQLQuery -Instance $Instance -Query 'sp_configure "external scripts enabled"' -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
@@ -1543,7 +1543,7 @@ EXEC sp_execute_external_script
                 if($DisableExternalScripts -eq 1)
                 {
                     Write-Verbose -Message "$Instance : Disabling external scripts"
-                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'external scripts enabled',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'external scripts enabled',0;RECONFIGURE WITH OVERRIDE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
                 }
 
                 # Restore Show Advanced Options state if needed

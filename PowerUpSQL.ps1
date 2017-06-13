@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.0.0.89
+        Version: 1.1.90
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8463,6 +8463,280 @@ Function  Get-SQLTriggerDml
     {
         # Return data
         $TblDmlTriggers
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLStoredProcedureCLR
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLStoredProcedureCLR
+{
+    <#
+            .SYNOPSIS
+            Returns stored procedures created from CLR assemblies for each accessible database.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER DatabaseName
+            Database name to filter for.
+            .PARAMETER DatabaseUser
+            Database user to filter for.            
+            .PARAMETER NoDefaults
+            Only show information for non default databases.
+            .PARAMETER ExportFolder
+            Folder to export CLR DLL files to.
+            .PARAMETER AssemblyName
+            Filter for assembly names that contain the provided word.
+
+            .EXAMPLE
+            Get CLR stored procedure information and export source DLLs to a folder as a sysadmin.
+            PS C:\> Get-SQLStoredProcedureCLR -Verbose -Instance SQLServer1\Instance1 -ExportFolder . | ft -AutoSize
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Grabbing assembly file information from master.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Creating export folder: .\CLRExports
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Creating server folder: .\CLRExports\MSSQLSRV04_SQLSERVER2014
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Creating database folder: .\CLRExports\MSSQLSRV04_SQLSERVER2014\master
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : - Exporting adduser.dll
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : - Exporting CLRFile.dll
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : - Exporting runcmd.dll.dll
+
+            ComputerName Instance                 DatabaseName assembly_method assembly_id assembly_name file_id file_name   clr_name      
+            ------------ --------                 ------------ --------------- ----------- ------------- ------- ---------   --------      
+            MSSQLSRV04   MSSQLSRV04\SQLSERVER2014 testdb       readfile        65537       filetools     1       filetools   filetools, ve...
+            MSSQLSRV04   MSSQLSRV04\SQLSERVER2014 testdb       writefile       65537       filetools     1       filetools   filetools, ve...
+            MSSQLSRV04   MSSQLSRV04\SQLSERVER2014 testdb       runcmd          65558       runcmd        1       ostools     ostools,...            
+         
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLStoredProcedureCLR -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server database name.')]
+        [string]$DatabaseName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter for filenames.')]
+        [string]$AssemblyName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Folder to export DLLs to.')]
+        [string]$ExportFolder,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Do not show database users associated with default databases.')]
+        [Switch]$NoDefaults,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblAssemblyFiles = New-Object -TypeName System.Data.DataTable
+        $null = $TblAssemblyFiles.Columns.Add('ComputerName')
+        $null = $TblAssemblyFiles.Columns.Add('Instance')
+        $null = $TblAssemblyFiles.Columns.Add('DatabaseName')
+        $null = $TblAssemblyFiles.Columns.Add('assembly_method')
+        $null = $TblAssemblyFiles.Columns.Add('assembly_id')
+        $null = $TblAssemblyFiles.Columns.Add('assembly_name')
+        $null = $TblAssemblyFiles.Columns.Add('file_id')
+        $null = $TblAssemblyFiles.Columns.Add('file_name')
+        $null = $TblAssemblyFiles.Columns.Add('clr_name')        
+        $null = $TblAssemblyFiles.Columns.Add('permission_set_desc')
+        $null = $TblAssemblyFiles.Columns.Add('create_date')
+        $null = $TblAssemblyFiles.Columns.Add('modify_date')
+        $null = $TblAssemblyFiles.Columns.Add('is_user_defined')
+        $null = $TblAssemblyFiles.Columns.Add('content')
+    }
+
+    Process
+    {
+        # Note: Tables queried by this function typically require sysadmin or DBO privileges.
+
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Get list of databases
+        if($NoDefaults)
+        {
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose  -NoDefaults
+        }
+        else
+        {
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -HasAccess -DatabaseName $DatabaseName -SuppressVerbose
+        }
+
+        # Setup assembly name filter
+        if($AssemblyName){
+            $AssemblyNameQuery = "WHERE af.name LIKE '%$AssemblyName%'"
+        }else{
+            $AssemblyNameQuery = ""
+        }
+
+        # Get the privs for each database
+        $TblDatabases |
+        ForEach-Object -Process {
+            # Set DatabaseName filter
+            $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Grabbing assembly file information from $DbName."
+            }
+
+            # Define Query
+            $Query = "USE $DbName;
+                      SELECT am.assembly_method,
+                      af.assembly_id,
+ 					  a.name as assembly_name,
+                      af.file_id,					  	
+					  af.name as file_name,
+                      a.clr_name, 
+                      a.permission_set_desc,
+                      a.create_date,
+                      a.modify_date,
+                      a.is_user_defined,
+                      af.content
+                      FROM sys.assemblies a 
+                      INNER JOIN sys.assembly_files af ON a.assembly_id = af.assembly_id 
+                      INNER JOIN sys.assembly_modules am ON am.assembly_id = af.assembly_id
+                      $AssemblyNameQuery"
+
+            # Execute Query
+            $TblAssemblyFilesTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+            # Add each result to table
+            $TblAssemblyFilesTemp |
+            ForEach-Object -Process {
+
+                # Add results to table
+                $null = $TblAssemblyFiles.Rows.Add(
+                    [string]$ComputerName,
+                    [string]$Instance,
+                    [string]$DbName,
+                    [string]$_.assembly_method,
+                    [string]$_.assembly_id,
+                    [string]$_.assembly_name,
+                    [string]$_.file_id,
+                    [string]$_.file_name,
+                    [string]$_.clr_name,
+                    [string]$_.permission_set_desc,
+                    [string]$_.create_date,
+                    [string]$_.modify_date,
+                    [string]$_.is_user_defined,
+                    [string]$_.content)
+
+                # Setup vars for verbose output
+                $CLRFilename = $_.file_name
+                $CLRMethod = $_.assembly_method
+                $CLRAssembly = $_.assembly_name 
+                
+                # Export dll 
+                if($ExportFolder){
+
+                    # Create export folder
+                    $ExportOutputFolder = "$ExportFolder\CLRExports"
+                    If ((test-path $ExportOutputFolder) -eq $False){
+                        Write-Verbose "$instance : Creating export folder: $ExportOutputFolder"
+                        $null = New-Item -Path "$ExportOutputFolder" -type directory
+                    }  
+                    
+                    # Create instance subfolder if it doesnt exist
+                    $InstanceClean = $Instance -replace('\\','_')
+                    $ServerPath = "$ExportOutputFolder\$InstanceClean"
+                    If ((test-path $Serverpath) -eq $False){
+                        Write-Verbose "$instance : Creating server folder: $ServerPath"
+                        $null = New-Item -Path "$ServerPath" -type directory
+                    }                   
+
+                    # Create database subfolder if it doesnt exist
+                    $Databasepath = "$ServerPath\$DbName"
+                    If ((test-path $Databasepath) -eq $False){
+                        Write-Verbose "$instance : Creating database folder: $Databasepath"
+                        $null = New-Item $Databasepath -type directory
+                    } 
+
+                    # Create dll file if it doesnt exist                  
+                    $FullExportPath = "$Databasepath\$CLRFilename.dll"
+                    if(-not (Test-Path $FullExportPath)){
+                        Write-Verbose "$Instance : - Exporting $CLRFilename.dll"                        
+                        $_.content | Set-Content -Encoding Byte $FullExportPath
+                    }else{
+                        #Write-Verbose "$Instance :   $CLRFilename.dll already exported" 
+                    }
+
+                    # Display found items 
+                    Write-Verbose "$instance : - File: $CLRFilename.dll Method: $CLRMethod Assembly: $CLRAssembly "
+                }                     
+            }
+        }
+    }
+
+    End
+    {
+        # Return data
+        $TblAssemblyFiles
     }
 }
 

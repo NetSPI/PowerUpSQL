@@ -19,7 +19,7 @@
 
 The PowerUpSQL module includes functions that support SQL Server discovery, auditing for common weak configurations, and privilege escalation on scale.  It is intended to be used during internal penetration tests and red team engagements. However, PowerUpSQL also includes many functions that could be used by administrators to quickly inventory the SQL Servers in their ADS domain.
 
-### PowerUpSQL wiki
+### PowerUpSQL Wiki
 For setup instructions, cheat sheets, blogs, function overviews, and usage information check out the wiki: https://github.com/NetSPI/PowerUpSQL/wiki
 
 

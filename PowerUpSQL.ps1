@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.82.97
+        Version: 1.82.98
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -11756,9 +11756,10 @@ function Get-DomainSpn
             $SpnResults | ForEach-Object -Process {
                 [string]$SidBytes = [byte[]]"$($_.Properties.objectsid)".split(' ')
                 [string]$SidString = $SidBytes -replace ' ', ''
-                $Spn = $_.properties.serviceprincipalname[0].split(',')
+                #$Spn = $_.properties.serviceprincipalname[0].split(',')
 
-                foreach ($item in $Spn)
+                #foreach ($item in $Spn)
+                foreach ($item in $($_.properties.serviceprincipalname))
                 {
                     # Parse SPNs
                     $SpnServer = $item.split('/')[1].split(':')[0].split(' ')[0]

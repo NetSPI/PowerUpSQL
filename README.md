@@ -1,7 +1,11 @@
 
-| ![PowerUpSQLLogo](https://github.com/NetSPI/PowerUpSQL/blob/master/images/powerupsql-large.png)       |
-| :-------------: |
-|<br> [![licence badge]][licence] [![wiki Badge]][wiki] <Br> [![stars badge]][stars] [![forks badge]][forks] [![issues badge]][issues] |
+![PowerUpSQLLogo](https://github.com/NetSPI/PowerUpSQL/blob/master/images/powerupsql-large.png)       
+<br> 
+[![licence badge]][licence] 
+[![wiki Badge]][wiki] 
+[![stars badge]][stars] 
+[![forks badge]][forks] 
+[![issues badge]][issues] |
 
 [licence badge]:https://img.shields.io/badge/license-New%20BSD-blue.svg
 [stars badge]:https://img.shields.io/github/stars/NetSPI/PowerUpSQL.svg

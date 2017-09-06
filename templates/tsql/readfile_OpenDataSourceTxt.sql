@@ -15,3 +15,6 @@ EXEC sp_MSset_oledb_prop
 
 -- Read a text file
 SELECT * FROM OpenDataSource( 'Microsoft.ACE.OLEDB.12.0','Data Source="c:\temp";Extended properties="Text;hdr=no"')...file#txt
+
+-- Note: This also works with unc paths \\ip\file.txt
+-- Note: This also works with webdav paths \\ip@80\file.txt However, the target web server needs to support propfind.

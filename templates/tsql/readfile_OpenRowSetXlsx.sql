@@ -19,3 +19,5 @@ SELECT column1 FROM OPENROWSET('Microsoft.ACE.OLEDB.12.0', 'Excel 12.0;Database=
 
 -- Read text file from unc path
 SELECT column1 FROM OPENROWSET('Microsoft.ACE.OLEDB.12.0', 'Excel 12.0;Database=\\server\folder\Book1.xlsx;', 'SELECT * FROM [Targets$]')
+
+-- Note: This also works with webdav paths \\ip@80\file.txt However, the target web server needs to support propfind.

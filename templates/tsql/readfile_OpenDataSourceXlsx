@@ -15,3 +15,6 @@ EXEC sp_MSset_oledb_prop
 
 -- Read text file
 SELECT * FROM OPENDATASOURCE('Microsoft.ACE.OLEDB.12.0','Data Source=C:\windows\temp\Book1.xlsx;Extended Properties=Excel 8.0')...[Targets$]
+
+-- Note: This also works with unc paths \\ip\file.txt
+-- Note: This also works with webdav paths \\ip@80\file.txt However, the target web server needs to support propfind.

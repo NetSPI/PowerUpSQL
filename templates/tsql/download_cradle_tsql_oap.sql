@@ -1,6 +1,9 @@
 -- OLE Automation Procedure - Download Cradle Example
 -- Does not require a table, but can't handle larger payloads
 
+-- Note: This also works with unc paths \\ip\file.txt
+-- Note: This also works with webdav paths \\ip@80\file.txt However, the target web server needs to support propfind.
+
 -- Setup Variables
 DECLARE @url varchar(300)   
 DECLARE @WinHTTP int  

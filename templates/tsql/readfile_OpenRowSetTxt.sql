@@ -18,3 +18,6 @@ go
 
 -- Read text file
 SELECT * FROM OPENROWSET('Microsoft.ACE.OLEDB.12.0','Text;Database=c:\temp\;HDR=Yes;FORMAT=text', 'SELECT * FROM [file.txt]')
+
+-- Note: This also works with unc paths \\ip\file.txt
+-- Note: This also works with webdav paths \\ip@80\file.txt However, the target web server needs to support propfind.

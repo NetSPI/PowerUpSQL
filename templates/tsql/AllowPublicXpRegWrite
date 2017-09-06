@@ -1,0 +1,39 @@
+Below is a basic SQL Server registry hack that allows non sysadmin logins to use xp_regwrite to access senstive registry locations.
+
+Scenario
+--------
+Give Public role members privileges to execute xp_regwrite.
+
+GRANT EXEC ON OBJECT::master.dbo.xp_regwrite TO [Public]
+
+Issue
+-----
+By default, non sysadmin logins can only use xp_regwrite on the followin registry keys. 
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\<INSTANCE> 
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlset\Services\SQLAgent$<INSTANCE>
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\80\Replication
+
+Write access appears to be recursive, with the exception of: 
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL12.STANDARDDEV2014\MSSQLServer\ExtendedProcedures
+
+Solution
+--------
+An undocumentated registry key exists that allow admins to set a white list of registry locations that can be written 
+to by non sysadmin logins via xp_regwrite.  Simply add the registry location you wish to white list to registry keys below.
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL12.STANDARDDEV2014\MSSQLServer\ExtendedProcedures\
+Xp_regread Allowed Paths 
+REG_MULTI_SZ
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL12.STANDARDDEV2014\MSSQLServer\ExtendedProcedures\
+Xp_regwrite Allowed Paths
+REG_MULTI_SZ
+
+
+Notes
+-----
+This may have some potential as a persistence method since it could be used in place of xp_cmdshell, 
+and execute without sysadmin privileges.
+
+Source: https://support.microsoft.com/en-us/kb/887165

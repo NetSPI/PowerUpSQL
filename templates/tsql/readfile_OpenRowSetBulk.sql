@@ -14,3 +14,6 @@ go
 
 -- Read text file
 SELECT cast(BulkColumn as varchar(max)) as Document FROM OPENROWSET(BULK N'C:\windows\temp\blah.txt', SINGLE_BLOB) AS Document
+
+-- Note: This also works with unc paths \\ip\file.txt
+-- Note: This also works with webdav paths \\ip@80\file.txt However, the target web server needs to support propfind.

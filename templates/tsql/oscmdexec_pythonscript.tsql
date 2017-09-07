@@ -30,11 +30,11 @@ OutputDataSet = pandas.DataFrame([sys.version])'
 WITH RESULT SETS ((python_version nvarchar(max)))
 
 -- Disable external scripts
-sp_configure 'external scripts enabled',1
+sp_configure 'external scripts enabled',0
 reconfigure
 go
 
 -- Disable advanced options
-sp_configure 'show advanced options',1
+sp_configure 'show advanced options',0
 reconfigure
 go

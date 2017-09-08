@@ -1,7 +1,7 @@
 #requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
-    ModuleVersion     = '1.83.98'
+    ModuleVersion     = '1.84.100'
     GUID              = 'dd1fe106-2226-4869-9363-44469e930a4a'
     Author            = 'Scott Sutherland'
     Copyright         = 'BSD 3-Clause'
@@ -87,7 +87,8 @@
         'Invoke-SQLImpersonateServiceCmd',
         'Invoke-SQLOSCmd',
         'Invoke-SQLOSCmdCLR',
-        'Invoke-SQLOSCmdCOle',        
+        'Invoke-SQLOSCmdCOle', 
+        'Invoke-SQLOSCmdPython',       
         'Invoke-SQLOSCmdR',  
         'Invoke-SQLOSCmdAgentJob',
         'Invoke-TokenManipulation'

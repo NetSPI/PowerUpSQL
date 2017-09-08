@@ -1502,6 +1502,18 @@ Function  Invoke-SQLOSCmdR
                     }
                 }
 
+                # Check if the configuration has been change in the run state 
+                $EnabledInRunValue = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name LIKE 'external scripts enabled'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -ExpandProperty value_in_use            
+                if($EnabledInRunValue -eq 0){
+                    Write-Verbose -Message "$Instance : The 'external scripts enabled' setting is not enabled in runtime.'"
+                    Write-Verbose -Message "$Instance : - The SQL Server service will need to be manually restarted for the change to take effect."
+                    Write-Verbose -Message "$Instance : - Not recommended unless you're the DBA."
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'External scripts not enabled in runtime.')
+                    return
+                }else{
+                    Write-Verbose -Message "$Instance : The 'external scripts enabled' setting is enabled in runtime.'"
+                }
+
                 # Setup output file
                 $OutputDir = 'c:\windows\temp'
                 $OutputFile = (-join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_}))

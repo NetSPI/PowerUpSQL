@@ -1,8 +1,13 @@
 /*
-	Build Audit Policies to identify potential command execution
+	Script Name: Audit Command Execution Template.sql
+	Description: This TSQL script can be used to configure SQL Server to log events commonly associated with operating system command execution to the Windows Application log.
+	Author: Scott Sutherland (@_nullbind), 2017 NetSPI 
 */
 
--- Create and enable an audit
+
+/*
+	Create and Enable Audit Policies
+*/
 USE master 
 CREATE SERVER AUDIT DerbyconAudit
 TO APPLICATION_LOG 
@@ -11,13 +16,17 @@ ALTER SERVER AUDIT DerbyconAudit
 WITH (STATE = ON)
 
 -- Server: Audit server configuration changes
+-- Windows Log: Application
+-- Events: 15457 
 CREATE SERVER AUDIT SPECIFICATION [Audit_Server_Configuration_Changes]
 FOR SERVER AUDIT DerbyconAudit
-ADD (AUDIT_CHANGE_GROUP), 		-- Audit Audit changes
-ADD (SERVER_OPERATION_GROUP)  	-- Audit server changes
+ADD (AUDIT_CHANGE_GROUP), 								-- Audit Audit changes
+ADD (SERVER_OPERATION_GROUP)  								-- Audit server changes
 WITH (STATE = ON)
 
---  DATABASE: Audit common agent job activity
+-- DATABASE: Audit common agent job activity
+-- Windows Log: Application
+-- Events: 33205 
 Use msdb
 CREATE DATABASE AUDIT SPECIFICATION [Audit_Agent_Jobs]
 FOR SERVER AUDIT [DerbyconAudit]
@@ -26,13 +35,15 @@ ADD (EXECUTE ON OBJECT::[dbo].[sp_add_job] BY [dbo]),
 ADD (EXECUTE ON OBJECT::[dbo].[sp_start_job] BY [dbo])
 WITH (STATE = ON)
 
---  DATABASE: Audit potentially dangerous procedures
+-- DATABASE: Audit potentially dangerous procedures
+-- Windows Log: Application
+-- Events: 33205 
 use master
 CREATE DATABASE AUDIT SPECIFICATION [Audit_OSCMDEXEC]
 FOR SERVER AUDIT [DerbyconAudit]
 ADD (EXECUTE ON OBJECT::[dbo].[xp_cmdshell] BY [dbo]),					-- Audit xp_cmdshell execution
-ADD (EXECUTE ON OBJECT::[dbo].[sp_addextendedproc] BY [dbo]),			-- Audit additional of custom extended stored procedures
-ADD (EXECUTE ON OBJECT::[dbo].[sp_execute_external_script] BY [dbo]), 	-- Audit execution of external scripts such as R and Python
+ADD (EXECUTE ON OBJECT::[dbo].[sp_addextendedproc] BY [dbo]),				-- Audit additional of custom extended stored procedures
+ADD (EXECUTE ON OBJECT::[dbo].[sp_execute_external_script] BY [dbo]), 			-- Audit execution of external scripts such as R and Python
 ADD (EXECUTE ON OBJECT::[dbo].[Sp_oacreate] BY [dbo])					-- Audit OLE Automation Procedure execution
 WITH (STATE = ON)
 

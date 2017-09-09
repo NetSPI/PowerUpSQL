@@ -7170,6 +7170,8 @@ Function  Get-SQLAuditDatabaseSpec
             s.name as [AuditSpecification],
             d.audit_action_id as [AuditActionId],
             d.audit_action_name as [AuditAction],
+	        d.major_id,
+	        OBJECT_NAME(d.major_id) as object,	
             s.is_state_enabled,
             d.is_group,
             s.create_date,

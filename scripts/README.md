@@ -19,5 +19,5 @@ Source: https://github.com/clymb3r/PowerShell/tree/master/Invoke-TokenManipulati
 Imported Scripts: Invoke-TokenManipulation.ps1 <br>
 
 ### Community Contributions <br>
-Some PowerUpSQL functions have been written by other authors.  Those authors are documented at the beginning of each function and noted on in the primary readme file.  If I missed someone please let me know!
+Some PowerUpSQL functions have been written by other authors.  Those authors are documented at the beginning of each function and noted in the primary readme file.  If I missed someone please let me know!
 

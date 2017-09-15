@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.101
+        Version: 1.84.102
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -22177,12 +22177,54 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLStoredProcedure -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_stored_procedure.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_stored_procedure.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting potential SQLi Stored Procedures
+        Write-Verbose -Message "$Instance - Getting stored procedures with potential SQL Injection..."
+        $Results = Get-SQLStoredProcedureSQLi -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_sqli.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_sqli.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting startup Stored Procedures
+        Write-Verbose -Message "$Instance - Getting startup stored procedures..."
+        $Results = Get-SQLStoredProcedureAutoExec -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_startup.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_startup.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting CLR Stored Procedures
+        Write-Verbose -Message "$Instance - Getting CLR stored procedures..."
+        $Results = Get-SQLStoredProcedureCLR -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedur_CLR.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_CLR_stored_procedure_CLR.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -22225,6 +22267,48 @@ Function Invoke-SQLDumpInfo
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Audit Database Specification Information
+        Write-Verbose -Message "$Instance - Getting Database audit specification information..."
+        $Results = Get-SQLAuditDatabaseSpec -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Audit_Database_Specifications.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Audit_Database_Specifications.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Audit Server Specification Information
+        Write-Verbose -Message "$Instance - Getting Server audit specification information..."
+        $Results = Get-SQLAuditServerSpec -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Audit__Server_Specifications.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Audit_Server_Specifications.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Agent Jobs Information
+        Write-Verbose -Message "$Instance - Getting Agent Jobs information..."
+        $Results = Get-SQLAgentJob -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Agent_Job.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Agent_Jobs.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 

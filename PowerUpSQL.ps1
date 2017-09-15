@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.104
+        Version: 1.84.105
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9746,6 +9746,212 @@ Function  Get-SQLStoredProcedure
     {
         # Return data
         $TblProcs
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLStoredProcedureXP
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLStoredProcedureXP
+{
+    <#
+            .SYNOPSIS
+            Returns custom extended stored procedures from target SQL Server databases.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DatabaseName
+            Database name to filter for.
+            .PARAMETER ProcedureName
+            Procedure name to filter for.
+            .PARAMETER NoDefaults
+            Filter out results from default databases.
+            .EXAMPLE
+            PS C:\> Get-SQLStoredProcedureXP -Instance SQLServer1\STANDARDDEV2014 -DatabaseName master
+
+            ComputerName        : SQLServer1
+            Instance            : SQLServer1\STANDARDDEV2014
+            DatabaseName        : master
+            name                : xp_evil
+            Object_id           : 1559676604
+            principal_id        : 
+            schema_id           : 1
+            parent_object_id    : 0
+            type                : X 
+            type_desc           : EXTENDED_STORED_PROCEDURE
+            create_date         : 9/11/2017 11:36:06 AM
+            modify_date         : 9/11/2017 11:36:06 AM
+            is_ms_shipped       : False
+            is_published        : False
+            is_schema_published : False
+
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedureXP -Verbose 
+    #>
+
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server database name.')]
+        [string]$DatabaseName,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Procedure name.')]
+        [string]$ProcedureName,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Don't select tables from default databases.")]
+        [switch]$NoDefaults,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblXpProcs = New-Object -TypeName System.Data.DataTable
+
+        # Setup routine name filter
+        if ($ProcedureName)
+        {
+            $ProcedureNameFilter = " AND NAME like '$ProcedureName'"
+        }
+        else
+        {
+            $ProcedureNameFilter = ''
+        }
+    }
+
+    Process
+    {
+        # Parse ComputerName
+        If ($Instance)
+        {
+            $ComputerName = $Instance.split('\')[0].split(',')[0]
+            $Instance = $Instance
+        }
+        else
+        {
+            $ComputerName = $env:COMPUTERNAME
+            $Instance = '.\'
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+                Write-Verbose -Message "$Instance : Grabbing stored procedures from databases below:"
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Setup NoDefault filter
+        if($NoDefaults)
+        {
+            # Get list of databases
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -NoDefaults -SuppressVerbose
+        }
+        else
+        {
+            # Get list of databases
+            $TblDatabases = Get-SQLDatabase -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName $DatabaseName -HasAccess -SuppressVerbose
+        }
+
+        # Get role for each database
+        $TblDatabases |
+        ForEach-Object -Process {
+            # Get database name
+            $DbName = $_.DatabaseName
+
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : - $DbName"
+            }
+
+            # Define Query
+            $Query = "  use [$DbName];
+                SELECT '$ComputerName' as [ComputerName],
+                    '$Instance' as [Instance],
+                    '$DbName' as [DatabaseName],                
+                    name,
+                    Object_id,
+                    principal_id,
+                    schema_id,
+                    parent_object_id,
+                    type,
+                    type_desc,
+                    create_date,
+                    modify_date,
+                    is_ms_shipped,
+                    is_published,
+                    is_schema_published                 
+                FROM sys.objects where type = 'x'
+                $ProcedureNameFilter"
+
+            # Execute Query
+            $TblXpProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+            # Append results
+            $TblXpProcs = $TblXpProcs + $TblXpProcsTemp
+        }
+    }
+
+    End
+    {
+
+        # Count 
+        $XpNum = $TblXpProcs.Count
+        if($XpNum -eq 0){
+
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : No custom extended stored procedures found."
+            }
+        }
+
+        # Return data
+        $TblXpProcs
     }
 }
 

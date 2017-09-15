@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.103
+        Version: 1.84.104
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -13750,6 +13750,8 @@ Function Get-SQLServerPolicy
             .EXAMPLE
             PS C:\>Get-SQLServerPolicy -Instance SQLServer1\STANDARDDEV2014
 
+            ComputerName        : SQLServer1
+            Instance            : SQLServer1\STANDARDDEV2014
             policy_id           : 17
             PolicyName          : WatchAllTheThings
             condition_id        : 18
@@ -13853,7 +13855,9 @@ Function Get-SQLServerPolicy
 
         # Define Query
         $Query = " -- Get-SQLServerPolicy.sql 
-                SELECT	p.policy_id,
+                SELECT '$ComputerName' as [ComputerName],
+                '$Instance' as [Instance],
+                    p.policy_id,
 		            p.name as [PolicyName],
 		            p.condition_id,
 		            c.name as [ConditionName],

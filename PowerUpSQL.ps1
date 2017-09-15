@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.106
+        Version: 1.84.107
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9776,21 +9776,32 @@ Function  Get-SQLStoredProcedureXP
             .EXAMPLE
             PS C:\> Get-SQLStoredProcedureXP -Instance SQLServer1\STANDARDDEV2014 -DatabaseName master
 
-            ComputerName        : SQLServer1
-            Instance            : SQLServer1\STANDARDDEV2014
-            DatabaseName        : master
-            name                : xp_evil
-            Object_id           : 1559676604
-            principal_id        : 
-            schema_id           : 1
-            parent_object_id    : 0
-            type                : X 
-            type_desc           : EXTENDED_STORED_PROCEDURE
-            create_date         : 9/11/2017 11:36:06 AM
-            modify_date         : 9/11/2017 11:36:06 AM
-            is_ms_shipped       : False
-            is_published        : False
-            is_schema_published : False
+                    ComputerName        : SQLServer1
+                    Instance            : SQLServer1\STANDARDDEV2014
+                    DatabaseName        : master
+                    object_id           : 1559676604
+                    parent_object_id    : 0
+                    schema_id           : 1
+                    type                : X 
+                    type_desc           : EXTENDED_STORED_PROCEDURE
+                    name                : xp_evil
+                    principal_id        : 
+                    text                : \\acme.com@SSL\evilxp.txt
+                    ctext               : {92, 0, 92, 0...}
+                    status              : 0
+                    create_date         : 9/11/2017 11:36:06 AM
+                    modify_date         : 9/11/2017 11:36:06 AM
+                    is_ms_shipped       : False
+                    is_published        : False
+                    is_schema_published : False
+                    colid               : 1
+                    compressed          : False
+                    encrypted           : False
+                    id                  : 1559676604
+                    language            : 0
+                    number              : 0
+                    texttype            : 2
+
 
             .EXAMPLE
             PS C:\> Get-SQLInstanceDomain | Get-SQLStoredProcedureXP -Verbose 
@@ -9914,20 +9925,33 @@ Function  Get-SQLStoredProcedureXP
                 SELECT '$ComputerName' as [ComputerName],
                     '$Instance' as [Instance],
                     '$DbName' as [DatabaseName],                
-                    name,
-                    Object_id,
-                    principal_id,
-                    schema_id,
-                    parent_object_id,
-                    type,
-                    type_desc,
-                    create_date,
-                    modify_date,
-                    is_ms_shipped,
-                    is_published,
-                    is_schema_published                 
-                FROM sys.objects where type = 'x'
-                $ProcedureNameFilter"
+                    o.object_id,
+		            o.parent_object_id,
+		            o.schema_id,
+		            o.type,
+		            o.type_desc,
+		            o.name,
+		            o.principal_id,
+		            s.text,
+		            s.ctext,
+		            s.status,
+		            o.create_date,
+		            o.modify_date,
+		            o.is_ms_shipped,
+		            o.is_published,
+		            o.is_schema_published,
+		            s.colid,
+		            s.compressed,
+		            s.encrypted,
+		            s.id,
+		            s.language,
+		            s.number,
+		            s.texttype
+            FROM sys.objects o 
+            INNER JOIN sys.syscomments s
+		            ON o.object_id = s.id
+            WHERE o.type = 'x' 
+            $ProcedureNameFilter"
 
             # Execute Query
             $TblXpProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

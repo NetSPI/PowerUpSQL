@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.105
+        Version: 1.84.106
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -22563,6 +22563,34 @@ Function Invoke-SQLDumpInfo
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Custom XP Stored Procedures 
+        Write-Verbose -Message "$Instance - Getting custom extended stored procedures..."
+        $Results = Get-SQLStoredProcedureXP -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_xp.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_xp.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting server policy
+        Write-Verbose -Message "$Instance - Getting server policies..."
+        $Results = Get-SQLServerPolicy -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_policy.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_policy.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 

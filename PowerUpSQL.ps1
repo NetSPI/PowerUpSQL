@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.102
+        Version: 1.84.103
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -13726,6 +13726,176 @@ Function   Get-SQLRecoverPwAutoLogon
     {
         # Return data
          $TblWinAutoCreds 
+    }
+}
+
+
+# ----------------------------------
+# Get-SQLServerPolicy
+# ----------------------------------
+# Author: Scott Sutherland
+Function Get-SQLServerPolicy
+{
+    <#
+            .SYNOPSIS
+            Returns policy information related to policy based management.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\>Get-SQLServerPolicy -Instance SQLServer1\STANDARDDEV2014
+
+            policy_id           : 17
+            PolicyName          : WatchAllTheThings
+            condition_id        : 18
+            ConditionName       : DatCheck
+            facet               : Login
+            ConditionExpression : <Operator>
+                                    <TypeClass>Bool</TypeClass>
+                                    <OpType>EQ</OpType>
+                                    <Count>2</Count>
+                                    <Attribute>
+                                      <TypeClass>DateTime</TypeClass>
+                                      <Name>DateLastModified</Name>
+                                    </Attribute>
+                                    <Function>
+                                      <TypeClass>DateTime</TypeClass>
+                                      <FunctionType>DateTime</FunctionType>
+                                      <ReturnType>DateTime</ReturnType>
+                                      <Count>1</Count>
+                                      <Constant>
+                                        <TypeClass>String</TypeClass>
+                                        <ObjType>System.String</ObjType>
+                                        <Value>2017-09-14T00:00:00.0000000</Value>
+                                      </Constant>
+                                    </Function>
+                                  </Operator>
+            root_condition_id   : 
+            is_enabled          : False
+            date_created        : 9/14/2017 9:01:11 PM
+            date_modified       : 
+            description         : Watch all the things.
+            created_by          : sa
+            is_system           : False
+            target_set_id       : 17
+            TYPE                : LOGIN
+            type_skeleton       : Server/Login
+
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal |Get-SQLServerPolicy -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Table for output
+        $TblPolicyInfo = New-Object -TypeName System.Data.DataTable
+    }
+
+    Process
+    {
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Define Query
+        $Query = " -- Get-SQLServerPolicy.sql 
+                SELECT	p.policy_id,
+		            p.name as [PolicyName],
+		            p.condition_id,
+		            c.name as [ConditionName],
+		            c.facet,
+		            c.expression as [ConditionExpression],
+		            p.root_condition_id,
+		            p.is_enabled,
+		            p.date_created,
+		            p.date_modified,
+		            p.description, 
+		            p.created_by, 
+		            p.is_system,
+                    t.target_set_id,
+                    t.TYPE,
+                    t.type_skeleton
+                FROM msdb.dbo.syspolicy_policies p
+                INNER JOIN msdb.dbo.syspolicy_conditions c 
+	                ON p.condition_id = c.condition_id
+                INNER JOIN msdb.dbo.syspolicy_target_sets t
+	                ON t.object_set_id = p.object_set_id"
+
+        # Execute Query
+        $TblPolicyInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+        # Append as needed
+        $TblPolicyInfo = $TblPolicyInfo + $TblPolicyInfoTemp
+    }
+
+    End
+    {
+        # Count 
+        $PolNum = $TblPolicyInfo.Count
+        if($PolNum -eq 0){
+
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : No policies found."
+            }
+        }
+        
+        # Return data
+        $TblPolicyInfo
     }
 }
 

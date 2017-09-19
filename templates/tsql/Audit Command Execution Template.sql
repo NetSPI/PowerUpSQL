@@ -30,9 +30,7 @@ WITH (STATE = ON)
 Use msdb
 CREATE DATABASE AUDIT SPECIFICATION [Audit_Agent_Jobs]
 FOR SERVER AUDIT [DerbyconAudit]
-ADD (EXECUTE ON OBJECT::[dbo].[sp_delete_job] BY [dbo]),
-ADD (EXECUTE ON OBJECT::[dbo].[sp_add_job] BY [dbo]),
-ADD (EXECUTE ON OBJECT::[dbo].[sp_start_job] BY [dbo])
+ADD (EXECUTE ON OBJECT::[dbo].[sp_add_job] BY [dbo])
 WITH (STATE = ON)
 
 -- DATABASE: Audit potentially dangerous procedures

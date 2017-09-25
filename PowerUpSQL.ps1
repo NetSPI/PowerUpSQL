@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.85.107
+        Version: 1.85.108
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -2560,7 +2560,7 @@ EXEC Sp_oamethod @Shell, 'run' , null, 'cmd.exe /c "del $OutputPath"' , '0' , 't
 #  Invoke-SQLOSCmdCLR
 # ----------------------------------
 # Author: Scott Sutherland
-# Note: This is based on Nathan Kirk's CRL template. 
+# References: This was built of off work done by Lee Christensen (@tifkin_) and Nathan Kirk (@sekirkity). 
 # Reference: http://sekirkity.com/seeclrly-fileless-sql-server-clr-based-custom-stored-procedure-command-execution/
 # Reference: https://msdn.microsoft.com/en-us/library/microsoft.sqlserver.server.sqlpipe.sendresultsrow(v=vs.110).aspx
 Function  Invoke-SQLOSCmdCLR
@@ -11938,6 +11938,8 @@ Function  Get-SQLServiceLocal
 # -------------------------------------------
 # Function:  Create-SQLFilCLRDLL
 # -------------------------------------------
+# Author: Scott Sutherland
+# References: This was built of off work done by Lee Christensen (@tifkin_) and Nathan Kirk (@sekirkity).
 function Create-SQLFileCLRDll
 {
     <#

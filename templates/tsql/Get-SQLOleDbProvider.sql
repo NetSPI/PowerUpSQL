@@ -1,5 +1,7 @@
 -- Name: Get-SQLOleDbProvider.sql
--- Description: Get a list of OLE provider along with their current settings.
+-- Description: Get a list of OLE DB providers along with their properties. 
+-- This query combines the output of sp_MSset_oledb_prop and sp_enum_oledb_providers.
+-- Requirements: Sysadmin privileges.
 -- Author: Scott Sutherland, NetSPI 2017
 
 -- Get a list of providers

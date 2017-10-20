@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.85.108
+        Version: 1.86.108
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -6345,6 +6345,8 @@ Function  Get-SQLServerLogin
 }
 
 
+
+
 # ----------------------------------
 #  Get-SQLSession
 # ----------------------------------
@@ -6521,6 +6523,327 @@ Function  Get-SQLSession
     {
         # Return data
         $TblSessions
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLOleDbProvder
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLOleDbProvder
+{
+    <#
+            .SYNOPSIS
+            Returns a list of the providers installede on SQL Servers and their properties.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Threads
+            Number of concurrent host threads.
+            PS C:\> Get-SQLOleDbProvder -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+
+            ProviderName         : SQLNCLI11
+            ProviderDescription  : SQL Server Native Client 11.0
+            ProviderParseName    : {397C2819-8272-4532-AD3A-FB5E43BEAA39}
+            AllowInProcess       : 1
+            DisallowAdHocAccess  : 0
+            DynamicParameters    : 0
+            IndexAsAccessPath    : 0
+            LevelZeroOnly        : 0
+            NestedQueries        : 0
+            NonTransactedUpdates : 0
+            SqlServerLIKE        : 0
+            ...
+
+            .EXAMPLE
+            PS C:\> Get-SQLOleDbProvder -Instance SQLServer1\STANDARDDEV2014 -Verbose | FT -AutoSize
+
+            ProviderName             ProviderDescription                                          ProviderParseName                      Allo
+           ------------             -------------------                                          -----------------                      ----
+            SQLOLEDB                 Microsoft OLE DB Provider for SQL Server                     {0C7FF16C-38E3-11d0-97AB-00C04FC2AD98} 0   
+            SQLNCLI11                SQL Server Native Client 11.0                                {397C2819-8272-4532-AD3A-FB5E43BEAA39} 1   
+            Microsoft.ACE.OLEDB.12.0 Microsoft Office 12.0 Access Database Engine OLE DB Provider {3BE786A0-0366-4F5C-9434-25CF162E475E} 0   
+            Microsoft.ACE.OLEDB.15.0 Microsoft Office 15.0 Access Database Engine OLE DB Provider {3BE786A1-0366-4F5C-9434-25CF162E475E} 0   
+            ADsDSOObject             OLE DB Provider for Microsoft Directory Services             {549365d0-ec26-11cf-8310-00aa00b505db} 1   
+            SSISOLEDB                OLE DB Provider for SQL Server Integration Services          {688037C5-0B57-464B-A953-90A806CC34C2} 0   
+            Search.CollatorDSO       Microsoft OLE DB Provider for Search                         {9E175B8B-F52A-11D8-B9A5-505054503030} 0   
+            MSDASQL                  Microsoft OLE DB Provider for ODBC Drivers                   {c8b522cb-5cf3-11ce-ade5-00aa0044773d} 1   
+            MSOLAP                   Microsoft OLE DB Provider for Analysis Services 14.0         {DBC724B0-DD86-4772-BB5A-FCC6CAB2FC1A} 1   
+            MSDAOSP                  Microsoft OLE DB Simple Provider                             {dfc8bdc0-e378-11d0-9b30-0080c7e9fe95} 0  ... 
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLOleDbProvder -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+     
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Number of threads.')]
+        [int]$Threads = 2,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Create data tables for output
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $TblProviders = New-Object -TypeName System.Data.DataTable
+        $null = $TblProviders.Columns.Add('ProviderName') 
+        $null = $TblProviders.Columns.Add('ProviderDescription')
+        $null = $TblProviders.Columns.Add('ProviderParseName')
+        $null = $TblProviders.Columns.Add('AllowInProcess')
+        $null = $TblProviders.Columns.Add('DisallowAdHocAccess')
+        $null = $TblProviders.Columns.Add('DynamicParameters') 
+        $null = $TblProviders.Columns.Add('IndexAsAccessPath') 
+        $null = $TblProviders.Columns.Add('LevelZeroOnly') 
+        $null = $TblProviders.Columns.Add('NestedQueries') 
+        $null = $TblProviders.Columns.Add('NonTransactedUpdates') 
+        $null = $TblProviders.Columns.Add('SqlServerLIKE')
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object -TypeName System.Data.DataTable
+
+
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
+        if($Instance)
+        {
+            $ProvideInstance = New-Object -TypeName PSObject -Property @{
+                Instance = $Instance
+            }
+        }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
+    }
+
+    Process
+    {
+        # Create list of pipeline items
+        $PipelineItems = $PipelineItems + $_
+    }
+
+    End
+    {
+        # Define code to be multi-threaded
+        $MyScriptBlock = {
+            # Set instance
+            $Instance = $_.Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Test connection to instance
+            $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+                $_.Status -eq 'Accessible'
+            }
+            if($TestConnection)
+            {
+                if( -not $SuppressVerbose)
+                {
+                    Write-Verbose -Message "$Instance : Connection Success."
+                }
+            }
+            else
+            {
+                if( -not $SuppressVerbose)
+                {
+                    Write-Verbose -Message "$Instance : Connection Failed."
+                }
+                return
+            }
+
+            # Check sysadmin
+            $IsSysadmin = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+            if($IsSysadmin -eq "No")
+            {
+                Write-Verbose -Message "$Instance : This command requires sysadmin privileges. Exiting."                
+                return
+            }else{
+                Write-Verbose -Message "$Instance : You have sysadmin privileges."
+                Write-Verbose -Message "$Instance : Grabbing list of providers."
+            }
+            
+
+            # SetUp Query
+            $Query = "                        
+
+            -- Name: Get-SQLOleDbProvider.sql
+            -- Description: Get a list of OLE provider along with their current settings.
+            -- Author: Scott Sutherland, NetSPI 2017
+
+            -- Get a list of providers
+            CREATE TABLE #Providers ([ProviderName] varchar(8000), 
+            [ParseName] varchar(8000),
+            [ProviderDescription] varchar(8000))
+
+            INSERT INTO #Providers
+            EXEC xp_enum_oledb_providers
+
+            -- Create temp table for provider information
+            CREATE TABLE #ProviderInformation ([ProviderName] varchar(8000), 
+            [ProviderDescription] varchar(8000),
+            [ProviderParseName] varchar(8000),
+            [AllowInProcess] int, 
+            [DisallowAdHocAccess] int, 
+            [DynamicParameters] int,  
+            [IndexAsAccessPath] int,  
+            [LevelZeroOnly] int,  
+            [NestedQueries] int,  
+            [NonTransactedUpdates] int,  
+            [SqlServerLIKE] int)
+
+            -- Setup required variables for cursor
+            DECLARE @Provider_name varchar(8000);
+            DECLARE @Provider_parse_name varchar(8000);
+            DECLARE @Provider_description varchar(8000);
+            DECLARE @property_name varchar(8000)
+            DECLARE @regpath nvarchar(512)  
+
+            -- Start cursor
+            DECLARE MY_CURSOR1 CURSOR
+            FOR
+            SELECT * FROM #Providers
+            OPEN MY_CURSOR1
+            FETCH NEXT FROM MY_CURSOR1 INTO @Provider_name,@Provider_parse_name,@Provider_description
+            WHILE @@FETCH_STATUS = 0 
+  
+	            BEGIN  
+		
+	            -- Set the registry path
+	            SET @regpath = N'SOFTWARE\Microsoft\MSSQLServer\Providers\' + @provider_name  
+
+	            -- AllowInProcess	
+	             DECLARE @AllowInProcess int 
+	             SET @AllowInProcess = 0 
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'AllowInProcess',	@AllowInProcess OUTPUT		 
+	             IF @AllowInProcess IS NULL 
+	             SET @AllowInProcess = 0
+
+	            -- DisallowAdHocAccess 
+	             DECLARE @DisallowAdHocAccess int  
+	             SET @DisallowAdHocAccess = 0
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'DisallowAdHocAccess',	@DisallowAdHocAccess OUTPUT	 
+	             IF @DisallowAdHocAccess IS NULL 
+	             SET @DisallowAdHocAccess = 0
+
+	            -- DynamicParameters 
+	             DECLARE @DynamicParameters  int  
+	             SET @DynamicParameters  = 0
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'DynamicParameters',	@DynamicParameters OUTPUT	 
+	             IF @DynamicParameters  IS NULL 
+	             SET @DynamicParameters  = 0
+
+	            -- IndexAsAccessPath 
+	             DECLARE @IndexAsAccessPath int 
+	             SET @IndexAsAccessPath = 0 
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'IndexAsAccessPath',	@IndexAsAccessPath OUTPUT	 
+	             IF @IndexAsAccessPath IS NULL 
+	             SET @IndexAsAccessPath  = 0
+
+	            -- LevelZeroOnly 
+	             DECLARE @LevelZeroOnly int
+	             SET @LevelZeroOnly  = 0
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'LevelZeroOnly',	@LevelZeroOnly OUTPUT	
+	             IF  @LevelZeroOnly IS NULL 
+	             SET  @LevelZeroOnly  = 0	  
+
+	            -- NestedQueries 
+	             DECLARE @NestedQueries int  
+	             SET @NestedQueries = 0
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'NestedQueries',	@NestedQueries OUTPUT
+	             IF   @NestedQueries IS NULL 
+	             SET  @NestedQueries = 0		 	 
+
+	            -- NonTransactedUpdates 
+	             DECLARE @NonTransactedUpdates int  
+	             SET @NonTransactedUpdates = 0
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'NonTransactedUpdates',	@NonTransactedUpdates  OUTPUT	 
+	             IF  @NonTransactedUpdates IS NULL 
+	             SET @NonTransactedUpdates = 0
+
+	            -- SqlServerLIKE
+	             DECLARE @SqlServerLIKE int  
+	             SET @SqlServerLIKE  = 0
+	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'SqlServerLIKE',	@SqlServerLIKE OUTPUT	
+	             IF  @SqlServerLIKE IS NULL 
+	             SET @SqlServerLIKE = 0 
+
+	            -- Add the full provider record to the temp table
+	            INSERT INTO #ProviderInformation
+	            VALUES (@Provider_name,@Provider_description,@Provider_parse_name,@AllowInProcess,@DisallowAdHocAccess,@DynamicParameters,@IndexAsAccessPath,@LevelZeroOnly,@NestedQueries,@NonTransactedUpdates,@SqlServerLIKE);
+
+	            FETCH NEXT FROM MY_CURSOR1 INTO  @Provider_name,@Provider_parse_name,@Provider_description
+
+	            END   
+
+            -- Return records
+            SELECT * FROM #ProviderInformation
+
+            -- Clean up
+            CLOSE MY_CURSOR1
+            DEALLOCATE MY_CURSOR1
+            DROP TABLE #Providers
+            DROP TABLE #ProviderInformation"
+          
+            # Execute Query
+            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+            # Append results for pipeline items
+            $TblResults |
+            ForEach-Object -Process {
+
+                # Add record to master table
+                $null = $TblProviders.Rows.Add(
+                    $_.ProviderName,
+                    $_.ProviderDescription,
+                    $_.ProviderParseName,
+                    $_.AllowInProcess,
+                    $_.DisallowAdHocAccess,
+                    $_.DynamicParameters,
+                    $_.IndexAsAccessPath,
+                    $_.LevelZeroOnly,
+                    $_.NestedQueries,
+                    $_.NonTransactedUpdates,
+                    $_.SqlServerLIKE
+                )
+            }
+        }
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
+
+        return $TblProviders
     }
 }
 

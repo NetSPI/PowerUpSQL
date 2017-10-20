@@ -1,7 +1,7 @@
 #requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
-    ModuleVersion     = '1.85.108'
+    ModuleVersion     = '1.86.108'
     GUID              = 'dd1fe106-2226-4869-9363-44469e930a4a'
     Author            = 'Scott Sutherland'
     Copyright         = 'BSD 3-Clause'
@@ -36,6 +36,7 @@
         'Get-SQLInstanceScanUDP', 
         'Get-SQLInstanceScanUDPThreaded', 
         'Get-SQLLocalAdminCheck',
+        'Get-SQLOleDbProvder',
         'Get-SQLQuery', 
         'Get-SQLQueryThreaded', 
         'Get-SQLRecoverPwAutoLogon',

@@ -23312,6 +23312,20 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
+        # Getting OLE DB provder information
+        Write-Verbose -Message "$Instance - Getting OLE DB provder information..."
+        $Results = Get-SQLOleDbProvder -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_OleDbProvders.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_OleDbProvders.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         Write-Verbose -Message "$Instance - END"
     }
 

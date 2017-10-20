@@ -13,6 +13,7 @@
 ######################################################
 
 <#
+Get-SQLOleDbProvder 
 Get-SQLInstanceDomain              
 Get-SQLInstanceFile                
 Get-SQLInstanceLocal               

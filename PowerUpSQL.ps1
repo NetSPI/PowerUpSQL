@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.86.108
+        Version: 1.86.109
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -6687,13 +6687,17 @@ Function  Get-SQLOleDbProvder
             $IsSysadmin = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
             if($IsSysadmin -eq "No")
             {
-                Write-Verbose -Message "$Instance : This command requires sysadmin privileges. Exiting."                
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : This command requires sysadmin privileges. Exiting."  
+                }              
                 return
             }else{
-                Write-Verbose -Message "$Instance : You have sysadmin privileges."
-                Write-Verbose -Message "$Instance : Grabbing list of providers."
-            }
-            
+                
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : You have sysadmin privileges."
+                    Write-Verbose -Message "$Instance : Grabbing list of providers."
+                }
+            }            
 
             # SetUp Query
             $Query = "                        
@@ -7332,7 +7336,9 @@ Function  Get-SQLAgentJob
 
     Begin
     {
-        Write-Verbose -Message "SQL Server Agent Job Search Starting..."
+        if(-not $SuppressVerbose){
+            Write-Verbose -Message "SQL Server Agent Job Search Starting..."
+        }
 
         # Setup data table for output
         $TblResults = New-Object -TypeName System.Data.DataTable
@@ -7434,11 +7440,15 @@ Function  Get-SQLAgentJob
             $IsAgentServiceEnabled = Get-SQLQuery -Instance $Instance -Query "SELECT 1 FROM sysprocesses WHERE LEFT(program_name, 8) = 'SQLAgent'" -Username $Username -Password $Password -SuppressVerbose
             if ($IsAgentServiceEnabled)
             {
-                Write-Verbose -Message "$Instance : - SQL Server Agent service enabled."
+                if(-not $SuppressVerbose){
+                    Write-Verbose -Message "$Instance : - SQL Server Agent service enabled."
+                }
             }
             else
             {
-                Write-Verbose -Message "$Instance : - SQL Server Agent service has not been started."
+                if(-not $SuppressVerbose){
+                    Write-Verbose -Message "$Instance : - SQL Server Agent service has not been started."
+                }
             }
 
             # Get logins that have SQL Agent roles
@@ -7451,7 +7461,9 @@ Function  Get-SQLAgentJob
 
             if($AgentJobPrivs -or ($Sysadmin -eq "Yes"))
             {
-                Write-Verbose -Message "$Instance : - Attempting to list existing agent jobs as $CurrentLogin."
+                if(-not $SuppressVerbose){
+                    Write-Verbose -Message "$Instance : - Attempting to list existing agent jobs as $CurrentLogin."
+                }
 
 
                 # Reference: https://msdn.microsoft.com/en-us/library/ms189817.aspx
@@ -7491,7 +7503,9 @@ Function  Get-SQLAgentJob
 
                 # Get number of results
                 $AgentJobCount = $result.rows.count
-                Write-Verbose -Message "$Instance : - $AgentJobCount agent jobs found."
+                if(-not $SuppressVerbose){
+                    Write-Verbose -Message "$Instance : - $AgentJobCount agent jobs found."
+                }
                 
 
                 # Update data table
@@ -7517,7 +7531,9 @@ Function  Get-SQLAgentJob
             }
             else
             {
-                Write-Verbose -Message "$Instance : - The current login ($CurrentLogin) does not have any agent privileges."
+                if(-not $SuppressVerbose){
+                    Write-Verbose -Message "$Instance : - The current login ($CurrentLogin) does not have any agent privileges."
+                }
                 return
             }
 
@@ -7542,7 +7558,9 @@ Function  Get-SQLAgentJob
 
     End
     {
-        Write-Verbose -Message "SQL Server Agent Job Search Complete."
+        if(-not $SuppressVerbose){
+            Write-Verbose -Message "SQL Server Agent Job Search Complete."
+        }
 
         # Get total count of jobs
         $TotalAgentCount = $TblResults.rows.Count
@@ -7559,26 +7577,27 @@ Function  Get-SQLAgentJob
         # Get instance summary data
         $SummaryInstance = $TblResults | Select-Object Instance -Unique | Measure-Object |  Select-Object Count -ExpandProperty Count
 
-        Write-Verbose -Message "---------------------------------"
-        Write-Verbose -Message "Agent Job Summary" 
-        Write-Verbose -Message "---------------------------------"
-        Write-Verbose -Message " $TotalAgentCount jobs found"
-        Write-Verbose -Message " $SummaryServer affected systems"
-        Write-Verbose -Message " $SummaryInstance affected SQL Server instances"
-        Write-Verbose -Message " $SummaryProxyAccount proxy credentials used"
+        if(-not $SuppressVerbose){
+            Write-Verbose -Message "---------------------------------"
+            Write-Verbose -Message "Agent Job Summary" 
+            Write-Verbose -Message "---------------------------------"
+            Write-Verbose -Message " $TotalAgentCount jobs found"
+            Write-Verbose -Message " $SummaryServer affected systems"
+            Write-Verbose -Message " $SummaryInstance affected SQL Server instances"
+            Write-Verbose -Message " $SummaryProxyAccount proxy credentials used"
 
-        Write-Verbose -Message "---------------------------------"
-        Write-Verbose -Message "Agent Job Summary by SubSystem" 
-        Write-Verbose -Message "---------------------------------"
-        $SummarySubSystem | 
-        ForEach-Object {
-            $SubSystem_Name = $_.Name
-            $SubSystem_Count = $_.Count
-            Write-Verbose -Message " $SubSystem_Count $SubSystem_Name Jobs"
+            Write-Verbose -Message "---------------------------------"
+            Write-Verbose -Message "Agent Job Summary by SubSystem" 
+            Write-Verbose -Message "---------------------------------"
+            $SummarySubSystem | 
+            ForEach-Object {
+                $SubSystem_Name = $_.Name
+                $SubSystem_Count = $_.Count
+                Write-Verbose -Message " $SubSystem_Count $SubSystem_Name Jobs"
+            }
+            Write-Verbose -Message " $TotalAgentCount Total"
+            Write-Verbose -Message "---------------------------------"
         }
-        Write-Verbose -Message " $TotalAgentCount Total"
-        Write-Verbose -Message "---------------------------------"
-       
 
         # Return data
         $TblResults

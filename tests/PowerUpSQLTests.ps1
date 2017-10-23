@@ -13,6 +13,7 @@
 ######################################################
 
 <#
+Get-SQLDomainObject
 Get-SQLDomainUser
 Get-SQLOleDbProvder 
 Get-SQLInstanceDomain              

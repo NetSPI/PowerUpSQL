@@ -1,7 +1,7 @@
 #requires -Version 1
 @{
     ModuleToProcess   = 'PowerUpSQL.psm1'
-    ModuleVersion     = '1.90.113'
+    ModuleVersion     = '1.91.113'
     GUID              = 'dd1fe106-2226-4869-9363-44469e930a4a'
     Author            = 'Scott Sutherland'
     Copyright         = 'BSD 3-Clause'
@@ -31,6 +31,7 @@
         'Get-SQLDomainUser', 
         'Get-SQLDomainGroup',
         'Get-SQLDomainOu',
+        'Get-SQLDomainAccountPolicy',
         'Get-SQLFuzzDatabaseName', 
         'Get-SQLFuzzDomainAccount', 
         'Get-SQLFuzzObjectName', 

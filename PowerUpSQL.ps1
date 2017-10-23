@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.90.113
+        Version: 1.91.113
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7532,7 +7532,7 @@ Function  Get-SQLDomainOu
             .EXAMPLE
             PS C:\> Get-SQLDomainOu -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
-            PS C:\> GGet-SQLDomainOu -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            PS C:\> Get-SQLDomainOu -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
           .EXAMPLE
             PS C:\> Get-SQLDomainOu -Instance SQLServer1\STANDARDDEV2014 -Verbose 
             .EXAMPLE
@@ -7629,6 +7629,143 @@ Function  Get-SQLDomainOu
                 Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
             }else{
                 Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
+            }
+        }                    
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLDomainAccountPolicy
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainAccountPolicy
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain account policy
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER Threads
+            Number of concurrent host threads.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainAccountPolicy -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainAccountPolicy -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainAccountPolicy -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainAccountPolicy -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainAccountPolicy -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+     
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
+        [int]$Threads = 2,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Create data tables for output
+        $TblResults = New-Object -TypeName System.Data.DataTable
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object -TypeName System.Data.DataTable
+
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
+        if($Instance)
+        {
+            $ProvideInstance = New-Object -TypeName PSObject -Property @{
+                Instance = $Instance
+            }
+        }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
+    }
+
+    Process
+    {
+        # Create list of pipeline items
+        $PipelineItems = $PipelineItems + $_
+    }
+
+    End
+    {
+        # Define code to be multi-threaded
+        $MyScriptBlock = {
+
+            # Set instance
+            $Instance = $_.Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
+            
+            # Call Get-SQLDomainObject    
+            if($UseAdHoc){
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
+            }else{
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
             }
         }                    
 

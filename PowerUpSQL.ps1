@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.87.112
+        Version: 1.87.113
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7310,7 +7310,6 @@ Function  Get-SQLDomainUser
     {
         # Create data tables for output
         $TblResults = New-Object -TypeName System.Data.DataTable
-        $TblDomainUsers = New-Object -TypeName System.Data.DataTable
 
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
@@ -7354,7 +7353,7 @@ Function  Get-SQLDomainUser
             if($UseAdHoc){
                 Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath' -UseAdHoc            
             }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath' -UseAdHoc            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath'            
             }
         }                    
 

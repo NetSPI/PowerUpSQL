@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.87.111
+        Version: 1.87.112
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7311,14 +7311,6 @@ Function  Get-SQLDomainUser
         # Create data tables for output
         $TblResults = New-Object -TypeName System.Data.DataTable
         $TblDomainUsers = New-Object -TypeName System.Data.DataTable
-        $null = $TblDomainUsers.Columns.Add('ComputerName') 
-        $null = $TblDomainUsers.Columns.Add('Instance')
-        $null = $TblDomainUsers.Columns.Add('SamAccountName')
-        $null = $TblDomainUsers.Columns.Add('Name')
-        $null = $TblDomainUsers.Columns.Add('admincount')
-        $null = $TblDomainUsers.Columns.Add('whencreated')
-        $null = $TblDomainUsers.Columns.Add('whenchanged')
-        $null = $TblDomainUsers.Columns.Add('AdsPath')
 
         # Setup data table for pipeline threading
         $PipelineItems = New-Object -TypeName System.Data.DataTable
@@ -7351,262 +7343,23 @@ Function  Get-SQLDomainUser
     {
         # Define code to be multi-threaded
         $MyScriptBlock = {
+
             # Set instance
             $Instance = $_.Instance
 
             # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
-
-            # Test connection to instance
-            $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
-                $_.Status -eq 'Accessible'
-            }
-            if($TestConnection)
-            {
-                if( -not $SuppressVerbose)
-                {
-                    Write-Verbose -Message "$Instance : Connection Success."
-                }
-            }
-            else
-            {
-                if( -not $SuppressVerbose)
-                {
-                    Write-Verbose -Message "$Instance : Connection Failed."
-                }
-                return
-            }
-
-            # Check sysadmin
-            $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-            $DomainName = $ServerInfo.DomainName
-            $IsSysadmin = $ServerInfo.IsSysadmin
-
-            If (-not($SuppressVerbose)){
-                Write-Verbose -Message "$Instance : Domain:$DomainName"
-            }
-             
-            if($IsSysadmin -eq "No")
-            {
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : This command requires sysadmin privileges. Exiting."  
-                }              
-                return
-            }else{
-                
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : You have sysadmin privileges."
-                }
-            }            
-
-            # Check if adsi is installed and enabled
-            #- get-sqloledbprovider where providername -eq ADSDSOObject
-
-            # Determine query type
-            if($UseAdHoc){
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Executing in AdHoc mode using OpenRowSet."
-                }
-            }else{
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Executing in Link mode using OpenQuery."
-                }
-            }
-
-            # Create ADSI Link (if link)
-            if(-not $UseAdHoc){
-
-                # ----------------------------------
-                #  Creaet ADSI SQL Server Link
-                # ----------------------------------   
-                
-                # Create Random Name
-                $RandomLinkName = (-join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_}))                                            
-
-                # Status user
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Creating ADSI SQL Server link named $RandomLinkName."
-                }
-
-                # Create Link
-                $QueryCreateLink = "
-                
-                -- Create SQL Server link to ADSI
-                IF (SELECT count(*) FROM master..sysservers WHERE srvname = '$RandomLinkName') = 0
-	                EXEC master.dbo.sp_addlinkedserver @server = N'$RandomLinkName', 
-	                @srvproduct=N'Active Directory Service Interfaces', 
-	                @provider=N'ADSDSOObject', 
-	                @datasrc=N'adsdatasource'
-                    
-                ELSE
-	                SELECT 'The target SQL Server link already exists.'"
-
-
-                # Run query to create link
-                $QueryCreateLinkResults = Get-SQLQuery -Instance $Instance -Query $QueryCreateLink -Username $Username -Password $Password -Credential $Credential -ReturnError
-               
-                # ----------------------------------
-                #  Associate Login with Link
-                # ----------------------------------
-
-                # Associate Login with the link
-                if(($LinkUsername) -and ($LinkPassword)){
-
-                    # Status user
-                    If (-not($SuppressVerbose)){
-                        Write-Verbose -Message "$Instance : Associating login '$LinkUsername' with ADSI SQL Server link named $RandomLinkName."
-                    }
-
-                    $QueryAssociateLogin = "
-
-                    EXEC sp_addlinkedsrvlogin 
-                        @rmtsrvname=N'$RandomLinkName',
-                        @useself=N'False',
-                        @locallogin=NULL,
-                        @rmtuser=N'$LinkUsername',
-                        @rmtpassword=N'$LinkPassword'"                                                           
-
-                }else{
-
-                    # Status user
-                    If (-not($SuppressVerbose)){
-                        Write-Verbose -Message "$Instance : Associating current login with ADSI SQL Server link named $RandomLinkName."
-                    }
-
-                    $QueryAssociateLogin = "
-                    -- Current User Context
-                    -- Notes: testing tbd, sql login (non sysadmin), sql login (sysadmin), windows login (nonsysadmin), windows login (sysadmin), - test passthru and provided creds 
-                    EXEC sp_addlinkedsrvlogin 
-                        @rmtsrvname=N'$RandomLinkName',
-                        @useself=N'True',
-                        @locallogin=NULL,
-                        @rmtuser=NULL,
-                        @rmtpassword=NULL"
-                }                                                
-
-                # Run query to associate login with link
-                Get-SQLQuery -Instance $Instance -Query $QueryAssociateLogin -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
-
-            }            
-
-            # Enable AdHoc Queries (if adhoc and required)
-            if($UseAdHoc){
-                
-                # Get current state
-                $Original_State_ShowAdv = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name like 'show advanced options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object value_in_use -ExpandProperty value_in_use
-                $Original_State_AdHocQuery = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name like 'Ad Hoc Distributed Queries'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object value_in_use -ExpandProperty value_in_use
-
-                # Enabled show advnaced options
-                if($Original_State_ShowAdv -eq 0){
-                    
-                    # Execute Query
-                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                      
-
-                    # Status user
-                    If (-not($SuppressVerbose)){
-                        Write-Verbose -Message "$Instance : Enabled 'Show Advanced Options'"
-                    }
-                }
-
-                if($Original_State_AdHocQuery -eq 0){                   
-
-                    # Execute Query
-                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ad Hoc Distributed Queries',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                        
-
-                    # Status user
-                    If (-not($SuppressVerbose)){
-                        Write-Verbose -Message "$Instance : Enabled 'Ad Hoc Distributed Queries'"
-                    }
-                }
-            }
-
-            # SetUp Query
-            if($UseAdHoc){
-
-                # Define adhoc query auth
-                if(($LinkUsername) -and ($LinkPassword)){
-                    $AdHocAuth = "User ID=$LinkUsername; Password=$LinkPassword;"                    
-                }else{
-                    $AdHocAuth = "adsdatasource" 
-                }
-
-                # Define adhoc query
-                $Query = "
-                -- Run with credential in syntax option 1 - works as sa
-                SELECT *
-                FROM OPENROWSET('ADSDSOOBJECT','$AdHocAuth','SELECT samaccountname,name,admincount,whencreated,whenchanged,adspath
-                FROM ''LDAP://$DomainName''
-                WHERE objectClass =  ''User'' ')"
-            }else{
-
-                # Define link query
-                # $QueryTemplateLink = SELECT * FROM OpenQuery($RandomLinkName,'<LDAP://$DomainName>;(&(objectCategory=Person)(objectClass=user));samaccountname,name,admincount,whencreated,whenchanged,adspath;subtree')         
-                $Query = "SELECT * FROM OpenQuery($RandomLinkName, 'SELECT samaccountname,name,admincount,whencreated,whenchanged,AdsPath FROM ''LDAP://$DomainName'' WHERE objectClass =  ''User'' AND objectCategory = ''Person'' ') AS tblADSI"                
-            }                                
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
             
-            # Display TSQL Query
-            # Write-verbose "Query: $Query"
-                
-            # Status user
-            If (-not($SuppressVerbose)){
-                Write-Verbose -Message "$Instance : Grabbing list of domain users from ADS using ADSI OLEDB..."
-            }            
-
-            # Execute Query
-            $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
-
-            # Append results for pipeline items
-            $TblResults |
-            ForEach-Object -Process {
-
-                # Add record to master table
-                $null = $TblDomainUsers.Rows.Add(
-                    $ComputerName,
-                    $Instance,
-                    $_.SamAccountName,
-                    $_.Name,
-                    $_.admincount,
-                    $_.whencreated,
-                    $_.whenchanged,
-                    $_.AdsPath)
-            }
-
-            # Remove ADSI Link (if Link)
-            if(-not $UseAdHoc){
-                
-                # Status user
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Removing ADSI SQL Server link named $RandomLinkName"
-                }
-
-                # Setup query to remove link
-                $RemoveLinkQuery = "EXEC master.dbo.sp_dropserver @server=N'$RandomLinkName', @droplogins='droplogins'"
-
-                # Run query to remove link
-                $RemoveLinkQueryResults = Get-SQLQuery -Instance $Instance -Query $RemoveLinkQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-            }
-
-            # Restore AdHoc State (if adhoc)
+            # Call Get-SQLDomainObject    
             if($UseAdHoc){
-                
-                # Status user
-                If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Restoring AdHoc settings if needed."
-                }
-                
-                # Restore ad hoc queries    
-                Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ad Hoc Distributed Queries',$Original_State_AdHocQuery;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose            
-
-                # Restore Show advanced options
-                Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',$Original_State_ShowAdv;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                  
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath' -UseAdHoc            
+            }else{
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath' -UseAdHoc            
             }
         }                    
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
-
-        # Return results
-        return $TblDomainUsers
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
     }
 }
 

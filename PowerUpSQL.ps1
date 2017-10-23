@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.86.111
+        Version: 1.87.111
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -6855,6 +6855,377 @@ Function  Get-SQLOleDbProvder
     }
 }
 
+
+# ----------------------------------
+#  Get-SQLDomainObject
+# ----------------------------------
+# Author: Scott Sutherland
+# Reference: LDAP templates are based on MSDN and PowerView by Will Schroeder (@HarmJ0y).
+Function  Get-SQLDomainObject
+{
+    <#
+        .SYNOPSIS
+        Using the OLE DB ADSI provider, query Active Directory for a list of domain objects
+        via the domain logon server associated with the SQL Server.  This can be 
+        done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+        flag to switch between modes. 
+        .PARAMETER Username
+        SQL Server or domain account to authenticate with.
+        .PARAMETER Password
+        SQL Server or domain account password to authenticate with.
+        .PARAMETER LinkUsername
+        Domain account used to authenticate to LDAP through SQL Server ADSI link.
+        .PARAMETER LinkPassword
+        Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+        .PARAMETER UseAdHoc
+        Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+        .PARAMETER Credential
+        SQL Server credential.
+        .PARAMETER Instance
+        SQL Server instance to connection to.
+        .PARAMETER Threads
+        Number of concurrent host threads.
+        .PARAMETER LdapPath
+        Ldap path.
+        .PARAMETER LdapFilter
+        LDAP filter.  Example: -LdapFilter ";(&(objectCategory=Person)(objectClass=user))"
+        .PARAMETER LdapFields
+        Ldap fields. Example -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath;'
+        .EXAMPLE
+        PS C:\> Get-SQLDomainObject -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LdapFilter "(&(objectCategory=Person)(objectClass=user))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -LdapPath "domain.local"
+        .EXAMPLE
+        PS C:\> Get-SQLDomainObject -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+        PS C:\> Get-SQLDomainObject -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+        .EXAMPLE
+        PS C:\> Get-SQLDomainObject -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+        .EXAMPLE
+        PS C:\> Get-SQLInstanceLocal | Get-SQLDomainObject -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+     
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
+        [int]$Threads = 2,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Ldap path. domain/dc=domain,dc=local')]
+        [string]$LdapPath,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Ldap filter. Example: (&(objectCategory=Person)(objectClass=user))')]
+        [string]$LdapFilter,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Ldap fields. Example: samaccountname,name,admincount,whencreated,whenchanged,adspath')]
+        [string]$LdapFields,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Create data tables for output
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $TblDomainObjects = New-Object -TypeName System.Data.DataTable         
+    }
+
+    Process
+    {
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Check sysadmin
+        $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        $DomainName = $ServerInfo.DomainName
+        $IsSysadmin = $ServerInfo.IsSysadmin
+        $SQLServerMajorVersion = $ServerInfo.SQLServerMajorVersion
+        $SQLServerEdition = $ServerInfo.SQLServerEdition
+        $SQLServerVersionNumber = $ServerInfo.SQLServerVersionNumber
+
+        # Status user
+        If (-not($SuppressVerbose)){
+            Write-Verbose -Message "$Instance : Domain: $DomainName"
+            Write-Verbose -Message "$Instance : Version: SQL Server $SQLServerMajorVersion $SQLServerEdition ($SQLServerVersionNumber)"
+        }
+         
+        if($IsSysadmin -eq "No")
+        {
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : This command requires sysadmin privileges. Exiting."  
+            }          
+            return
+        }else{
+            
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : You have sysadmin privileges."
+            }
+        }          
+        
+        # Setup the LDAP Path
+        if(-not $LdapPath ){
+            $LdapPath = $DomainName
+        }
+
+        # Check if adsi is installed and can run in process
+        $CheckEnabled = Get-SQLOleDbProvder -Instance NETSPI-419-SSU\SQLSERVER2017 -Username sa -Password 'abc$123!' -SuppressVerbose | Where ProviderName -like "ADsDSOObject" | Select-Object AllowInProcess -ExpandProperty AllowInProcess
+        if ($CheckEnabled -ne 1){
+            Write-Verbose -Message "$Instance : The ADsDSOObject provider is not allowed to run in process. Stopping operation."
+            return
+        }else{
+            Write-Verbose -Message "$Instance : The ADsDSOObject provider is allowed to run in process."
+        }
+
+        # Determine query type
+        if($UseAdHoc){
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : Executing in AdHoc mode using OpenRowSet."
+            }
+        }else{
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : Executing in Link mode using OpenQuery."
+            }
+        }
+
+        # Create ADSI Link (if link)
+        if(-not $UseAdHoc){
+
+            # Create Random Name
+            $RandomLinkName = (-join ((65..90) + (97..122) | Get-Random -Count 8 | % {[char]$_}))                                
+
+            # Status user
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : Creating ADSI SQL Server link named $RandomLinkName."
+            }
+
+            # Create Link
+            $QueryCreateLink = "
+            
+            -- Create SQL Server link to ADSI
+            IF (SELECT count(*) FROM master..sysservers WHERE srvname = '$RandomLinkName') = 0
+	            EXEC master.dbo.sp_addlinkedserver @server = N'$RandomLinkName', 
+	            @srvproduct=N'Active Directory Service Interfaces', 
+	            @provider=N'ADSDSOObject', 
+	            @datasrc=N'adsdatasource'
+                
+            ELSE
+	            SELECT 'The target SQL Server link already exists.'"
+
+            # Run query to create link
+            $QueryCreateLinkResults = Get-SQLQuery -Instance $Instance -Query $QueryCreateLink -Username $Username -Password $Password -Credential $Credential -ReturnError
+           
+            # Associate login with the link
+            if(($LinkUsername) -and ($LinkPassword)){
+
+                # Status user
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : Associating login '$LinkUsername' with ADSI SQL Server link named $RandomLinkName."
+                }
+
+                $QueryAssociateLogin = "
+
+                EXEC sp_addlinkedsrvlogin 
+                @rmtsrvname=N'$RandomLinkName',
+                @useself=N'False',
+                @locallogin=NULL,
+                @rmtuser=N'$LinkUsername',
+                @rmtpassword=N'$LinkPassword'"                                           
+
+            }else{
+
+                # Status user
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : Associating current login with ADSI SQL Server link named $RandomLinkName."
+                }
+
+                $QueryAssociateLogin = "
+                -- Current User Context
+                -- Notes: testing tbd, sql login (non sysadmin), sql login (sysadmin), windows login (nonsysadmin), windows login (sysadmin), - test passthru and provided creds 
+                EXEC sp_addlinkedsrvlogin 
+                @rmtsrvname=N'$RandomLinkName',
+                @useself=N'True',
+                @locallogin=NULL,
+                @rmtuser=NULL,
+                @rmtpassword=NULL"
+            }                                
+
+            # Run query to associate login with link
+            Get-SQLQuery -Instance $Instance -Query $QueryAssociateLogin -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
+
+        }        
+
+        # Enable AdHoc Queries (if adhoc and required)
+        if($UseAdHoc){
+            
+            # Get current state
+            $Original_State_ShowAdv = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name like 'show advanced options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object value_in_use -ExpandProperty value_in_use
+            $Original_State_AdHocQuery = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name like 'Ad Hoc Distributed Queries'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object value_in_use -ExpandProperty value_in_use
+
+            # Enable 'Show Advanced Options'
+            if($Original_State_ShowAdv -eq 0){
+                
+                # Execute Query
+                Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                  
+
+                # Status user
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : Enabled 'Show Advanced Options'"
+                }
+            }else{
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : 'Show Advanced Options' is already enabled"
+                }
+            }
+
+            # Enable 'Ad Hoc Distributed Queries'
+            if($Original_State_AdHocQuery -eq 0){               
+
+                # Execute Query
+                Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ad Hoc Distributed Queries',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose                
+
+                # Status user
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : Enabled 'Ad Hoc Distributed Queries'"
+                }
+            }else{
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message "$Instance : 'Ad Hoc Distributed Queries' are already enabled"
+                }
+            }
+        }
+
+        # SetUp LDAP Query
+        if($UseAdHoc){
+
+            # Define adhoc query auth
+            if(($LinkUsername) -and ($LinkPassword)){
+                $AdHocAuth = "User ID=$LinkUsername; Password=$LinkPassword;"                
+            }else{
+                $AdHocAuth = "adsdatasource" 
+            }
+
+            # Define adhoc query
+            $Query = "
+            -- Run with credential in syntax option 1 - works as sa
+            SELECT *
+            FROM OPENROWSET('ADSDSOOBJECT','$AdHocAuth',
+            '<LDAP://$LdapPath>;$LdapFilter;$LdapFields;subtree')"
+        }else{
+
+            # Define link query
+            $Query  = "SELECT * FROM OpenQuery($RandomLinkName,'<LDAP://$LdapPath>;$LdapFilter;$LdapFields;subtree')"                 
+        }                        
+        
+        # Display TSQL Query
+        # Write-verbose "Query: $Query"
+            
+        # Status user
+        If (-not($SuppressVerbose)){
+            Write-Verbose -Message "$Instance : Grabbing list of domain users from ADS using ADSI OLEDB..."
+        }        
+
+        # Execute Query
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential
+
+        # Add results to table
+        $TblDomainObjects += $TblResults         
+        
+        # Remove ADSI Link (if Link)
+        if(-not $UseAdHoc){
+            
+            # Status user
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : Removing ADSI SQL Server link named $RandomLinkName"
+            }
+
+            # Setup query to remove link
+            $RemoveLinkQuery = "EXEC master.dbo.sp_dropserver @server=N'$RandomLinkName', @droplogins='droplogins'"
+
+            # Run query to remove link
+            $RemoveLinkQueryResults = Get-SQLQuery -Instance $Instance -Query $RemoveLinkQuery -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        }
+
+        # Restore AdHoc State (if adhoc)
+        if($UseAdHoc){
+            
+            # Status user
+            If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : Restoring AdHoc settings if needed."
+            }
+            
+            # Restore ad hoc queries    
+            Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ad Hoc Distributed Queries',$Original_State_AdHocQuery;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose        
+
+            # Restore Show advanced options
+            Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',$Original_State_ShowAdv;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose              
+        }
+    }
+
+    End
+    {
+        return $TblDomainObjects
+    }
+}
+
+
 # ----------------------------------
 #  Get-SQLDomainUser
 # ----------------------------------
@@ -12932,7 +13303,7 @@ function Create-SQLFileXpDll
             Modified source code used to create the DLL can be found at the link below:
             https://github.com/nullbind/Powershellery/blob/master/Stable-ish/MSSQL/xp_evil_template.cpp
 
-            The method used to patch the DLL was based on Will Schroeder "Invoke-PatchDll" function found in the PowerUp toolkit:
+            The method used to patch the DLL was based on Will Schroeder (@HarmJ0y) "Invoke-PatchDll" function found in the PowerUp toolkit:
             https://github.com/HarmJ0y/PowerUp
     #>
 

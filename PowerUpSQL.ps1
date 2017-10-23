@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.86.110
+        Version: 1.86.111
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -22666,7 +22666,9 @@ function Invoke-Parallel
         }
 
         Write-Debug -Message "`$ScriptBlock: $($ScriptBlock | Out-String)"
-        Write-Verbose -Message 'Creating runspace pool and session states'
+        If (-not($SuppressVerbose)){
+            Write-Verbose -Message 'Creating runspace pool and session states'
+        }
 
 
         #If specified, add variables and modules/snapins to session state
@@ -22869,7 +22871,9 @@ function Invoke-Parallel
             #Close the runspace pool, unless we specified no close on timeout and something timed out
             if ( ($timedOutTasks -eq $false) -or ( ($timedOutTasks -eq $true) -and ($NoCloseOnTimeout -eq $false) ) )
             {
-                Write-Verbose -Message 'Closing the runspace pool'
+                If (-not($SuppressVerbose)){
+                    Write-Verbose -Message 'Closing the runspace pool'
+                }
                 $runspacepool.close()
             }
 

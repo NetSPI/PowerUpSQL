@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.115
+        Version: 1.91.116
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7829,6 +7829,8 @@ Function  Get-SQLDomainGroup
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER FilterGroup
+            Domain group to filter for.
             .PARAMETER Threads
             Number of concurrent host threads.
             .EXAMPLE
@@ -7871,6 +7873,11 @@ Function  Get-SQLDomainGroup
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain group to filter for.')]
+        [string]$FilterGroup,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
      
@@ -7907,6 +7914,11 @@ Function  Get-SQLDomainGroup
 
         # Add instance to instance list
         $PipelineItems = $PipelineItems + $ProvideInstance
+
+        # Setup user filter
+        if((-not $FilterGroup)){
+            $FilterGroup = '*'
+        }
     }
 
     Process
@@ -7928,9 +7940,9 @@ Function  Get-SQLDomainGroup
             
             # Call Get-SQLDomainObject    
             if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=Group)' -LdapFields 'name,whencreated,whenchanged,adspath' -UseAdHoc            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(name=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath' -UseAdHoc            
             }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=Group)' -LdapFields 'name,whencreated,whenchanged,adspath'            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(name=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath'            
             }
         }                    
 

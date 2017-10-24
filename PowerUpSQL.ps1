@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.113
+        Version: 1.91.114
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7000,6 +7000,7 @@ Function  Get-SQLDomainObject
         $SQLServerMajorVersion = $ServerInfo.SQLServerMajorVersion
         $SQLServerEdition = $ServerInfo.SQLServerEdition
         $SQLServerVersionNumber = $ServerInfo.SQLServerVersionNumber
+        $SQLCurrentLogin = $ServerInfo.Currentlogin
 
         # Status user
         If (-not($SuppressVerbose)){
@@ -7019,6 +7020,21 @@ Function  Get-SQLDomainObject
                 Write-Verbose -Message "$Instance : You have sysadmin privileges."
             }
         }          
+
+        # When the following conditions are met stop, because it won't work
+        # sysadmin (implicit at this point in the code) + type sql login + no adhoc or provided link cred        
+        if ($SQLCurrentLogin -notlike "*\*")
+        {
+            if(($UseAdHoc) -or ($LinkPassword)){
+                # note
+            }else{
+                Write-Verbose -Message "$Instance : A SQL Login with sysadmin privileges cannot execute ASDI queries through a linked server by itself."
+                Write-Verbose -Message "$Instance : Try one of the following:"
+                Write-Verbose -Message "$Instance :  - Run the command again with the -UseAdHoc flag "
+                Write-Verbose -Message "$Instance :  - Run the command again and provide -LinkUser and -LinkPassword"
+                return
+            }
+        }
         
         # Setup the LDAP Path
         if(-not $LdapPath ){

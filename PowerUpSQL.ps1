@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.114
+        Version: 1.91.115
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7270,6 +7270,8 @@ Function  Get-SQLDomainUser
             SQL Server instance to connection to.
             .PARAMETER Threads
             Number of concurrent host threads.
+            .PARAMETER FilterUser
+            Domain user to filter for.
             .EXAMPLE
             PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7318,6 +7320,11 @@ Function  Get-SQLDomainUser
         [int]$Threads = 2,
 
         [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain user to filter for.')]
+        [string]$FilterUser,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -7346,6 +7353,11 @@ Function  Get-SQLDomainUser
 
         # Add instance to instance list
         $PipelineItems = $PipelineItems + $ProvideInstance
+
+        # Setup user filter
+        if((-not $FilterUser)){
+            $FilterUser = '*'
+        }
     }
 
     Process
@@ -7367,9 +7379,9 @@ Function  Get-SQLDomainUser
             
             # Call Get-SQLDomainObject    
             if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath' -UseAdHoc            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
             }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(&(objectCategory=Person)(objectClass=user))' -LdapFields 'samaccountname,name,admincount,whencreated,whenchanged,adspath'            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
             }
         }                    
 

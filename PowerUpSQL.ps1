@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.116
+        Version: 1.91.117
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7419,6 +7419,8 @@ Function  Get-SQLDomainComputer
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER FilterComputer
+            Domain computer to filter for.
             .PARAMETER Threads
             Number of concurrent host threads.
             .EXAMPLE
@@ -7461,6 +7463,11 @@ Function  Get-SQLDomainComputer
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain computer to filter for.')]
+        [string]$FilterComputer,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
      
@@ -7497,6 +7504,11 @@ Function  Get-SQLDomainComputer
 
         # Add instance to instance list
         $PipelineItems = $PipelineItems + $ProvideInstance
+
+        # Setup computer filter
+        if((-not $FilterComputer)){
+            $FilterComputer = '*'
+        }
     }
 
     Process
@@ -7518,9 +7530,9 @@ Function  Get-SQLDomainComputer
             
             # Call Get-SQLDomainObject    
             if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=Computer)' -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath' -UseAdHoc            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath' -UseAdHoc            
             }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=Computer)' -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath'            
+                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath'            
             }
         }                    
 
@@ -7915,7 +7927,7 @@ Function  Get-SQLDomainGroup
         # Add instance to instance list
         $PipelineItems = $PipelineItems + $ProvideInstance
 
-        # Setup user filter
+        # Setup group filter
         if((-not $FilterGroup)){
             $FilterGroup = '*'
         }

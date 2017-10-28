@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.117
+        Version: 1.91.118
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7195,7 +7195,7 @@ Function  Get-SQLDomainObject
             
         # Status user
         If (-not($SuppressVerbose)){
-            Write-Verbose -Message "$Instance : Grabbing list of domain users from ADS using ADSI OLEDB..."
+            Write-Verbose -Message "$Instance : LDAP query against logon server using ADSI OLEDB started..."
         }        
 
         # Execute Query
@@ -7233,10 +7233,24 @@ Function  Get-SQLDomainObject
             # Restore Show advanced options
             Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',$Original_State_ShowAdv;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose              
         }
+
+        # Status user
+        If (-not($SuppressVerbose)){
+            Write-Verbose -Message "$Instance : LDAP query against logon server using ADSI OLEDB complete."
+        } 
     }
 
     End
     {
+        # Return record count
+        $RecordCount = $TblDomainObjects.Row.count
+
+        # Status user
+        If (-not($SuppressVerbose)){
+            Write-Verbose -Message "$Instance : $RecordCount records were found."
+        } 
+
+        # Return records
         return $TblDomainObjects
     }
 }
@@ -7386,11 +7400,11 @@ Function  Get-SQLDomainUser
         }                    
 
         # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+        $Results = $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+
+        $Results
     }
 }
-
-
 
 
 # ----------------------------------

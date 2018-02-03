@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.119
+        Version: 1.91.120
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15143,12 +15143,17 @@ function Get-SQLInstanceBroadcast
             .EXAMPLE
             PS C:\> Get-SQLInstanceBroadcast -Verbose
             VERBOSE: Attempting to identify SQL Server instances on the broadcast domain.
-            VERBOSE: 1 SQL Server instance was found.
+            VERBOSE: 7 SQL Server instances were found.
 
-            ComputerName     : SQLServer1.domain.com
-            Instance         : SQLServer1.domain.com\Instance1
-            IsClustered      : No
-            Version          : 14.0.900.75
+            ComputerName                         Instance                            IsClustered                         Version                            
+            ------------                         --------                            -----------                         -------                            
+            MSSQLSRV01                           MSSQLSRV01\SQLSERVER2012            No                                  11.0.2100.60
+            MSSQL2K5                             MSSQL2K5                            No                                  9.00.1399.06
+            MSSQLSRV03                           MSSQLSRV03\SQLSERVER2008            No                                  10.0.1600.22
+            MSSQLSRV04                           MSSQLSRV04\SQLSERVER2014            No                                  12.0.4100.1
+            MSSQLSRV04                           MSSQLSRV04\SQLSERVER2016            No                                  13.0.1601.5
+            MSSQLSRV04                           MSSQLSRV04\BOSCHSQL                 No                                  12.0.4100.1
+            MSSQLSRV04                           MSSQLSRV04\SQLSERVER2017            No                                  14.0.500.272
     #>
 
     Begin
@@ -15170,18 +15175,22 @@ function Get-SQLInstanceBroadcast
             # Discover instances
             $Instances = [System.Data.Sql.SqlDataSourceEnumerator]::Instance.GetDataSources()
 
-            # Grab variables
-            [string]$InstanceName = $Instances.Servername + "\" + $Instances.InstanceName
-            [string]$ComputerName = $Instances.Servername
-            [string]$IsClustered  = $Instances.IsClustered
-            [string]$Version      = $Instances.Version
+            # Add results to modified data table
+            $Instances | 
+            ForEach-Object {
+                [string]$InstanceTemp =  $_.InstanceName
+                if($InstanceTemp){
+                    [string]$InstanceName = $_.Servername + "\" + $_.InstanceName
+                }else{
+                    [string]$InstanceName = $_.Servername 
+                }
+                [string]$ComputerName = $_.Servername
+                [string]$IsClustered  = $_.IsClustered
+                [string]$Version      = $_.Version
 
-            # Add to table
-            $TblSQLServers.Rows.Add($ComputerName, $InstanceName, $IsClustered, $Version) | Out-Null
-
-            # Get instance count
-            $InstanceCount = $TblSQLServers.Rows.Count
-            Write-Verbose "$InstanceCount SQL Server instances were found." 
+                # Add to table
+                $TblSQLServers.Rows.Add($ComputerName, $InstanceName, $IsClustered, $Version) | Out-Null
+            }
         }
         catch{
 
@@ -15194,8 +15203,12 @@ function Get-SQLInstanceBroadcast
 
     End
     {
+        # Get instance count
+        $InstanceCount = $TblSQLServers.Rows.Count
+        Write-Verbose "$InstanceCount SQL Server instances were found." 
+
         # Return results
-         $TblSQLServers
+        $TblSQLServers
     }
 }
 

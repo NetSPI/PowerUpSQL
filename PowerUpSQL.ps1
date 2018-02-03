@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.118
+        Version: 1.91.119
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15120,6 +15120,82 @@ function Get-SQLInstanceScanUDP
     {
         # Return Results
         $TableResults
+    }
+}
+
+
+# -------------------------------------------
+# Function:  Get-SQLInstanceBroadcast
+# -------------------------------------------
+# Author: Scott Sutherland
+# Initial publication by @nikhil_mitt on twitter
+function Get-SQLInstanceBroadcast 
+{
+    [CmdletBinding()]
+    Param()
+
+    <#
+            .SYNOPSIS
+            This function sends a UDP request to the broadcast address of the current subnet using the 
+            SMB protocol over port 138 to identify SQL Server instances on the local network.  The .net function used
+            has been supported since .net version 2.0. For more information see the reference below:
+            https://msdn.microsoft.com/en-us/library/system.data.sql.sqldatasourceenumerator(v=vs.110).aspx
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceBroadcast -Verbose
+            VERBOSE: Attempting to identify SQL Server instances on the broadcast domain.
+            VERBOSE: 1 SQL Server instance was found.
+
+            ComputerName     : SQLServer1.domain.com
+            Instance         : SQLServer1.domain.com\Instance1
+            IsClustered      : No
+            Version          : 14.0.900.75
+    #>
+
+    Begin
+    {
+        # Create data table for output
+        $TblSQLServers = New-Object -TypeName System.Data.DataTable
+        $null = $TblSQLServers.Columns.Add('ComputerName')
+        $null = $TblSQLServers.Columns.Add('Instance')
+        $null = $TblSQLServers.Columns.Add('IsClustered')
+        $null = $TblSQLServers.Columns.Add('Version')
+
+        Write-Verbose "Attempting to identify SQL Server instances on the broadcast domain."
+    }
+
+    Process
+    {
+        try {
+
+            # Discover instances
+            $Instances = [System.Data.Sql.SqlDataSourceEnumerator]::Instance.GetDataSources()
+
+            # Grab variables
+            [string]$InstanceName = $Instances.Servername + "\" + $Instances.InstanceName
+            [string]$ComputerName = $Instances.Servername
+            [string]$IsClustered  = $Instances.IsClustered
+            [string]$Version      = $Instances.Version
+
+            # Add to table
+            $TblSQLServers.Rows.Add($ComputerName, $InstanceName, $IsClustered, $Version) | Out-Null
+
+            # Get instance count
+            $InstanceCount = $TblSQLServers.Rows.Count
+            Write-Verbose "$InstanceCount SQL Server instances were found." 
+        }
+        catch{
+
+            # Show error message
+            $ErrorMessage = $_.Exception.Message
+            Write-Output -Message " Operation Failed."
+            Write-Output -Message " Error: $ErrorMessage"     
+        }
+    }
+
+    End
+    {
+        # Return results
+         $TblSQLServers
     }
 }
 

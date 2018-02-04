@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.91.120
+        Version: 1.92.0
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15131,9 +15131,6 @@ function Get-SQLInstanceScanUDP
 # Initial publication by @nikhil_mitt on twitter
 function Get-SQLInstanceBroadcast 
 {
-    [CmdletBinding()]
-    Param()
-
     <#
             .SYNOPSIS
             This function sends a UDP request to the broadcast address of the current subnet using the 
@@ -15156,6 +15153,13 @@ function Get-SQLInstanceBroadcast
             MSSQLSRV04                           MSSQLSRV04\SQLSERVER2017            No                                  14.0.500.272
     #>
 
+    [CmdletBinding()]
+    Param(
+            [Parameter(Mandatory = $false,
+        HelpMessage = 'This will send a UDP request to each of the identified SQL Server instances to gather more information..')]
+        [switch]$UDPPing
+    )
+
     Begin
     {
         # Create data table for output
@@ -15163,7 +15167,7 @@ function Get-SQLInstanceBroadcast
         $null = $TblSQLServers.Columns.Add('ComputerName')
         $null = $TblSQLServers.Columns.Add('Instance')
         $null = $TblSQLServers.Columns.Add('IsClustered')
-        $null = $TblSQLServers.Columns.Add('Version')
+        $null = $TblSQLServers.Columns.Add('Version')        
 
         Write-Verbose "Attempting to identify SQL Server instances on the broadcast domain."
     }
@@ -15202,13 +15206,25 @@ function Get-SQLInstanceBroadcast
     }
 
     End
-    {
+    {               
         # Get instance count
         $InstanceCount = $TblSQLServers.Rows.Count
-        Write-Verbose "$InstanceCount SQL Server instances were found." 
+        Write-Verbose "$InstanceCount SQL Server instances were found."
+        
+        # Get port and force engcryption flag
+        if($UDPPing){
+            Write-Verbose "Performing UDP ping against $InstanceCount SQL Server instances."
+            $TblSQLServers |
+            ForEach-Object{
+                $CurrentComputer = $_.ComuterName                
+                Get-SQLInstanceScanUDP -ComputerName $_.ComputerName -SuppressVerbose
+            }
+        }         
 
         # Return results
-        $TblSQLServers
+        if(-not $UDPPing){
+            $TblSQLServers
+        }
     }
 }
 

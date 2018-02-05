@@ -1,5 +1,5 @@
 -- Script: Get-SQLForcedEncryptionSetting.sql
--- Description: Get the "Forced Encryption" setting for the current SQL Server instance
+-- Description: Get the "Forced Encryption" setting for the current SQL Server instance.
 -- Author: Scott Sutherland, NetSPI 2018
 
 BEGIN TRY 

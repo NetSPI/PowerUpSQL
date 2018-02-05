@@ -11,5 +11,7 @@ BEGIN TRY
 	SELECT @ForcedEncryption as ForcedEncryption
 END TRY
 BEGIN CATCH
-	SELECT 'NA'
+	SELECT   
+        ERROR_NUMBER() AS ErrorNumber  
+        ,ERROR_MESSAGE() AS ErrorMessage;  
 END CATCH

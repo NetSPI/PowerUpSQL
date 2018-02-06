@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.92.0
+        Version: 1.92.1
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -13,7 +13,7 @@
 #########################################################################
 #
 #region          CORE FUNCTIONS
-#
+#h
 #########################################################################
 
 # ----------------------------------
@@ -3415,6 +3415,16 @@ Function  Get-SQLServerInfo
             N'Software\Microsoft\MSSQLServer\MSSQLServer',
             N'LoginMode', @AuthenticationMode OUTPUT
 
+            -- Get the forced encryption flag
+            BEGIN TRY 
+	            DECLARE @ForcedEncryption INT
+	            EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
+	            N'SOFTWARE\MICROSOFT\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib',
+	            N'ForceEncryption', @ForcedEncryption OUTPUT
+            END TRY
+            BEGIN CATCH	            
+            END CATCH
+
             -- Grab additional information as sysadmin
             $SysadminSetup
 
@@ -3430,6 +3440,7 @@ Function  Get-SQLServerInfo
             WHEN 2 THEN 'Windows and SQL Server Authentication'
             ELSE 'Unknown'
             END) as [AuthenticationMode],
+            @ForcedEncryption as ForcedEncryption,
             CASE  SERVERPROPERTY('IsClustered')
             WHEN 0
             THEN 'No'

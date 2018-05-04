@@ -7053,7 +7053,7 @@ Function  Get-SQLDomainObject
         }
 
         # Check if adsi is installed and can run in process
-        $CheckEnabled = Get-SQLOleDbProvder -Instance NETSPI-419-SSU\SQLSERVER2017 -Username sa -Password 'abc$123!' -SuppressVerbose | Where ProviderName -like "ADsDSOObject" | Select-Object AllowInProcess -ExpandProperty AllowInProcess
+        $CheckEnabled = Get-SQLOleDbProvder -Instance $Instance -Username $Username -Password $Password -SuppressVerbose | Where ProviderName -like "ADsDSOObject" | Select-Object AllowInProcess -ExpandProperty AllowInProcess
         if ($CheckEnabled -ne 1){
             Write-Verbose -Message "$Instance : The ADsDSOObject provider is not allowed to run in process. Stopping operation."
             return
@@ -7356,28 +7356,11 @@ Function  Get-SQLDomainUser
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
 
         # Setup user filter
         if((-not $FilterUser)){
@@ -7387,33 +7370,16 @@ Function  Get-SQLDomainUser
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
+        }
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $Results = $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
-
-        $Results
+    {                                       
     }
 }
 
@@ -7507,28 +7473,11 @@ Function  Get-SQLDomainComputer
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
 
         # Setup computer filter
         if((-not $FilterComputer)){
@@ -7538,31 +7487,16 @@ Function  Get-SQLDomainComputer
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath'            
+        }
     }
 
     End
     {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath'            
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
     }
 }
 
@@ -7648,57 +7582,25 @@ Function  Get-SQLDomainOu
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
     }
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
+        }
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    {                                           
     }
 }
 
@@ -7785,57 +7687,25 @@ Function  Get-SQLDomainAccountPolicy
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
     }
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
+        }
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    {                     
     }
 }
 
@@ -7929,28 +7799,11 @@ Function  Get-SQLDomainGroup
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
 
         # Setup group filter
         if((-not $FilterGroup)){
@@ -7960,31 +7813,16 @@ Function  Get-SQLDomainGroup
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath'            
+        }
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(name=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(name=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath'            
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    {               
     }
 }
 

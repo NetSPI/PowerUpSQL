@@ -8392,6 +8392,136 @@ Function  Get-SQLDomainExploitableSystem
     }
 }
 
+# ----------------------------------
+#  Get-SQLDomainGroupMember
+# ----------------------------------
+# Author: Scott Sutherland, Thomas Elling
+Function  Get-SQLDomainGroupMember
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain groups
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER FilterGroup
+            Domain group to filter for.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -FilterGroup 'Enterprise Admins'
+            .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -FilterGroup 'Enterprise Admins'
+            .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainGroupMember -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain group to filter for.')]
+        [string]$FilterGroup,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Setup group filter
+        if((-not $FilterGroup)){
+            $FilterGroup = 'Domain Admins'
+        }
+
+        $TableMembers = New-Object System.Data.DataTable
+        $TableMembers.Columns.Add('Group') | Out-Null
+        $TableMembers.Columns.Add('sAMAccountName') | Out-Null
+        $TableMembers.Columns.Add('displayName') | Out-Null
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject to get group DN
+        if($UseAdHoc){
+            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -UseAdHoc -SuppressVerbose
+        }else{
+            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -SuppressVerbose       
+        }
+
+        $DN = $FullDN.distinguishedname
+
+        # Call Get-SQLDomainObject to get group membership
+        if($UseAdHoc){
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname' -UseAdHoc
+        }else{
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname'     
+        }
+
+        $Results | ForEach-Object {           
+            $TableMembers.Rows.Add($FilterGroup,$_.samaccountname,$_.displayname) | Out-Null 
+        }
+
+        $TableMembers
+
+    }
+
+    End
+    {               
+    }
+}
 
 # ----------------------------------
 #  Get-SQLSysadminCheck

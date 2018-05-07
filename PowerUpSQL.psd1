@@ -36,6 +36,7 @@
         'Get-SQLDomainPasswordsLAPS',
         'Get-SQLDomainController',
         'Get-SQLDomainExploitableSystem',
+        'Get-SQLDomainGroupMember',
         'Get-SQLFuzzDatabaseName', 
         'Get-SQLFuzzDomainAccount', 
         'Get-SQLFuzzObjectName', 

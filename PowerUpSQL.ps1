@@ -7278,7 +7278,9 @@ Function  Get-SQLDomainUser
             Using the OLE DB ADSI provider, query Active Directory for a list of domain users
             via the domain logon server associated with the SQL Server.  This can be 
             done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
-            flag to switch between modes.
+            flag to switch between modes.  The userstate parameter can also be used to filter users
+            by state such as disabled/locked, and property setting such as not requiring a password
+            or kerberos preauthentication.
             .PARAMETER Username
             SQL Server or domain account to authenticate with.
             .PARAMETER Password
@@ -7295,8 +7297,24 @@ Function  Get-SQLDomainUser
             SQL Server instance to connection to.
             .PARAMETER FilterUser
             Domain user to filter for.
+            .PARAMETER UserState
+            Filter for users of specific state such as disabled, enabled, and locked.
             .EXAMPLE
             PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            Only grab enabled users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState All
+            Only grab enabled users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState Enabled
+            Only grab disabled users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState Disabled
+            Only grab that don't require kerberos preauthentication.
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState PreAuthNotRequired
+            Only grab locked users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState Locked
             .EXAMPLE
             PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
           .EXAMPLE
@@ -7305,6 +7323,153 @@ Function  Get-SQLDomainUser
             PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLDomainUser -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Filter users based on state or property settings.')]
+        [ValidateSet("All","Enabled","Disabled","Locked","PwNeverExpires","PwNotRequired","PreAuthNotRequired","SmartCardRequired","TrustedForDelegation","TrustedToAuthForDelegation","PwStoredRevEnc")]
+        [String]$UserState,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain user to filter for.')]
+        [string]$FilterUser,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Only list the users who have not changed their password in the number of days provided.')]
+        [Int]$PwLastSet,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Setup user filter
+        if((-not $FilterUser)){
+            $FilterUser = '*'
+        }
+
+        # Setup user state / property filter
+        if((-not $PwLastSet)){
+            $PwLastSetFilter = ""
+        }else{
+
+            # Get number of days from user and convert to timestamp
+            $DesiredTimeStamp = (Get-Date).AddDays(-$PwLastSet).ToFileTime()
+
+            # Use timestamp to create filter to only list the users who have not changed their password in the number of days provided.
+            $PwLastSetFilter = "(!pwdLastSet>=$DesiredTimeStamp)"
+        }
+
+        # Setup user state filter
+        switch ($UserState)
+        {
+            "All"                         {$UserStateFilter = ""} 
+            "Enabled"                     {$UserStateFilter = "(!userAccountControl:1.2.840.113556.1.4.803:=2)"} 
+            "Disabled"                    {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=2)"} 
+            "Locked"                      {$UserStateFilter = "(sAMAccountType=805306368)(lockoutTime>0)"}
+            "PwNeverExpires"              {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=65536)"} 
+            "PwNotRequired"               {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=32)"}
+            "PwStoredRevEnc"              {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=128)"}
+            "PreAuthNotRequired"          {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=4194304)"}
+            "SmartCardRequired"           {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=262144)"}
+            "TrustedForDelegation"        {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=524288)"}
+            "TrustedToAuthForDelegation"  {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=16777216)"}
+        }
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
+        }
+    }
+
+    End
+    {                                       
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLDomainSubnet
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainSubnet
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain subnets
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainComputer -Verbose
     #>
     [CmdletBinding()]
     Param(
@@ -7339,9 +7504,107 @@ Function  Get-SQLDomainUser
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+    }
+
+    Process
+    {
+        # Get the domain of the server
+        $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        $DomainDistinguishedName = Get-SQLDomainObject -SuppressVerbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath "$Domain" -LdapFilter "(name=$Domain)" -LdapFields 'distinguishedname' -UseAdHoc | Select-Object distinguishedname -ExpandProperty distinguishedname
+        
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=subnet)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,siteobject,whencreated,whenchanged,location' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=subnet)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,siteobject,whencreated,whenchanged,location'          
+        }
+    }
+
+    End
+    {
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLDomainSite
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainSite
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain sites
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainComputer -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
-        HelpMessage = 'Domain user to filter for.')]
-        [string]$FilterUser,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -7355,25 +7618,24 @@ Function  Get-SQLDomainUser
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Setup user filter
-        if((-not $FilterUser)){
-            $FilterUser = '*'
-        }
     }
 
     Process
     {
+        # Get the domain of the server
+        $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        $DomainDistinguishedName = Get-SQLDomainObject -SuppressVerbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath "$Domain" -LdapFilter "(name=$Domain)" -LdapFields 'distinguishedname' -UseAdHoc | Select-Object distinguishedname -ExpandProperty distinguishedname
+        
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=site)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,whencreated,whenchanged' -UseAdHoc            
         }else{
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=site)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,whencreated,whenchanged'          
         }
     }
 
     End
-    {                                       
+    {
     }
 }
 
@@ -8400,7 +8662,7 @@ Function  Get-SQLDomainGroupMember
 {
     <#
             .SYNOPSIS
-            Using the OLE DB ADSI provider, query Active Directory for a list of domain groups
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain group members
             via the domain logon server associated with the SQL Server.  This can be 
             done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
             flag to switch between modes.

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.92.2
+        Version: 1.103.2
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7270,7 +7270,7 @@ Function  Get-SQLDomainObject
 # ----------------------------------
 #  Get-SQLDomainUser
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainUser
 {
     <#
@@ -7437,7 +7437,7 @@ Function  Get-SQLDomainUser
 # ----------------------------------
 #  Get-SQLDomainSubnet
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainSubnet
 {
     <#
@@ -7540,7 +7540,7 @@ Function  Get-SQLDomainSubnet
 # ----------------------------------
 #  Get-SQLDomainSite
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainSite
 {
     <#
@@ -7643,7 +7643,7 @@ Function  Get-SQLDomainSite
 # ----------------------------------
 #  Get-SQLDomainComputer
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainComputer
 {
     <#
@@ -7852,7 +7852,7 @@ Function  Get-SQLDomainOu
 # ----------------------------------
 #  Get-SQLDomainAccountPolicy
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 # Reference: https://msdn.microsoft.com/en-us/library/ms682204(v=vs.85).aspx
 Function  Get-SQLDomainAccountPolicy
 {
@@ -7983,7 +7983,7 @@ Function  Get-SQLDomainAccountPolicy
 # ----------------------------------
 #  Get-SQLDomainGroup
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainGroup
 {
     <#
@@ -8093,7 +8093,7 @@ Function  Get-SQLDomainGroup
 # ----------------------------------
 #  Get-SQLDomainTrust
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainTrust
 {
     <#
@@ -8252,7 +8252,7 @@ Function  Get-SQLDomainTrust
 # ----------------------------------
 #  Get-SQLDomainPasswordsLAPS
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainPasswordsLAPS
 {
     <#
@@ -8370,7 +8370,7 @@ Function  Get-SQLDomainPasswordsLAPS
 # ----------------------------------
 #  Get-SQLDomainController
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainController
 {
     <#
@@ -8469,7 +8469,7 @@ Function  Get-SQLDomainController
 # ----------------------------------
 #  Get-SQLDomainExploitableSystem
 # ----------------------------------
-# Author: Scott Sutherland
+# Author: Scott Sutherland, Thomas Elling
 Function  Get-SQLDomainExploitableSystem
 {
     <#

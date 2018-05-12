@@ -7853,6 +7853,7 @@ Function  Get-SQLDomainOu
 #  Get-SQLDomainAccountPolicy
 # ----------------------------------
 # Author: Scott Sutherland
+# Reference: https://msdn.microsoft.com/en-us/library/ms682204(v=vs.85).aspx
 Function  Get-SQLDomainAccountPolicy
 {
     <#
@@ -7930,16 +7931,47 @@ Function  Get-SQLDomainAccountPolicy
         {
             $Instance = $env:COMPUTERNAME
         }
+
+        # Create table for results
+        $TableAccountPolicy = New-Object System.Data.DataTable 
+        $TableAccountPolicy.Columns.Add("pwdhistorylength") | Out-Null
+        $TableAccountPolicy.Columns.Add("lockoutthreshold") | Out-Null
+        $TableAccountPolicy.Columns.Add("lockoutduration") | Out-Null
+        $TableAccountPolicy.Columns.Add("lockoutobservationwindow") | Out-Null
+        $TableAccountPolicy.Columns.Add("minpwdlength") | Out-Null 
+        $TableAccountPolicy.Columns.Add("minpwdage") | Out-Null
+        $TableAccountPolicy.Columns.Add("pwdproperties") | Out-Null
+        $TableAccountPolicy.Columns.Add("whenchanged") | Out-Null
+        $TableAccountPolicy.Columns.Add("gplink") | Out-Null
     }
 
     Process
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
         }else{
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
         }
+
+        $Results | ForEach-Object {
+
+            # Add results to table
+            $TableAccountPolicy.Rows.Add(
+            $_.pwdHistoryLength,
+            $_.lockoutThreshold,
+            [string]([string]$_.lockoutDuration -replace '-','') / (60 * 10000000),
+            [string]([string]$_.lockOutObservationWindow -replace '-','') / (60 * 10000000),
+            $_.minPwdLength,
+            [string][Math]::Floor([decimal](((([string]$_.minPwdAge -replace '-','') / (60 * 10000000)/60))/24)),
+            [string]$_.pwdProperties,
+            [string]$_.whenChanged,
+            [string]$_.gPLink 
+            ) | Out-Null
+
+        }
+
+        $TableAccountPolicy
     }
 
     End

@@ -7053,7 +7053,7 @@ Function  Get-SQLDomainObject
         }
 
         # Check if adsi is installed and can run in process
-        $CheckEnabled = Get-SQLOleDbProvder -Instance NETSPI-419-SSU\SQLSERVER2017 -Username sa -Password 'abc$123!' -SuppressVerbose | Where ProviderName -like "ADsDSOObject" | Select-Object AllowInProcess -ExpandProperty AllowInProcess
+        $CheckEnabled = Get-SQLOleDbProvder -Instance $Instance -Username $Username -Password $Password -SuppressVerbose | Where ProviderName -like "ADsDSOObject" | Select-Object AllowInProcess -ExpandProperty AllowInProcess
         if ($CheckEnabled -ne 1){
             Write-Verbose -Message "$Instance : The ADsDSOObject provider is not allowed to run in process. Stopping operation."
             return
@@ -7278,7 +7278,9 @@ Function  Get-SQLDomainUser
             Using the OLE DB ADSI provider, query Active Directory for a list of domain users
             via the domain logon server associated with the SQL Server.  This can be 
             done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
-            flag to switch between modes.
+            flag to switch between modes.  The userstate parameter can also be used to filter users
+            by state such as disabled/locked, and property setting such as not requiring a password
+            or kerberos preauthentication.
             .PARAMETER Username
             SQL Server or domain account to authenticate with.
             .PARAMETER Password
@@ -7293,12 +7295,26 @@ Function  Get-SQLDomainUser
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
-            .PARAMETER Threads
-            Number of concurrent host threads.
             .PARAMETER FilterUser
             Domain user to filter for.
+            .PARAMETER UserState
+            Filter for users of specific state such as disabled, enabled, and locked.
             .EXAMPLE
             PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            Only grab enabled users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState All
+            Only grab enabled users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState Enabled
+            Only grab disabled users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState Disabled
+            Only grab that don't require kerberos preauthentication.
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState PreAuthNotRequired
+            Only grab locked users.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -UserState Locked
             .EXAMPLE
             PS C:\> Get-SQLDomainUser -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
           .EXAMPLE
@@ -7332,22 +7348,28 @@ Function  Get-SQLDomainUser
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
-     
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
-        [int]$Threads = 2,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Filter users based on state or property settings.')]
+        [ValidateSet("All","Enabled","Disabled","Locked","PwNeverExpires","PwNotRequired","PreAuthNotRequired","SmartCardRequired","TrustedForDelegation","TrustedToAuthForDelegation","PwStoredRevEnc")]
+        [String]$UserState,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Domain user to filter for.')]
         [string]$FilterUser,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Only list the users who have not changed their password in the number of days provided.')]
+        [Int]$PwLastSet,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -7356,64 +7378,264 @@ Function  Get-SQLDomainUser
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
-        # set instance to local host by default
+        # Set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
 
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
-
         # Setup user filter
         if((-not $FilterUser)){
             $FilterUser = '*'
+        }
+
+        # Setup user state / property filter
+        if((-not $PwLastSet)){
+            $PwLastSetFilter = ""
+        }else{
+
+            # Get number of days from user and convert to timestamp
+            $DesiredTimeStamp = (Get-Date).AddDays(-$PwLastSet).ToFileTime()
+
+            # Use timestamp to create filter to only list the users who have not changed their password in the number of days provided.
+            $PwLastSetFilter = "(!pwdLastSet>=$DesiredTimeStamp)"
+        }
+
+        # Setup user state filter
+        switch ($UserState)
+        {
+            "All"                         {$UserStateFilter = ""} 
+            "Enabled"                     {$UserStateFilter = "(!userAccountControl:1.2.840.113556.1.4.803:=2)"} 
+            "Disabled"                    {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=2)"} 
+            "Locked"                      {$UserStateFilter = "(sAMAccountType=805306368)(lockoutTime>0)"}
+            "PwNeverExpires"              {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=65536)"} 
+            "PwNotRequired"               {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=32)"}
+            "PwStoredRevEnc"              {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=128)"}
+            "PreAuthNotRequired"          {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=4194304)"}
+            "SmartCardRequired"           {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=262144)"}
+            "TrustedForDelegation"        {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=524288)"}
+            "TrustedToAuthForDelegation"  {$UserStateFilter = "(userAccountControl:1.2.840.113556.1.4.803:=16777216)"}
         }
     }
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
+        }
+    }
+
+    End
+    {                                       
+    }
+}
+
+
+# ----------------------------------
+#  Get-SQLDomainSubnet
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainSubnet
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain subnets
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainComputer -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+    }
+
+    Process
+    {
+        # Get the domain of the server
+        $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        $DomainDistinguishedName = Get-SQLDomainObject -SuppressVerbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath "$Domain" -LdapFilter "(name=$Domain)" -LdapFields 'distinguishedname' -UseAdHoc | Select-Object distinguishedname -ExpandProperty distinguishedname
+        
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=subnet)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,siteobject,whencreated,whenchanged,location' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=subnet)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,siteobject,whencreated,whenchanged,location'          
+        }
     }
 
     End
     {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
+    }
+}
 
-            # Set instance
-            $Instance = $_.Instance
 
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)(SamAccountName=$FilterUser))" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
-            }
-        }                    
+# ----------------------------------
+#  Get-SQLDomainSite
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainSite
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain sites
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainComputer -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
 
-        # Run scriptblock using multi-threading
-        $Results = $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
 
-        $Results
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+    }
+
+    Process
+    {
+        # Get the domain of the server
+        $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        $DomainDistinguishedName = Get-SQLDomainObject -SuppressVerbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath "$Domain" -LdapFilter "(name=$Domain)" -LdapFields 'distinguishedname' -UseAdHoc | Select-Object distinguishedname -ExpandProperty distinguishedname
+        
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=site)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,whencreated,whenchanged' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=site)" -LdapPath "$Domain/CN=Sites,CN=Configuration,$DomainDistinguishedName" -LdapFields 'name,distinguishedname,whencreated,whenchanged'          
+        }
+    }
+
+    End
+    {
     }
 }
 
@@ -7446,8 +7668,6 @@ Function  Get-SQLDomainComputer
             SQL Server instance to connection to.
             .PARAMETER FilterComputer
             Domain computer to filter for.
-            .PARAMETER Threads
-            Number of concurrent host threads.
             .EXAMPLE
             PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7495,10 +7715,6 @@ Function  Get-SQLDomainComputer
         [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
-     
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
-        [int]$Threads = 2,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -7507,28 +7723,11 @@ Function  Get-SQLDomainComputer
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
 
         # Setup computer filter
         if((-not $FilterComputer)){
@@ -7538,31 +7737,16 @@ Function  Get-SQLDomainComputer
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemversion,operatingSystemServicePack,whencreated,whenchanged,adspath' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemversion,operatingSystemServicePack,whencreated,whenchanged,adspath'            
+        }
     }
 
     End
     {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Computer)(SamAccountName=$FilterComputer))" -LdapFields 'samaccountname,dnshostname,operatingsystem,operatingsystemservicepack,whencreated,whenchanged,adspath'            
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
     }
 }
 
@@ -7592,8 +7776,6 @@ Function  Get-SQLDomainOu
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
-            .PARAMETER Threads
-            Number of concurrent host threads.
             .EXAMPLE
             PS C:\> Get-SQLDomainOu -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7636,10 +7818,6 @@ Function  Get-SQLDomainOu
         [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
-     
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
-        [int]$Threads = 2,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -7648,57 +7826,25 @@ Function  Get-SQLDomainOu
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
     }
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
+        }
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    {                                           
     }
 }
 
@@ -7707,11 +7853,12 @@ Function  Get-SQLDomainOu
 #  Get-SQLDomainAccountPolicy
 # ----------------------------------
 # Author: Scott Sutherland
+# Reference: https://msdn.microsoft.com/en-us/library/ms682204(v=vs.85).aspx
 Function  Get-SQLDomainAccountPolicy
 {
     <#
             .SYNOPSIS
-            Using the OLE DB ADSI provider, query Active Directory for a list of domain account policy
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain account policies
             via the domain logon server associated with the SQL Server.  This can be 
             done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
             flag to switch between modes.
@@ -7729,8 +7876,6 @@ Function  Get-SQLDomainAccountPolicy
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
-            .PARAMETER Threads
-            Number of concurrent host threads.
             .EXAMPLE
             PS C:\> Get-SQLDomainAccountPolicy -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7773,10 +7918,6 @@ Function  Get-SQLDomainAccountPolicy
         [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
-     
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
-        [int]$Threads = 2,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -7785,57 +7926,56 @@ Function  Get-SQLDomainAccountPolicy
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
 
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
+        # Create table for results
+        $TableAccountPolicy = New-Object System.Data.DataTable 
+        $TableAccountPolicy.Columns.Add("pwdhistorylength") | Out-Null
+        $TableAccountPolicy.Columns.Add("lockoutthreshold") | Out-Null
+        $TableAccountPolicy.Columns.Add("lockoutduration") | Out-Null
+        $TableAccountPolicy.Columns.Add("lockoutobservationwindow") | Out-Null
+        $TableAccountPolicy.Columns.Add("minpwdlength") | Out-Null 
+        $TableAccountPolicy.Columns.Add("minpwdage") | Out-Null
+        $TableAccountPolicy.Columns.Add("pwdproperties") | Out-Null
+        $TableAccountPolicy.Columns.Add("whenchanged") | Out-Null
+        $TableAccountPolicy.Columns.Add("gplink") | Out-Null
     }
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
+        }else{
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
+        }
+
+        $Results | ForEach-Object {
+
+            # Add results to table
+            $TableAccountPolicy.Rows.Add(
+            $_.pwdHistoryLength,
+            $_.lockoutThreshold,
+            [string]([string]$_.lockoutDuration -replace '-','') / (60 * 10000000),
+            [string]([string]$_.lockOutObservationWindow -replace '-','') / (60 * 10000000),
+            $_.minPwdLength,
+            [string][Math]::Floor([decimal](((([string]$_.minPwdAge -replace '-','') / (60 * 10000000)/60))/24)),
+            [string]$_.pwdProperties,
+            [string]$_.whenChanged,
+            [string]$_.gPLink 
+            ) | Out-Null
+
+        }
+
+        $TableAccountPolicy
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    {                     
     }
 }
 
@@ -7868,8 +8008,6 @@ Function  Get-SQLDomainGroup
             SQL Server instance to connection to.
             .PARAMETER FilterGroup
             Domain group to filter for.
-            .PARAMETER Threads
-            Number of concurrent host threads.
             .EXAMPLE
             PS C:\> Get-SQLDomainGroup -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7917,10 +8055,6 @@ Function  Get-SQLDomainGroup
         [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
-     
-        [Parameter(Mandatory = $false,
-        HelpMessage = 'Number of threads.  This is the number of instance to process at a time')]
-        [int]$Threads = 2,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -7929,28 +8063,11 @@ Function  Get-SQLDomainGroup
 
     Begin
     {
-        # Create data tables for output
-        $TblResults = New-Object -TypeName System.Data.DataTable
-
-        # Setup data table for pipeline threading
-        $PipelineItems = New-Object -TypeName System.Data.DataTable
-
         # set instance to local host by default
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
         }
-
-        # Ensure provided instance is processed
-        if($Instance)
-        {
-            $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
-            }
-        }
-
-        # Add instance to instance list
-        $PipelineItems = $PipelineItems + $ProvideInstance
 
         # Setup group filter
         if((-not $FilterGroup)){
@@ -7960,34 +8077,745 @@ Function  Get-SQLDomainGroup
 
     Process
     {
-        # Create list of pipeline items
-        $PipelineItems = $PipelineItems + $_
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'samaccountname,adminCount,whencreated,whenchanged,adspath' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'samaccountname,adminCount,whencreated,whenchanged,adspath'            
+        }
     }
 
     End
-    {
-        # Define code to be multi-threaded
-        $MyScriptBlock = {
-
-            # Set instance
-            $Instance = $_.Instance
-
-            # Parse computer name from the instance
-            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance               
-            
-            # Call Get-SQLDomainObject    
-            if($UseAdHoc){
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(name=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath' -UseAdHoc            
-            }else{
-                Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(name=$FilterGroup))" -LdapFields 'name,whencreated,whenchanged,adspath'            
-            }
-        }                    
-
-        # Run scriptblock using multi-threading
-        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue        
+    {               
     }
 }
 
+# ----------------------------------
+#  Get-SQLDomainTrust
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainTrust
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain trusts
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainTrust -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainTrust -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainTrust -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainTrust -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainTrust -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+        $TblTrusts = New-Object System.Data.DataTable
+        $TblTrusts.Columns.Add("TrustedDomain") | Out-Null
+        $TblTrusts.Columns.Add("TrustedDomainDn") | Out-Null
+        $TblTrusts.Columns.Add("Trusttype") | Out-Null
+        $TblTrusts.Columns.Add("Trustdirection") | Out-Null
+        $TblTrusts.Columns.Add("Trustattributes") | Out-Null
+        $TblTrusts.Columns.Add("Whencreated") | Out-Null
+        $TblTrusts.Columns.Add("Whenchanged") | Out-Null
+        $TblTrusts.Columns.Add("Objectclass") | Out-Null
+        $TblTrusts.Clear()
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectClass=trustedDomain)" -LdapFields 'trustpartner,distinguishedname,trusttype,trustdirection,trustattributes,whencreated,whenchanged,adspath' -UseAdHoc            
+        }else{
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectClass=trustedDomain)" -LdapFields 'trustpartner,distinguishedname,trusttype,trustdirection,trustattributes,whencreated,whenchanged,adspath'            
+        }
+
+        $Result | ForEach-Object {
+
+            # Resolve trust direction
+            $TrustDirection = Switch ($_.trustdirection) {
+                0 { "Disabled" }
+                1 { "Inbound" }
+                2 { "Outbound" }
+                3 { "Bidirectional" }
+            }
+
+            # Resolve trust attribute
+            $TrustAttrib = Switch ($_.trustattributes){
+                0x001 { "non_transitive" }
+                0x002 { "uplevel_only" }
+                0x004 { "quarantined_domain" }
+                0x008 { "forest_transitive" }
+                0x010 { "cross_organization" }
+                0x020 { "within_forest" }
+                0x040 { "treat_as_external" }
+                0x080 { "trust_uses_rc4_encryption" }
+                0x100 { "trust_uses_aes_keys" }
+                Default {                 
+                    $_.trustattributes
+                }
+            }
+
+            # Resolve trust type
+            # Reference: https://support.microsoft.com/en-us/kb/228477
+            $TrustType = Switch ($_.trusttype){
+                1 {"Downlevel Trust (Windows NT domain external)"}
+                2 {"Uplevel Trust (Active Directory domain - parent-child, root domain, shortcut, external, or forest)"}
+                3 {"MIT (non-Windows Kerberos version 5 realm)"}
+                4 {"DCE (Theoretical trust type - DCE refers to Open Group's Distributed Computing)"}
+            }
+
+            # Add trust to table
+            $TblTrusts.Rows.Add(
+                [string]$_.trustpartner,
+                [string]$_.distinguishedname,
+                [string]$TrustType,
+                [string]$TrustDirection,
+                [string]$TrustAttrib,
+                [string]$_.whencreated,
+                [string]$_.whenchanged,
+                [string]$_.objectclass
+            ) | Out-Null
+
+        }
+
+        $TblTrusts
+    }
+
+    End
+    {               
+    }
+}
+
+# ----------------------------------
+#  Get-SQLDomainPasswordsLAPS
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainPasswordsLAPS
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain LAPS passwords
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainPasswordsLAPS -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainPasswordsLAPS -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainPasswordsLAPS -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainPasswordsLAPS -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainPasswordsLAPS -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        $TableLAPS = New-Object System.Data.DataTable 
+        $TableLAPS.Columns.Add('Hostname') | Out-Null
+        $TableLAPS.Columns.Add('Password') | Out-Null
+        $TableLAPS.Clear()
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,ms-MCS-AdmPwd,adspath' -UseAdHoc            
+        }else{
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,ms-MCS-AdmPwd,adspath'            
+        }
+        
+        $Result | ForEach-Object {
+            $CurrentHost = $_.dnshostname
+            $CurrentPassword = $_.'ms-MCS-AdmPwd'
+
+            # Check for readable password and add to table
+            if ([string]$CurrentPassword)
+            {
+                # Add domain computer to data table
+                $TableLAPS.Rows.Add($CurrentHost,$CurrentPassword) | Out-Null
+            }
+        }
+        
+        $TableLAPS
+            
+    }
+
+    End
+    {               
+    }
+}
+
+# ----------------------------------
+#  Get-SQLDomainController
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainController
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain controllers
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainController -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainController -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainController -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainController -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainController -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))" -LdapFields 'name,dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount' -UseAdHoc            
+        }else{
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))" -LdapFields 'name,dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount'            
+        }
+
+    }
+
+    End
+    {               
+    }
+}
+
+# ----------------------------------
+#  Get-SQLDomainExploitableSystem
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLDomainExploitableSystem
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain exploitable computers
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainExploitableSystem -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainExploitableSystem -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainExploitableSystem -Instance SQLServer1\STANDARDDEV2014 -Verbose 
+            .EXAMPLE
+            PS C:\> Get-SQLDomainExploitableSystem -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainExploitableSystem -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+        
+        # Create data table for list of patches levels with a MSF exploit
+        $TableExploits = New-Object System.Data.DataTable 
+        $TableExploits.Columns.Add('OperatingSystem') | Out-Null 
+        $TableExploits.Columns.Add('ServicePack') | Out-Null
+        $TableExploits.Columns.Add('MsfModule') | Out-Null  
+        $TableExploits.Columns.Add('CVE') | Out-Null
+        
+        # Add exploits to data table
+        $TableExploits.Rows.Add("Windows 7","","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Server Pack 1","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Server Pack 1","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Server Pack 1","exploit/windows/iis/ms03_007_ntdll_webdav","http://www.cvedetails.com/cve/2003-0109") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Server Pack 1","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 2","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 2","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 2","exploit/windows/iis/ms03_007_ntdll_webdav","http://www.cvedetails.com/cve/2003-0109") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 2","exploit/windows/smb/ms04_011_lsass","http://www.cvedetails.com/cve/2003-0533/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 2","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 3","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 3","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 3","exploit/windows/iis/ms03_007_ntdll_webdav","http://www.cvedetails.com/cve/2003-0109") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 3","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/dcerpc/ms07_029_msdns_zonename","http://www.cvedetails.com/cve/2007-1748") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/smb/ms04_011_lsass","http://www.cvedetails.com/cve/2003-0533/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/smb/ms06_066_nwapi","http://www.cvedetails.com/cve/2006-4688") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/smb/ms06_070_wkssvc","http://www.cvedetails.com/cve/2006-4691") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","Service Pack 4","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","","exploit/windows/iis/ms03_007_ntdll_webdav","http://www.cvedetails.com/cve/2003-0109") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","","exploit/windows/smb/ms05_039_pnp","http://www.cvedetails.com/cve/2005-1983") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2000","","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Server Pack 1","exploit/windows/dcerpc/ms07_029_msdns_zonename","http://www.cvedetails.com/cve/2007-1748") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Server Pack 1","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Server Pack 1","exploit/windows/smb/ms06_066_nwapi","http://www.cvedetails.com/cve/2006-4688") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Server Pack 1","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Server Pack 1","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Service Pack 2","exploit/windows/dcerpc/ms07_029_msdns_zonename","http://www.cvedetails.com/cve/2007-1748") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Service Pack 2","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","Service Pack 2","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003","","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003 R2","","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003 R2","","exploit/windows/smb/ms04_011_lsass","http://www.cvedetails.com/cve/2003-0533/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003 R2","","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2003 R2","","exploit/windows/wins/ms04_045_wins","http://www.cvedetails.com/cve/2004-1080/") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2008","Service Pack 2","exploit/windows/smb/ms09_050_smb2_negotiate_func_index","http://www.cvedetails.com/cve/2009-3103") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2008","Service Pack 2","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2008","","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2008","","exploit/windows/smb/ms09_050_smb2_negotiate_func_index","http://www.cvedetails.com/cve/2009-3103") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2008","","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Server 2008 R2","","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","Server Pack 1","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","Server Pack 1","exploit/windows/smb/ms09_050_smb2_negotiate_func_index","http://www.cvedetails.com/cve/2009-3103") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","Server Pack 1","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","Service Pack 2","exploit/windows/smb/ms09_050_smb2_negotiate_func_index","http://www.cvedetails.com/cve/2009-3103") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","Service Pack 2","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows Vista","","exploit/windows/smb/ms09_050_smb2_negotiate_func_index","http://www.cvedetails.com/cve/2009-3103") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Server Pack 1","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Server Pack 1","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Server Pack 1","exploit/windows/smb/ms04_011_lsass","http://www.cvedetails.com/cve/2003-0533/") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Server Pack 1","exploit/windows/smb/ms05_039_pnp","http://www.cvedetails.com/cve/2005-1983") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Server Pack 1","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 2","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 2","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 2","exploit/windows/smb/ms06_066_nwapi","http://www.cvedetails.com/cve/2006-4688") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 2","exploit/windows/smb/ms06_070_wkssvc","http://www.cvedetails.com/cve/2006-4691") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 2","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 2","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 3","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","Service Pack 3","exploit/windows/smb/ms10_061_spoolss","http://www.cvedetails.com/cve/2010-2729") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","","exploit/windows/dcerpc/ms03_026_dcom","http://www.cvedetails.com/cve/2003-0352/") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","","exploit/windows/dcerpc/ms05_017_msmq","http://www.cvedetails.com/cve/2005-0059") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","","exploit/windows/smb/ms06_040_netapi","http://www.cvedetails.com/cve/2006-3439") | Out-Null  
+        $TableExploits.Rows.Add("Windows XP","","exploit/windows/smb/ms08_067_netapi","http://www.cvedetails.com/cve/2008-4250") | Out-Null  
+
+        # Create data table to house vulnerable server list
+        $TableVulnComputers = New-Object System.Data.DataTable 
+        $TableVulnComputers.Columns.Add('ComputerName') | Out-Null
+        $TableVulnComputers.Columns.Add('OperatingSystem') | Out-Null
+        $TableVulnComputers.Columns.Add('ServicePack') | Out-Null
+        $TableVulnComputers.Columns.Add('LastLogon') | Out-Null
+        $TableVulnComputers.Columns.Add('MsfModule') | Out-Null  
+        $TableVulnComputers.Columns.Add('CVE') | Out-Null
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject    
+        if($UseAdHoc){
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount' -UseAdHoc            
+        }else{
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount'            
+        }
+
+        # Iterate through each exploit
+        $TableExploits | ForEach-Object {
+                     
+            $ExploitOS = $_.OperatingSystem
+            $ExploitSP = $_.ServicePack
+            $ExploitMsf = $_.MsfModule
+            $ExploitCve = $_.CVE
+
+            # Iterate through each ADS computer
+            $Result | ForEach-Object {
+                
+                $AdsHostname = $_.DNSHostName
+                $AdsOS = $_.OperatingSystem
+                $AdsSP = $_.OperatingSystemServicePack                                                      
+                $AdsLast = $_.LastLogon
+                
+                # Add exploitable systems to vuln computers data table
+                if ($AdsOS -like "$ExploitOS*" -and $AdsSP -like "$ExploitSP" ){                    
+                   
+                    # Add domain computer to data table                    
+                    $TableVulnComputers.Rows.Add($AdsHostname,$AdsOS,$AdsSP,[dateTime]::FromFileTime($AdsLast),$ExploitMsf,$ExploitCve) | Out-Null 
+                }
+
+            }
+
+        }
+
+        $TableVulnComputers | Sort-Object { $_.lastlogon -as [datetime]} -Descending  
+
+    }
+
+    End
+    {               
+    }
+}
+
+# ----------------------------------
+#  Get-SQLDomainGroupMember
+# ----------------------------------
+# Author: Scott Sutherland, Thomas Elling
+Function  Get-SQLDomainGroupMember
+{
+    <#
+            .SYNOPSIS
+            Using the OLE DB ADSI provider, query Active Directory for a list of domain group members
+            via the domain logon server associated with the SQL Server.  This can be 
+            done using a SQL Server link (OpenQuery) or AdHoc query (OpenRowset).  Use the -UseAdHoc
+            flag to switch between modes.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER LinkUsername
+            Domain account used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER LinkPassword
+            Domain account password used to authenticate to LDAP through SQL Server ADSI link.
+            .PARAMETER UseAdHoc
+            Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER FilterGroup
+            Domain group to filter for.
+            .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -FilterGroup 'Enterprise Admins'
+            .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+          .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -FilterGroup 'Enterprise Admins'
+            .EXAMPLE
+            PS C:\> Get-SQLDomainGroupMember -Instance SQLServer1\STANDARDDEV2014 -Verbose -LinkUsername 'domain\user' -LinkPassword 'Password123!'
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceLocal | Get-SQLDomainGroupMember -Verbose
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate to SQL Server.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate to SQL Server.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkUsername,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Domain account password used to authenticate to LDAP through SQL Server ADSI link.')]
+        [string]$LinkPassword,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain group to filter for.')]
+        [string]$FilterGroup,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
+        [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Setup group filter
+        if((-not $FilterGroup)){
+            $FilterGroup = 'Domain Admins'
+        }
+
+        $TableMembers = New-Object System.Data.DataTable
+        $TableMembers.Columns.Add('Group') | Out-Null
+        $TableMembers.Columns.Add('sAMAccountName') | Out-Null
+        $TableMembers.Columns.Add('displayName') | Out-Null
+    }
+
+    Process
+    {
+        # Call Get-SQLDomainObject to get group DN
+        if($UseAdHoc){
+            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -UseAdHoc -SuppressVerbose
+        }else{
+            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -SuppressVerbose       
+        }
+
+        $DN = $FullDN.distinguishedname
+
+        # Call Get-SQLDomainObject to get group membership
+        if($UseAdHoc){
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname' -UseAdHoc
+        }else{
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname'     
+        }
+
+        $Results | ForEach-Object {           
+            $TableMembers.Rows.Add($FilterGroup,$_.samaccountname,$_.displayname) | Out-Null 
+        }
+
+        $TableMembers
+
+    }
+
+    End
+    {               
+    }
+}
 
 # ----------------------------------
 #  Get-SQLSysadminCheck

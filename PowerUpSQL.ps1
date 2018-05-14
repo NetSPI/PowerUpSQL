@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.103.2
+        Version: 1.103.3
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -7008,6 +7008,7 @@ Function  Get-SQLDomainObject
         $ServerInfo = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         $DomainName = $ServerInfo.DomainName
         $IsSysadmin = $ServerInfo.IsSysadmin
+        $ServiceAccount = $ServerInfo.ServiceAccount
         $SQLServerMajorVersion = $ServerInfo.SQLServerMajorVersion
         $SQLServerEdition = $ServerInfo.SQLServerEdition
         $SQLServerVersionNumber = $ServerInfo.SQLServerVersionNumber
@@ -7015,6 +7016,7 @@ Function  Get-SQLDomainObject
 
         # Status user
         If (-not($SuppressVerbose)){
+            Write-Verbose -Message "$instance : Login: $SQLCurrentLogin"
             Write-Verbose -Message "$Instance : Domain: $DomainName"
             Write-Verbose -Message "$Instance : Version: SQL Server $SQLServerMajorVersion $SQLServerEdition ($SQLServerVersionNumber)"
         }
@@ -7022,13 +7024,14 @@ Function  Get-SQLDomainObject
         if($IsSysadmin -eq "No")
         {
             If (-not($SuppressVerbose)){
+                Write-Verbose -Message "$Instance : Sysadmin: No"
                 Write-Verbose -Message "$Instance : This command requires sysadmin privileges. Exiting."  
             }          
             return
         }else{
             
             If (-not($SuppressVerbose)){
-                Write-Verbose -Message "$Instance : You have sysadmin privileges."
+                Write-Verbose -Message "$Instance : Sysadmin: Yes"
             }
         }          
 
@@ -7055,16 +7058,26 @@ Function  Get-SQLDomainObject
         # Check if adsi is installed and can run in process
         $CheckEnabled = Get-SQLOleDbProvder -Instance $Instance -Username $Username -Password $Password -SuppressVerbose | Where ProviderName -like "ADsDSOObject" | Select-Object AllowInProcess -ExpandProperty AllowInProcess
         if ($CheckEnabled -ne 1){
+            Write-Verbose -Message "$Instance : ADsDSOObject provider allowed to run in process: No"
             Write-Verbose -Message "$Instance : The ADsDSOObject provider is not allowed to run in process. Stopping operation."
             return
         }else{
-            Write-Verbose -Message "$Instance : The ADsDSOObject provider is allowed to run in process."
+            Write-Verbose -Message "$Instance : ADsDSOObject provider allowed to run in process: Yes"
         }
 
         # Determine query type
         if($UseAdHoc){
-            If (-not($SuppressVerbose)){
-                Write-Verbose -Message "$Instance : Executing in AdHoc mode using OpenRowSet."
+            If (-not($SuppressVerbose)){                
+
+                if ($SQLCurrentLogin -like "*\*"){
+                    Write-Verbose -Message "$Instance : Executing in AdHoc mode using OpenRowSet as '$SQLCurrentLogin'."
+                }else{
+                    if(-not $LinkUsername){
+                        Write-Verbose -Message "$Instance : Executing in AdHoc mode using OpenRowSet as the SQL Server service account ($ServiceAccount)."
+                    }else{
+                        Write-Verbose -Message "$Instance : Executing in AdHoc mode using OpenRowSet as '$LinkUsername'."
+                    }
+                }
             }
         }else{
             If (-not($SuppressVerbose)){
@@ -7120,7 +7133,7 @@ Function  Get-SQLDomainObject
 
                 # Status user
                 If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Associating current login with ADSI SQL Server link named $RandomLinkName."
+                    Write-Verbose -Message "$Instance : Associating '$SQLCurrentLogin' with ADSI SQL Server link named $RandomLinkName."
                 }
 
                 $QueryAssociateLogin = "
@@ -7154,7 +7167,7 @@ Function  Get-SQLDomainObject
 
                 # Status user
                 If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Enabled 'Show Advanced Options'"
+                    Write-Verbose -Message "$Instance : Enabling 'Show Advanced Options'"
                 }
             }else{
                 If (-not($SuppressVerbose)){
@@ -7170,7 +7183,7 @@ Function  Get-SQLDomainObject
 
                 # Status user
                 If (-not($SuppressVerbose)){
-                    Write-Verbose -Message "$Instance : Enabled 'Ad Hoc Distributed Queries'"
+                    Write-Verbose -Message "$Instance : Enabling 'Ad Hoc Distributed Queries'"
                 }
             }else{
                 If (-not($SuppressVerbose)){

@@ -28,7 +28,7 @@ For setup instructions, cheat sheets, blogs, function overviews, and usage infor
 
 ### Author, Contributors, and License
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2018
-* Major Contributors: Antti Rantasaari and Eric Gruber (@egru)
+* Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)
 * Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), and @ktaranov
 * License: BSD 3-Clause
 * Required Dependencies: None

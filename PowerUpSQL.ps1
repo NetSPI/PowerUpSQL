@@ -14240,7 +14240,7 @@ Function  Get-SQLServiceLocal
         # Grab SQL Server services based on file path
         $SqlServices = Get-WmiObject -Class win32_service |
         Where-Object -FilterScript {
-            $_.pathname -like '*Microsoft SQL Server*'
+            $_.DisplayName -like 'SQL Server *'
         } |
         Select-Object -Property DisplayName, PathName, Name, StartName, State, SystemName, ProcessId
 

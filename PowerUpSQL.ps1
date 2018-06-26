@@ -38,6 +38,8 @@ Function Get-SQLConnectionObject
             Default database to connect to.
             .PARAMETER AppName
             Spoof the name of the application you are connecting to SQL Server with.
+            .PARAMETER WorkstationId
+            Spoof the name of the workstation/hostname you are connecting to SQL Server with.
             .PARAMETER Encrypt
             Use an encrypted connection.
             .PARAMETER TrustServerCert
@@ -94,6 +96,10 @@ Function Get-SQLConnectionObject
         [string]$AppName = "",
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Spoof the name of the workstation/hostname your connecting to the server with.')]
+        [string]$WorkstationId = "",
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Use an encrypted connection.')]
         [ValidateSet("Yes","No","")]
         [string]$Encrypt = "",
@@ -133,6 +139,13 @@ Function Get-SQLConnectionObject
             $AppNameString = ""
         }
 
+        # Check if workstationid was provided
+        if($WorkstationId){
+            $WorkstationString = ";Workstation Id=`"$WorkstationId`""
+        }else{
+            $WorkstationString = ""
+        }
+
         # Check if encrypt was provided
         if($Encrypt){
             $EncryptString = ";Encrypt=Yes"
@@ -166,7 +179,7 @@ Function Get-SQLConnectionObject
             $AuthenticationType = "Current Windows Credentials"
 
             # Set connection string
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1 $AppNameString $EncryptString $TrustCertString"
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1$AppNameString$EncryptString$TrustCertString$WorkstationString"
         }
         
         # Set authentcation type - provided windows user
@@ -174,7 +187,7 @@ Function Get-SQLConnectionObject
             $AuthenticationType = "Provided Windows Credentials"
 
             # Setup connection string 
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;uid=$Username;pwd=$Password;Connection Timeout=$TimeOut$AppNameString$EncryptString$TrustCertString"
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;uid=$Username;pwd=$Password;Connection Timeout=$TimeOut$AppNameString$EncryptString$TrustCertString$WorkstationString"
         }
 
         # Set authentcation type - provided sql login
@@ -184,7 +197,7 @@ Function Get-SQLConnectionObject
             $AuthenticationType = "Provided SQL Login"
 
             # Setup connection string 
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut $AppNameString$EncryptString$TrustCertString"
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut$AppNameString$EncryptString$TrustCertString$WorkstationString"
         }
 
         # Return the connection object
@@ -550,6 +563,8 @@ Function Get-SQLQuery
             Query to be executed on the SQL Server.
             .PARAMETER AppName
             Spoof the name of the application you are connecting to SQL Server with.
+            .PARAMETER WorkstationId
+            Spoof the name of the workstation/hostname you are connecting to SQL Server with.
             .PARAMETER Encrypt
             Use an encrypted connection.
             .PARAMETER TrustServerCert
@@ -609,6 +624,10 @@ Function Get-SQLQuery
         [string]$AppName = "",
 
         [Parameter(Mandatory = $false,
+        HelpMessage = 'Spoof the name of the workstation/hostname your connecting to the server with.')]
+        [string]$WorkstationId = "",
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Use an encrypted connection.')]
         [ValidateSet("Yes","No","")]
         [string]$Encrypt = "",
@@ -635,12 +654,12 @@ Function Get-SQLQuery
         if($DAC)
         {
             # Create connection object
-            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut -DAC -Database $Database -AppName $AppName -Encrypt $Encrypt -TrustServerCert $TrustServerCert
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut -DAC -Database $Database -AppName $AppName -WorkstationId $WorkstationId -Encrypt $Encrypt -TrustServerCert $TrustServerCert
         }
         else
         {
             # Create connection object
-            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut -Database $Database -AppName $AppName -Encrypt $Encrypt -TrustServerCert $TrustServerCert
+            $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut -Database $Database -AppName $AppName -WorkstationId $WorkstationId -Encrypt $Encrypt -TrustServerCert $TrustServerCert
         }
 
         # Parse SQL Server instance name

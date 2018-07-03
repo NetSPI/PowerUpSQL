@@ -264,6 +264,16 @@ Function  Get-SQLConnectionTest
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'IP Address of SQL Server.')]
+        [string]$IPAddress,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'IP Address Range to Audit.')]
+        [string]$IPRange,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
         [Switch]$DAC,
 
@@ -293,6 +303,33 @@ Function  Get-SQLConnectionTest
     {
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        if($IPRange -and $IPAddress)
+        {
+            if ($IPAddress.Contains(","))
+            {
+                $ContainsValid = $false
+                foreach ($IP in $IPAddress.Split(","))
+                {
+                    if($(Test-Subnet -cidr $IPRange -ip $IP))
+                    {
+                        $ContainsValid = $true
+                    }
+                }
+                if (-not $ContainsValid)
+                {
+                    Write-Warning "Skipping $ComputerName ($IPAddress)"
+                    return
+                }
+            }
+
+            if(-not $(Test-Subnet -cidr $IPRange -ip $IPAddress))
+            {
+                Write-Warning "Skipping $ComputerName ($IPAddress)"
+                return
+            }
+            Write-Verbose "$ComputerName ($IPAddress)"
+        }
 
         # Default connection to local default instance
         if(-not $Instance)
@@ -24686,6 +24723,22 @@ function Invoke-Parallel
 }
 
 
+# Source: http://www.padisetty.com/2014/05/powershell-bit-manipulation-and-network.html
+# Notes: Changed name from checkSubnet to Test-Subnet (Approved Verbs)
+function Test-Subnet ([string]$cidr, [string]$ip)
+{
+    $network, [int]$subnetlen = $cidr.Split('/')
+    $a = [uint32[]]$network.split('.')
+    [uint32] $unetwork = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+
+    $mask = (-bnot [uint32]0) -shl (32 - $subnetlen)
+
+    $a = [uint32[]]$ip.split('.')
+    [uint32] $uip = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+
+    $unetwork -eq ($mask -band $uip)
+}
+
 
 #endregion
 
@@ -25541,7 +25594,6 @@ Function Invoke-SQLDumpInfo
 
         Write-Verbose -Message "$Instance - END"
     }
-
     End
     {
     }

@@ -15662,6 +15662,11 @@ Function  Get-SQLInstanceDomain
 
         [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Preforms a DNS lookup on the instance.')]
+        [switch]$IncludeIP,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 3
     )
@@ -15680,6 +15685,10 @@ Function  Get-SQLInstanceDomain
         $null = $TblSQLServerSpns.Columns.Add('LastLogon')
         $null = $TblSQLServerSpns.Columns.Add('Description')
 
+        if($IncludeIP)
+        {
+            $null = $TblSQLServerSpns.Columns.Add('IPAddress')
+        }
         # Table for UDP scan results of management servers
     }
 
@@ -15713,9 +15722,7 @@ Function  Get-SQLInstanceDomain
 
             $SpnServerInstance = $SpnServerInstance -replace 'MSSQLSvc/', ''
 
-            # Add SQL Server spn to table
-            $null = $TblSQLServerSpns.Rows.Add(
-                [string]$_.ComputerName,
+            $TableRow = @([string]$_.ComputerName,
                 [string]$SpnServerInstance,
                 $_.UserSid,
                 [string]$_.User,
@@ -15723,7 +15730,27 @@ Function  Get-SQLInstanceDomain
                 [string]$_.Service,
                 [string]$_.Spn,
                 $_.LastLogon,
-            [string]$_.Description)
+                [string]$_.Description)
+
+            if($IncludeIP)
+            {
+                try 
+                {
+                    $IPAddress = [Net.DNS]::GetHostAddresses([String]$_.ComputerName).IPAddressToString
+                    if($IPAddress -is [Object[]])
+                    {
+                        $IPAddress = $IPAddress -join ", "
+                    }
+                }
+                catch 
+                {
+                    $IPAddress = "0.0.0.0"
+                }
+                $TableRow += $IPAddress
+            }
+
+            # Add SQL Server spn to table
+            $null = $TblSQLServerSpns.Rows.Add($TableRow)
         }
 
         # Enumerate SQL Server instances from management servers

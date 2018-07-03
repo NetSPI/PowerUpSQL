@@ -270,7 +270,7 @@ Function  Get-SQLConnectionTest
         [string]$IPAddress,
 
         [Parameter(Mandatory = $false,
-        HelpMessage = 'IP Address Range to Audit.')]
+        HelpMessage = 'IP Address Range In CIDR Format to Audit.')]
         [string]$IPRange,
 
         [Parameter(Mandatory = $false,
@@ -301,6 +301,12 @@ Function  Get-SQLConnectionTest
 
     Process
     {
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+        # Split Demarkation Start ^
         # Parse computer name from the instance
         $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
 
@@ -319,6 +325,7 @@ Function  Get-SQLConnectionTest
                 if (-not $ContainsValid)
                 {
                     Write-Warning "Skipping $ComputerName ($IPAddress)"
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
                     return
                 }
             }
@@ -326,15 +333,10 @@ Function  Get-SQLConnectionTest
             if(-not $(Test-Subnet -cidr $IPRange -ip $IPAddress))
             {
                 Write-Warning "Skipping $ComputerName ($IPAddress)"
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
                 return
             }
             Write-Verbose "$ComputerName ($IPAddress)"
-        }
-
-        # Default connection to local default instance
-        if(-not $Instance)
-        {
-            $Instance = $env:COMPUTERNAME
         }
 
         # Setup DAC string
@@ -448,6 +450,16 @@ Function  Get-SQLConnectionTestThreaded
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'IP Address of SQL Server.')]
+        [string]$IPAddress,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'IP Address Range In CIDR Format to Audit.')]
+        [string]$IPRange,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
         [Switch]$DAC,
 
@@ -489,8 +501,13 @@ Function  Get-SQLConnectionTestThreaded
         if($Instance)
         {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
+                Instance = $Instance;
             }
+        }
+
+        if($Instance -and $IPAddress)
+        {
+            $ProvideInstance | Add-Member -Name "IPAddress" -Value $IPAddress
         }
 
         # Add instance to instance list
@@ -509,9 +526,39 @@ Function  Get-SQLConnectionTestThreaded
         $MyScriptBlock = {
             # Setup instance
             $Instance = $_.Instance
+            $IPAddress = $_.IPAddress
 
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            if($IPRange -and $IPAddress)
+            {
+                if ($IPAddress.Contains(","))
+                {
+                    $ContainsValid = $false
+                    foreach ($IP in $IPAddress.Split(","))
+                    {
+                        if($(Test-Subnet -cidr $IPRange -ip $IP))
+                        {
+                            $ContainsValid = $true
+                        }
+                    }
+                    if (-not $ContainsValid)
+                    {
+                        Write-Warning "Skipping $ComputerName ($IPAddress)"
+                        $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
+                        return
+                    }
+                }
+
+                if(-not $(Test-Subnet -cidr $IPRange -ip $IPAddress))
+                {
+                    Write-Warning "Skipping $ComputerName ($IPAddress)"
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
+                    return
+                }
+                Write-Verbose "$ComputerName ($IPAddress)"
+            }
 
             # Setup DAC string
             if($DAC)

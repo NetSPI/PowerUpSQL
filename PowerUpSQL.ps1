@@ -14885,6 +14885,8 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null
         $DefaultPasswords.Rows.Add("VSDOTNET","sa","") | Out-Null
         $DefaultPasswords.Rows.Add("VSQL","sa","111") | Out-Null
+        $DefaultPasswords.Rows.Add("CASEWISE","sa","") | Out-Null
+        $DefaultPasswords.Rows.Add("VANTAGE","sa","vantage12!") | Out-Null
 
         $PwCount = $DefaultPasswords | measure | select count -ExpandProperty count
         # Write-Verbose "Loaded $PwCount default passwords."

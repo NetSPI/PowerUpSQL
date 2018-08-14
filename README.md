@@ -35,6 +35,6 @@ For setup instructions, cheat sheets, blogs, function overviews, and usage infor
 
 ## Issue Reports
 
-I do perform some QA on functions before we publish them, but it's hard to consider every scenario. So I just wanted to say thanks to those of you that have taken the time to give me a heads up on issues with PowerUpSQL so that we can make it better. :)
+I perform QA on functions before we publish them, but it's hard to consider every scenario. So I just wanted to say thanks to those of you that have taken the time to give me a heads up on issues with PowerUpSQL so that we can make it better. :)
 * Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject 
 

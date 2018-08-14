@@ -9,9 +9,10 @@
 
 	Author: Scott Sutherland
 	Invoke-SqlServer-Persist-StartupSp.psm1
-
+	
 	Author: Scott Sutherland
-	Invoke-SqlServer-Persist-TriggerDDL.psm1
+	Invoke-SqlServer-Persist-TriggerLogon.psm1	
 
-	Author: Scott Sutherland
-	Invoke-SqlServer-Persist-TriggerLogon.psm1
+	Author: Antti Rantasaari
+	Get-MSSQLCredentialPasswords.psm1
+

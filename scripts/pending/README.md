@@ -1,5 +1,5 @@
 	### Stand Alone Scripts
-	These are scripting that will eventually be turned into PowerUpSQL functions.
+	These are scripts that will eventually be turned into PowerUpSQL functions.
 
 	Author: Scott Sutherland	
 	Get-SQLCompactQuery.ps1

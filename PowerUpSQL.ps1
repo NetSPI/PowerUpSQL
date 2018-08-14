@@ -13709,10 +13709,8 @@ Function  Get-SQLFuzzServerLogin
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
-            .PARAMETER StartId
-            Principal ID to start fuzzing with.
-            .PARAMETER EndId
-            Principal ID to stop fuzzing with.
+            .PARAMETER FuzzNum
+            The number of Principal IDs to fuzz during blind SQL login enumeration as a least privilege login.
             .PARAMETER GetRole
             Checks if the principal name is a role, SQL login, or Windows account.
             .EXAMPLE
@@ -13830,7 +13828,7 @@ Function  Get-SQLFuzzServerLogin
             if( -not $SuppressVerbose)
             {
                 Write-Verbose -Message "$Instance : Connection Success."
-                Write-Verbose -Message "$Instance : Enumerating principal names from principal IDs.."
+                Write-Verbose -Message "$Instance : Enumerating principal names from $FuzzNum principal IDs.."
             }
         }
         else
@@ -20721,10 +20719,8 @@ Function Invoke-SQLAuditWeakLoginPw
             Don't try to login using the login name as the password.
             .PARAMETER NoUserEnum
             Don't try to enumerate logins to test.
-            .PARAMETER StartId
-            Start id for fuzzing login IDs when authenticating as a least privilege login.
-            .PARAMETER EndId
-            End id for fuzzing login IDs when authenticating as a least privilege login.
+            .PARAMETER FuzzNum
+            The number of Principal IDs to fuzz during blind SQL login enumeration as a least privilege login.
             .PARAMETER Exploit
             Exploit vulnerable issues.
             .EXAMPLE
@@ -20944,7 +20940,7 @@ Function Invoke-SQLAuditWeakLoginPw
                 else
                 {
                     # Fuzz logins
-                    Write-Verbose -Message "$Instance - Fuzzing principal IDs $StartId to $EndId..."
+                    Write-Verbose -Message "$Instance : Enumerating principal names from $FuzzNum principal IDs.."
                     Get-SQLFuzzServerLogin -Instance $Instance -GetPrincipalType -Username $Username -Password $Password -Credential $Credential -FuzzNum $FuzzNum -SuppressVerbose |
                     Where-Object -FilterScript {
                         $_.PrincipleType -eq 'SQL Login'

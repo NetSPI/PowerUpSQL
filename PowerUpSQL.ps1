@@ -264,6 +264,16 @@ Function  Get-SQLConnectionTest
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'IP Address of SQL Server.')]
+        [string]$IPAddress,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'IP Address Range In CIDR Format to Audit.')]
+        [string]$IPRange,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
         [Switch]$DAC,
 
@@ -291,13 +301,42 @@ Function  Get-SQLConnectionTest
 
     Process
     {
-        # Parse computer name from the instance
-        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
-
         # Default connection to local default instance
         if(-not $Instance)
         {
             $Instance = $env:COMPUTERNAME
+        }
+        # Split Demarkation Start ^
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        if($IPRange -and $IPAddress)
+        {
+            if ($IPAddress.Contains(","))
+            {
+                $ContainsValid = $false
+                foreach ($IP in $IPAddress.Split(","))
+                {
+                    if($(Test-Subnet -cidr $IPRange -ip $IP))
+                    {
+                        $ContainsValid = $true
+                    }
+                }
+                if (-not $ContainsValid)
+                {
+                    Write-Warning "Skipping $ComputerName ($IPAddress)"
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
+                    return
+                }
+            }
+
+            if(-not $(Test-Subnet -cidr $IPRange -ip $IPAddress))
+            {
+                Write-Warning "Skipping $ComputerName ($IPAddress)"
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
+                return
+            }
+            Write-Verbose "$ComputerName ($IPAddress)"
         }
 
         # Setup DAC string
@@ -411,6 +450,16 @@ Function  Get-SQLConnectionTestThreaded
         [string]$Instance,
 
         [Parameter(Mandatory = $false,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'IP Address of SQL Server.')]
+        [string]$IPAddress,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'IP Address Range In CIDR Format to Audit.')]
+        [string]$IPRange,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Connect using Dedicated Admin Connection.')]
         [Switch]$DAC,
 
@@ -452,8 +501,13 @@ Function  Get-SQLConnectionTestThreaded
         if($Instance)
         {
             $ProvideInstance = New-Object -TypeName PSObject -Property @{
-                Instance = $Instance
+                Instance = $Instance;
             }
+        }
+
+        if($Instance -and $IPAddress)
+        {
+            $ProvideInstance | Add-Member -Name "IPAddress" -Value $IPAddress
         }
 
         # Add instance to instance list
@@ -472,9 +526,39 @@ Function  Get-SQLConnectionTestThreaded
         $MyScriptBlock = {
             # Setup instance
             $Instance = $_.Instance
+            $IPAddress = $_.IPAddress
 
             # Parse computer name from the instance
             $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            if($IPRange -and $IPAddress)
+            {
+                if ($IPAddress.Contains(","))
+                {
+                    $ContainsValid = $false
+                    foreach ($IP in $IPAddress.Split(","))
+                    {
+                        if($(Test-Subnet -cidr $IPRange -ip $IP))
+                        {
+                            $ContainsValid = $true
+                        }
+                    }
+                    if (-not $ContainsValid)
+                    {
+                        Write-Warning "Skipping $ComputerName ($IPAddress)"
+                        $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
+                        return
+                    }
+                }
+
+                if(-not $(Test-Subnet -cidr $IPRange -ip $IPAddress))
+                {
+                    Write-Warning "Skipping $ComputerName ($IPAddress)"
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Out of Scope')
+                    return
+                }
+                Write-Verbose "$ComputerName ($IPAddress)"
+            }
 
             # Setup DAC string
             if($DAC)
@@ -15662,6 +15746,11 @@ Function  Get-SQLInstanceDomain
 
         [Parameter(Mandatory = $false,
                 ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Preforms a DNS lookup on the instance.')]
+        [switch]$IncludeIP,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.')]
         [int]$UDPTimeOut = 3
     )
@@ -15680,6 +15769,10 @@ Function  Get-SQLInstanceDomain
         $null = $TblSQLServerSpns.Columns.Add('LastLogon')
         $null = $TblSQLServerSpns.Columns.Add('Description')
 
+        if($IncludeIP)
+        {
+            $null = $TblSQLServerSpns.Columns.Add('IPAddress')
+        }
         # Table for UDP scan results of management servers
     }
 
@@ -15713,9 +15806,7 @@ Function  Get-SQLInstanceDomain
 
             $SpnServerInstance = $SpnServerInstance -replace 'MSSQLSvc/', ''
 
-            # Add SQL Server spn to table
-            $null = $TblSQLServerSpns.Rows.Add(
-                [string]$_.ComputerName,
+            $TableRow = @([string]$_.ComputerName,
                 [string]$SpnServerInstance,
                 $_.UserSid,
                 [string]$_.User,
@@ -15723,7 +15814,27 @@ Function  Get-SQLInstanceDomain
                 [string]$_.Service,
                 [string]$_.Spn,
                 $_.LastLogon,
-            [string]$_.Description)
+                [string]$_.Description)
+
+            if($IncludeIP)
+            {
+                try 
+                {
+                    $IPAddress = [Net.DNS]::GetHostAddresses([String]$_.ComputerName).IPAddressToString
+                    if($IPAddress -is [Object[]])
+                    {
+                        $IPAddress = $IPAddress -join ", "
+                    }
+                }
+                catch 
+                {
+                    $IPAddress = "0.0.0.0"
+                }
+                $TableRow += $IPAddress
+            }
+
+            # Add SQL Server spn to table
+            $null = $TblSQLServerSpns.Rows.Add($TableRow)
         }
 
         # Enumerate SQL Server instances from management servers
@@ -25109,6 +25220,22 @@ function Invoke-Parallel
 }
 
 
+# Source: http://www.padisetty.com/2014/05/powershell-bit-manipulation-and-network.html
+# Notes: Changed name from checkSubnet to Test-Subnet (Approved Verbs)
+function Test-Subnet ([string]$cidr, [string]$ip)
+{
+    $network, [int]$subnetlen = $cidr.Split('/')
+    $a = [uint32[]]$network.split('.')
+    [uint32] $unetwork = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+
+    $mask = (-bnot [uint32]0) -shl (32 - $subnetlen)
+
+    $a = [uint32[]]$ip.split('.')
+    [uint32] $uip = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+
+    $unetwork -eq ($mask -band $uip)
+}
+
 
 #endregion
 
@@ -25964,7 +26091,6 @@ Function Invoke-SQLDumpInfo
 
         Write-Verbose -Message "$Instance - END"
     }
-
     End
     {
     }

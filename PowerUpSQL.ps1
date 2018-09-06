@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2016
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.104.11
+        Version: 1.104.12
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -14937,7 +14937,7 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("CounterPoint","sa","CounterPoint8") | Out-Null
         $DefaultPasswords.Rows.Add("CSSQL05","ELNAdmin","ELNAdmin") | Out-Null
         $DefaultPasswords.Rows.Add("CSSQL05","sa","CambridgeSoft_SA") | Out-Null
-        $DefaultPasswords.Rows.Add("CADSQL","CADSQLAdminUser","Cr41g1sth3M4n!") | Out-Null
+        $DefaultPasswords.Rows.Add("CADSQL","CADSQLAdminUser","Cr41g1sth3M4n!") | Out-Null  #Maybe a local windows account
         $DefaultPasswords.Rows.Add("DHLEASYSHIP","sa","DHLadmin@1") | Out-Null
         $DefaultPasswords.Rows.Add("DPM","admin","ca_admin") | out-null
         $DefaultPasswords.Rows.Add("DVTEL","sa","") | Out-Null
@@ -14962,6 +14962,9 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
         $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null
         $DefaultPasswords.Rows.Add("SQLEXPRESS","admin","ca_admin") | out-null
+        $DefaultPasswords.Rows.Add("SQLEXPRESS","gcs_client","SysGal.5560") | Out-Null     #SA password = GCSsa5560 
+        $DefaultPasswords.Rows.Add("SQLEXPRESS","gcs_web_client","SysGal.5560") | out-null #SA password = GCSsa5560 
+        $DefaultPasswords.Rows.Add("SQLEXPRESS","NBNUser","NBNPassword") | out-null
         $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null 
         $DefaultPasswords.Rows.Add("TEW_SQLEXPRESS","tew","tew") | Out-Null
         $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null
@@ -14969,6 +14972,19 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("VSQL","sa","111") | Out-Null
         $DefaultPasswords.Rows.Add("CASEWISE","sa","") | Out-Null
         $DefaultPasswords.Rows.Add("VANTAGE","sa","vantage12!") | Out-Null
+        $DefaultPasswords.Rows.Add("BCM","bcmdbuser","Bcmuser@06") | Out-Null
+        $DefaultPasswords.Rows.Add("BCM","bcmdbuser","Numara@06") | Out-Null
+        $DefaultPasswords.Rows.Add("DEXIS_DATA","sa","dexis") | Out-Null
+        $DefaultPasswords.Rows.Add("DEXIS_DATA","dexis","dexis") | Out-Null
+        $DefaultPasswords.Rows.Add("SMTKINGDOM","SMTKINGDOM",'$ei$micMicro') | Out-Null
+        $DefaultPasswords.Rows.Add("RE7_MS","Supervisor",'Supervisor') | Out-Null
+        $DefaultPasswords.Rows.Add("RE7_MS","Admin",'Admin') | Out-Null
+        $DefaultPasswords.Rows.Add("OHD","sa",'ohdusa@123') | Out-Null
+        $DefaultPasswords.Rows.Add("UPC","serviceadmin",'Password.0') | Out-Null           #Maybe a local windows account
+        $DefaultPasswords.Rows.Add("Hirsh","Velocity",'i5X9FG42') | Out-Null
+        $DefaultPasswords.Rows.Add("Hirsh","sa",'i5X9FG42') | Out-Null
+        $DefaultPasswords.Rows.Add("SPSQL","sa",'SecurityMaster08') | Out-Null
+        $DefaultPasswords.Rows.Add("CAREWARE","sa",'') | Out-Null        
 
         $PwCount = $DefaultPasswords | measure | select count -ExpandProperty count
         # Write-Verbose "Loaded $PwCount default passwords."

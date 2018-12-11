@@ -5,19 +5,22 @@
 [![wiki Badge]][wiki] 
 [![stars badge]][stars] 
 [![forks badge]][forks] 
-[![issues badge]][issues] |
+[![issues badge]][issues]
+[![rawsec inventory badge]][rawsec inventory] |
 
 [licence badge]:https://img.shields.io/badge/license-New%20BSD-blue.svg
 [stars badge]:https://img.shields.io/github/stars/NetSPI/PowerUpSQL.svg
 [forks badge]:https://img.shields.io/github/forks/NetSPI/PowerUpSQL.svg
 [issues badge]:https://img.shields.io/github/issues/NetSPI/PowerUpSQL.svg
 [wiki badge]:https://img.shields.io/badge/PowerUpSQL-Wiki-green.svg
+[rawsec inventory badge]:https://inventory.rawsec.ml/img/badges/Rawsec-inventoried-FF5050_flat.svg
 
 [licence]:https://github.com/NetSPI/PowerUpSQL/blob/master/LICENSE
 [stars]:https://github.com/NetSPI/PowerUpSQL/stargazers
 [forks]:https://github.com/NetSPI/PowerUpSQL/network
 [issues]:https://github.com/NetSPI/PowerUpSQL/issues
 [wiki]:https://github.com/NetSPI/PowerUpSQL/wiki
+[rawsec inventory]:http://inventory.rawsec.ml/tools.html#PowerUpSQL
 
 ### PowerUpSQL: A PowerShell Toolkit for Attacking SQL Server
 

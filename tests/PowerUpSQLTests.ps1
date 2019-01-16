@@ -26,7 +26,7 @@ Invoke-SQLOSCmdAgentJob
 Invoke-SQLOSCmdPython
 Invoke-SQLOSCmdR
 Invoke-SQLOSCmdOle
-Create-SQLFileCLRDll
+New-SQLFileCLRDll
 Get-SQLAssemblyFile
 #>
 
@@ -1313,7 +1313,7 @@ Invoke-SQLAuditSQLiSpSigned
 ######################################################
 
 <#
-Create-SQLFileXpDll 
+New-SQLFileXpDll 
 Get-SQLStoredProcedureSQLi
 Get-SQLServerLoginDefaultPw
 Get-SQLStoredProcedureAutoExec

@@ -14418,11 +14418,11 @@ Function  Get-SQLServiceLocal
 
 
 # -------------------------------------------
-# Function:  Create-SQLFilCLRDLL
+# Function:  New-SQLFilCLRDLL
 # -------------------------------------------
 # Author: Scott Sutherland
 # References: This was built of off work done by Lee Christensen (@tifkin_) and Nathan Kirk (@sekirkity).
-function Create-SQLFileCLRDll
+function New-SQLFileCLRDll
 {
     <#
             .SYNOPSIS
@@ -14642,9 +14642,9 @@ function Create-SQLFileCLRDll
 
 
 # -------------------------------------------
-# Function:  Create-SQLFileXpDll
+# Function:  New-SQLFileXpDll
 # -------------------------------------------
-function Create-SQLFileXpDll
+function New-SQLFileXpDll
 {
     <#
             .SYNOPSIS
@@ -14660,7 +14660,7 @@ function Create-SQLFileXpDll
             .PARAMETER OutFile
             Name of the Dll file to write to.
             .EXAMPLE
-            PS C:\temp> Create-SQLFileXpDll -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
+            PS C:\temp> New-SQLFileXpDll -OutFile c:\temp\test.dll -Command "echo test > c:\temp\test.txt" -ExportName xp_test
 
             Creating DLL c:\temp\test.dll
             - Exported function name: xp_test
@@ -24066,7 +24066,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     }
 
 
-    function Create-ProcessWithToken
+    function New-ProcessWithToken
     {
         Param(
             [Parameter(Position=0, Mandatory=$true)]
@@ -24085,7 +24085,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
             [Switch]
             $PassThru
         )
-        Write-Verbose "Entering Create-ProcessWithToken"
+        Write-Verbose "Entering New-ProcessWithToken"
         #Duplicate the token so it can be used to create a new process
         [IntPtr]$NewHToken = [IntPtr]::Zero
         $Success = $DuplicateTokenEx.Invoke($hToken, $Win32Constants.MAXIMUM_ALLOWED, [IntPtr]::Zero, 3, 1, [Ref]$NewHToken)
@@ -24387,7 +24387,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
                     Set-DesktopACLs
                 }
 
-                Create-ProcessWithToken -hToken $hToken -ProcessName $CreateProcess -ProcessArgs $ProcessArgs -PassThru:$PassThru
+                New-ProcessWithToken -hToken $hToken -ProcessName $CreateProcess -ProcessArgs $ProcessArgs -PassThru:$PassThru
 
                 Invoke-RevertToSelf
             }

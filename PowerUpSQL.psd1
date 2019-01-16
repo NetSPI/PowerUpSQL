@@ -8,8 +8,8 @@
     Description       = 'PowerUpSQL is an offensive toolkit designed for attacking SQL Server.  The PowerUpSQL module includes functions that support SQL Server discovery, auditing for common weak configurations, and privilege escalation on scale.  It is intended to be used during penetration tests and red team engagements. However, PowerUpSQL also includes many functions that could be used by administrators to inventory the SQL Servers on their ADS domain very quickly.  More information can be found at https://github.com/NetSPI/PowerUpSQL.'
     PowerShellVersion = '2.0'
     FunctionsToExport = @(  
-        'Create-SQLFileXpDll', 
-        'Create-SQLFileCLRDll', 
+        'New-SQLFileXpDll', 
+        'New-SQLFileCLRDll', 
         'Get-SQLAgentJob',
         'Get-SQLAssemblyFile',
         'Get-SQLAuditDatabaseSpec', 
@@ -116,4 +116,3 @@
     )
     FileList          = 'PowerUpSQL.psm1', 'PowerUpSQL.ps1', 'README.md'
 }
-

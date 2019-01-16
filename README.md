@@ -29,7 +29,7 @@ For setup instructions, cheat sheets, blogs, function overviews, and usage infor
 ### Author, Contributors, and License
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2018
 * Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)
-* Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), and @ktaranov
+* Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), @ktaranov, and Ian Williams (@aph3rson)
 * License: BSD 3-Clause
 * Required Dependencies: None
 
@@ -37,4 +37,3 @@ For setup instructions, cheat sheets, blogs, function overviews, and usage infor
 
 I perform QA on functions before we publish them, but it's hard to consider every scenario. So I just wanted to say thanks to those of you that have taken the time to give me a heads up on issues with PowerUpSQL so that we can make it better. :)
 * Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject 
-

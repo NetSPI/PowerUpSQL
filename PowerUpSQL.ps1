@@ -1,9 +1,9 @@
 #requires -version 2
 <#
         File: PowerUpSQL.ps1
-        Author: Scott Sutherland (@_nullbind), NetSPI - 2016
+        Author: Scott Sutherland (@_nullbind), NetSPI - 2019
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.104.12
+        Version: 1.104.13
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -14958,6 +14958,10 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("PRISM","sa","SecurityMaster08") | Out-Null
         $DefaultPasswords.Rows.Add("RMSQLDATA","Super","Orange") | out-null
         $DefaultPasswords.Rows.Add("RTCLOCAL","sa","mypassword") | Out-Null
+        $DefaultPasswords.Rows.Add("RBAT","sa",'34TJ4@#$') | Out-Null
+        $DefaultPasswords.Rows.Add("RIT","sa",'34TJ4@#$') | Out-Null
+        $DefaultPasswords.Rows.Add("RCO","sa",'34TJ4@#$') | Out-Null
+        $DefaultPasswords.Rows.Add("REDBEAM","sa",'34TJ4@#$') | Out-Null
         $DefaultPasswords.Rows.Add("SALESLOGIX","sa","SLXMaster") | Out-Null
         $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
         $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null

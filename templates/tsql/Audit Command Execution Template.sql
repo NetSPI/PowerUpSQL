@@ -2,6 +2,31 @@
 	Script Name: Audit Command Execution Template.sql
 	Description: This TSQL script can be used to configure SQL Server to log events commonly associated with operating system command execution to the Windows Application log.
 	Author: Scott Sutherland (@_nullbind), 2017 NetSPI 
+	
+	SIEM Cheatsheet for Potentially Malicious Events in SQL Server
+
+	Windows Application Log
+	Event ID: 15457
+	Description: This event is associated with server configuration changes.  Watch for the following configuration changes:
+
+	Configuration option 'external scripts enabled' changed from 0 to 1. Run the RECONFIGURE statement to install.
+	Configuration option 'Ole Automation Procedures' changed from 0 to 1. Run the RECONFIGURE statement to install.
+	Configuration option 'clr enabled' changed from 0 to 1. Run the RECONFIGURE statement to install.
+	Configuration option 'clr strict security' changed from 0 to 1. Run the RECONFIGURE statement to install.
+	Configuration option 'xp_cmdshell' changed from 0 to 1. Run the RECONFIGURE statement to install.
+	Configuration option 'Ad Hoc Distributed Queries' changed from 0 to 1. Run the RECONFIGURE statement to install.
+
+	Windows Application Log
+	Event ID: 33205
+	Description: This event applies to the SQL Server Agent and database level changes. Watch for the following:
+
+	msdb.dbo.sp_add_job Watch for potentially malicious ActiveX, cmdexec, and powershell jobs.
+	"sp_execute_external_script" Watch for cmd.exe and similar calls. 
+	"sp_OACreate" Watch for Sp_oacreate 'wscript.shell’ and similar calls
+	"sp_addextendedproc" Watch for any usage
+	"sp_add_trusted_assembly" Watch for unauthorized usage
+	
+	NOTE: Make sure to enabled the auditing as shown below.
 */
 
 

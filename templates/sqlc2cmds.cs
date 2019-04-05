@@ -4,8 +4,8 @@ Author: Scott Sutherland, NetSPI (2018)
 Application: SQLC2CMDS.dll
 Description: 
 
-This .net DLL is intended to be imported into SQL Server and used during post exploitation activies.  
-However, it could also be used for legitimite purposes. Long term this is intended to be the core 
+This .net DLL is intended to be imported into SQL Server and used during post exploitation activities.  
+However, it could also be used for legitimate purposes. Long term this is intended to be the core 
 set of functions used by the SQLC2 project being roled into PowerUpSQL.
 
 It currently supports:

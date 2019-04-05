@@ -1,6 +1,8 @@
-/* 
+-- Script: oscmdexec_clr.sql
+-- Description: Create a .net assembly to execute os commands, import into sql server, and map to stored procedures.
+-- https://blog.netspi.com/attacking-sql-server-clr-assemblies/
 
-// Full blog: https://blog.netspi.com/attacking-sql-server-clr-assemblies/
+/* 
 // cmd_exec.dll
 // C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:library c:\temp\cmd_exec.cs
 

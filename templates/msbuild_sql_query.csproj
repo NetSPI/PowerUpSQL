@@ -216,7 +216,7 @@
 							Console.WriteLine("\nSuccessfully wrote query output to " + filePath);
 
 								// send results in icmp
-                // https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
+                						// https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
 								string enableicmp = "";
 								if(enableicmp == "true")
 								{									

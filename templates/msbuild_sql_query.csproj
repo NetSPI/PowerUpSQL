@@ -3,11 +3,12 @@
 		Author: Scott Sutherland (@_nullbind), NetSPI 2019
 		Version: 0.1 (work in progress)
 		Description: This is a simple C# SQL Server client that can be run through msbuild. 
-		By setting the "enableicmp" to true, and setting and IP the results of each query
-		can be included in the payload of the ICMP request for the purpose of data exfiltration.
+		By setting the "enableicmp" variable to true, and setting the IP, the results of each query
+		can be included in the payload of the ICMP echo request for the purpose of data exfiltration.
 		The payloads are encrypted by default, the salt/key are hard coded.  You can use the baked in decryption
-		function to restore the payload data on the receiving system. You can also disable
-		encrypted payloads by setting the "enableEncryption" variable to "false".
+		function to decrypt the payload data on the receiving system. You can also disable
+		encrypted payloads by setting the "enableEncryption" variable to "false", but cleartext data == bad idea.
+		Type "help" for basic instructions.
 	    Instructions: 
 		1. 	Save this to a .xml or .csproj file.
 		2. 	In a console, navigate to the folder containing this .csproj or .xml file.

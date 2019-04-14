@@ -2,20 +2,27 @@
 	<!--
 		Author: Scott Sutherland (@_nullbind), NetSPI 2019
 		Version: 0.1 (work in progress)
-		Description: This is a simple C# SQL Server client that can be run through msbuild. 
-		By setting the "enableicmp" variable to true, and setting the IP, the results of each query
-		can be included in the payload of the ICMP echo request for the purpose of data exfiltration.
-		The payloads are encrypted by default, the salt/key are hard coded.  You can use the baked in decryption
-		function to decrypt the payload data on the receiving system. You can also disable
-		encrypted payloads by setting the "enableEncryption" variable to "false", but cleartext data == bad idea.
-		Type "help" for basic instructions.
-	    Instructions: 
-		1. 	Save this to a .xml or .csproj file.
-		2. 	In a console, navigate to the folder containing this .csproj or .xml file.
-		3. 	Run the msbuild.exe command from its path using one of the commands below. 
-			You can explicitly define the .csproj file to load, but it is not required 
-			if only one .csproj file existing the your current working directory. 
+		Description: 
+		This is a simple C# SQL Server client console that can be run through msbuild. 
+
+	    	Features:		
+		1. Uses hardcode connection string by default.  Change with setconn command.
+		2. Writes query results to c:\windows\temp\file.csv by default.  Change with setfile command.
+		3. ICMP exfilatation is disabled by default. By setting the "enableicmp" variable to true, and 
+		   setting the IP, the results of each query will be sent to the provided IP in the payloads of ICMP echo requests.
+		   The payloads are encrypted by default and the salt/key are hard coded.  You can use the baked in decryption
+		   function to decrypt the payload data on the receiving system. You can also disable
+		   encrypted payloads by setting the "enableEncryption" variable to "false", but cleartext data == bad idea.
+		4. Type "help" for basic instructions.
+	    	
+		Execution Instructions: 
+		1. Save this file as an .xml or .csproj file.
+		2. In a console, navigate to the folder containing this .csproj or .xml file.
+		3. Run the msbuild.exe command from its path using one of the commands below. 
+		   You can explicitly define the .csproj file to load, but it is not required 
+                   if only one .csproj file exists your current working directory. 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe 
+			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.xml
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.csproj
 			
 		Note: This execution technique is entirely based on Casey Smith magic.

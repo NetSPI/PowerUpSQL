@@ -15025,11 +15025,6 @@ Function  Get-SQLServerLoginDefaultPw
             return 
         }        
 
-        # Grab username and password
-        #Write-Verbose $TblResultsTemp
-		#$CurrentUsername = $TblResultsTemp.username
-        #$CurrentPassword = $TblResultsTemp.password
-
         # Test login
 		#Write-Verbose ($instance).ToString()
 		#Write-Verbose ($CurrentUsername).ToString()
@@ -15037,6 +15032,7 @@ Function  Get-SQLServerLoginDefaultPw
 		
 		# Grab and iterate username and password
 		for($i=0; $i -lt $TblResultsTemp.count; $i++){
+			#Write-Verbose $TblResultsTemp
 			$CurrentUsername = $TblResultsTemp.username[$i]
 			$CurrentPassword = $TblResultsTemp.password[$i]
 			$LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose

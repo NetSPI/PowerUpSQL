@@ -23,7 +23,7 @@
 		2. In a console, navigate to the folder containing this .csproj or .xml file.
 		3. Run the msbuild.exe command from its path using one of the commands below. 
 		   You can explicitly define the .csproj file to load, but it is not required 
-                   if only one .csproj file exists your current working directory. 
+           if only one .csproj file exists your current working directory. 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe 
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.xml
 			C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe file.csproj
@@ -203,8 +203,7 @@
 				// Read line from the client	
 				Console.WriteLine("----------");				
 				Console.WriteLine(" -= MSBiuld SQLClient v1.0");
-				Console.WriteLine(" -= Instance:     User:        User Type:");
-				Console.WriteLine(" -= ICMPEXFIL:  EXFILIP:  EXFILEnc:");					
+				Console.WriteLine(" -= Instance:     User:);					
 				Console.WriteLine("----------");
 				Console.Write("SQLCLIENT> ");
 				String MyQuery = Console.ReadLine().ToString();

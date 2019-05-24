@@ -203,7 +203,7 @@
 				// Read line from the client	
 				Console.WriteLine("----------");				
 				Console.WriteLine(" -= MSBiuld SQLClient v1.0");
-				Console.WriteLine(" -= Instance:     User:);					
+				Console.WriteLine(" -= Instance:     User:");					
 				Console.WriteLine("----------");
 				Console.Write("SQLCLIENT> ");
 				String MyQuery = Console.ReadLine().ToString();

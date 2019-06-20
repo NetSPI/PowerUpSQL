@@ -23,10 +23,7 @@
 PowerUpSQL includes functions that support SQL Server discovery, weak configuration auditing, privilege escalation on scale, and post exploitation actions such as OS command execution. It is intended to be used during internal penetration tests and red team engagements. However, PowerUpSQL also includes many functions that can be used by administrators to quickly inventory the SQL Servers in their ADS domain and perform common threat hunting tasks related to SQL Server.
 
 ### PowerUpSQL Wiki
-For setup instructions, cheat sheets, blogs, function overviews, and usage information check out the wiki: <a href="  https://github.com/NetSPI/PowerUpSQL/wiki">https://github.com/NetSPI/PowerUpSQL/wiki</a>
-
-### PowerUpSQL Cheat Sheet
-Here is a quick link to the <a href="https://github.com/NetSPI/PowerUpSQL/wiki/PowerUpSQL-Cheat-Sheet">PowerUpSQL Cheat Sheet</a>.
+For setup instructions, <a href="https://github.com/NetSPI/PowerUpSQL/wiki/PowerUpSQL-Cheat-Sheet">cheat Sheets</a>, blogs, function overviews, and usage information check out the wiki: <a href="  https://github.com/NetSPI/PowerUpSQL/wiki">https://github.com/NetSPI/PowerUpSQL/wiki</a>
 
 ### Author, Contributors, and License
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2018

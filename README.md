@@ -1,6 +1,6 @@
 
 ![PowerUpSQLLogo](https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/images/PowerUpSQL_GitHub3.png) 
-<br> &nbsp;&nbsp;
+<br> &nbsp;
 [![licence badge]][licence] 
 [![wiki Badge]][wiki] 
 [![stars badge]][stars] 

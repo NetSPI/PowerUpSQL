@@ -24,6 +24,9 @@ PowerUpSQL includes functions that support SQL Server discovery, weak configurat
 ### PowerUpSQL Wiki
 For setup instructions, cheat sheets, blogs, function overviews, and usage information check out the wiki: <a href="  https://github.com/NetSPI/PowerUpSQL/wiki">https://github.com/NetSPI/PowerUpSQL/wiki</a>
 
+### PowerUpSQL Cheat Sheet
+Here is a quick link to the <a href="https://github.com/NetSPI/PowerUpSQL/wiki/PowerUpSQL-Cheat-Sheet">PowerUpSQL Cheat Sheet</a>.
+
 ### Author, Contributors, and License
 * Author: Scott Sutherland (@_nullbind), NetSPI - 2018
 * Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)

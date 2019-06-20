@@ -1,5 +1,5 @@
 
-![PowerUpSQLLogo](https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/images/PowerUpSQL_GitHub2.png) 
+![PowerUpSQLLogo](https://raw.githubusercontent.com/NetSPI/PowerUpSQL/master/images/PowerUpSQL_GitHub3.png) 
 <br> 
 [![licence badge]][licence] 
 [![wiki Badge]][wiki] 

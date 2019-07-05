@@ -25,15 +25,16 @@ PowerUpSQL includes functions that support SQL Server discovery, weak configurat
 ### PowerUpSQL Wiki
 For setup instructions, <a href="https://github.com/NetSPI/PowerUpSQL/wiki/PowerUpSQL-Cheat-Sheet">cheat Sheets</a>, blogs, function overviews, and usage information check out the wiki: <a href="  https://github.com/NetSPI/PowerUpSQL/wiki">https://github.com/NetSPI/PowerUpSQL/wiki</a>
 
-### Author, Contributors, and License
-* Author: Scott Sutherland (@_nullbind), NetSPI - 2018
+### Author and Contributors
+* Author: Scott Sutherland (@_nullbind)
 * Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)
 * Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), and @ktaranov
-* License: BSD 3-Clause
-* Required Dependencies: None
 
 ### Issue Reports
 
 I perform QA on functions before we publish them, but it's hard to consider every scenario. So I just wanted to say thanks to those of you that have taken the time to give me a heads up on issues with PowerUpSQL so that we can make it better. :)
 * Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject 
+
+### License
+* BSD 3-Clause
 

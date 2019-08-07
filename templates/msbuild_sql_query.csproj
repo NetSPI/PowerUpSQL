@@ -10,6 +10,7 @@
 		1. Fix bug so you can set connString = @"Server=server\instance;Database=Master;Integrated Security=SSPI;";
 		2. enable option feature without hardcoding
 		3. fix status command
+		4. fix http exil
 		3. test all function
 
 	    Features:		
@@ -652,12 +653,12 @@
 								}
 
 								// Send results in http post
-								string enablehttp = "true";
+								string enablehttp = "false";
 								if(enablehttp == "true")
 								{
 									try{
 										string mydata = "id=my data is here.";
-										string myurl = "http://www.netspi.com";
+										string myurl = "http://127.0.0.1";
 										byte[] postArray1 = Encoding.ASCII.GetBytes(mydata);
 										Console.WriteLine("Uploading to {0} ...",  myurl);							
 										WebClient myWebClient1 = new WebClient();

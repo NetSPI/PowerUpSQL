@@ -15,6 +15,8 @@
 WHILE 1=1 
 BEGIN	
 	-- Update table contents with custom powershell script
+	-- In real world, use the path below, because it is writable by the restricted SQL Server service account, and c:\windows\temp\ is not.
+	-- DECLARE @SQLerrorlogDir VARCHAR(256);SELECT @SQLerrorlogDir = master.dbo.fn_SQLServerErrorLogDir() 
 	DECLARE @mycommand varchar(max)
 	SET @mycommand = 'UPDATE t1 SET t1.PSCode = ''whoami > c:\windows\temp\finishline.txt'' FROM ##temp123  t1'		
 	EXEC(@mycommand)	

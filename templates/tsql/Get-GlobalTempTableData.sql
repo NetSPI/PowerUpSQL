@@ -41,8 +41,9 @@ CLOSE MY_CURSOR
 DEALLOCATE MY_CURSOR
 
 ------------------------------------------
--- View Contents of All Global Temp Tables
--- loop it - Make sure to manage this one
+-- View Monitor all Contents of 
+-- All Global Temp Tables in a Loop
+-- Note: Make sure to manage this one
 -- carefully so you dont start the server 
 -- on fire. :)
 ------------------------------------------

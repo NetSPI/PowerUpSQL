@@ -28,6 +28,7 @@ DECLARE @Command NVARCHAR(4000)
 Set @PsFileName = 'MyPowerShellScript.ps1'
 
 -- Set target directory for PowerShell script to be written to
+-- SELECT @TargetDirectory = master.dbo.fn_SQLServerErrorLogDir() .
 Set @TargetDirectory = 'c:\Windows\temp\'
 
 -- Create full output path for creating the PowerShell script 
@@ -37,7 +38,7 @@ SELECT @PsFilePath = @TargetDirectory + @PsFileName
 SET @MyPowerShellCode = 'Write-Output "hello world" | Out-File c:\windows\temp\intendedoutput.txt'
 
 -- Create a global temp table with a unique name using dynamic SQL 
-SELECT  @MyGlobalTempTable = '##temp' + CONVERT(VARCHAR(12), CONVERT(INT, RAND() * 1000000))
+SELECT  @MyGlobalTempTable =  '##temp' + CONVERT(VARCHAR(12), CONVERT(INT, RAND() * 1000000))
 
 -- Create a command to insert the PowerShell code stored in the @MyPowerShellCode variable, into the global temp table
 SELECT  @Command = '
@@ -47,6 +48,9 @@ SELECT  @Command = '
 				
 -- Execute that command 
 EXECUTE sp_ExecuteSQL @command, N'@MyPowerShellCode varchar(MAX)', @MyPowerShellCode
+
+-- Add delay
+-- waitfor delay '0:0:2'
 
 -- Execute bcp via xp_cmdshell (as the service account) to save the contents of the temp table to MyPowerShellScript.ps1
 SELECT @Command = 'bcp "SELECT PsCode from [' + @MyGlobalTempTable + ']' + '" queryout '+ @PsFilePath + ' -c -T -S ' + @@SERVERNAME

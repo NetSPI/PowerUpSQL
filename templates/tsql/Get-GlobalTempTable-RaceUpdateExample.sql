@@ -47,6 +47,8 @@ BEGIN
 		PRINT @mytempname 
 	
 		-- Update contents of known column with ps script in an unknown temp table
+		-- In real world, use the path below, because it is writable by the restricted SQL Server service account, and c:\windows\temp\ is not.
+		-- DECLARE @SQLerrorlogDir VARCHAR(256);SELECT @SQLerrorlogDir = master.dbo.fn_SQLServerErrorLogDir() 		
 		DECLARE @mycommand varchar(max)
 		SET @mycommand = 'UPDATE t1 SET t1.PSCode = ''whoami > c:\windows\temp\finishline.txt'' FROM ' + @mytempname + '  t1'
 		EXEC(@mycommand)

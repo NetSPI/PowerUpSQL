@@ -28,7 +28,7 @@ END
 WHILE 1=1 
 BEGIN	
 	-- Slow down if needed
-	waitfor delay '0:0:0'
+	-- waitfor delay '0:0:2'
 
 	-- Setup variables
 	DECLARE @mytempname varchar(max)
@@ -55,9 +55,8 @@ BEGIN
 	CLOSE MY_CURSOR
 	DEALLOCATE MY_CURSOR
 END
-
 ------------------------------------------------------
--- Example 2: Unknown Table, Unkown column
+-- Example 3: Unknown Table, Unkown column
 ------------------------------------------------------
 -- todo
 

@@ -1,9 +1,18 @@
 -- Script: Get-GlobalTempTableData.sql
 -- Author: Scott Sutherland
+-- Description: Monitor for global temp tables.  
+-- Sometimes they're used to store sensitive data 
+-- or code that may be executed in another user's context.
 
----------------------------------------
--- View All Global Temp Table Contents
----------------------------------------
+------------------------------------------
+-- List All Global Temp Tables
+------------------------------------------
+
+SELECT name FROM tempdb.sys.tables WHERE name LIKE '##%'
+
+------------------------------------------
+-- View Contents of All Global Temp Tables
+------------------------------------------
 
 -- Setup variables
 DECLARE @mytempname varchar(max)
@@ -31,13 +40,18 @@ END
 CLOSE MY_CURSOR
 DEALLOCATE MY_CURSOR
 
----------------------------------------
--- View All Global Temp Table Contents 
--- Loop it
----------------------------------------
+------------------------------------------
+-- View Contents of All Global Temp Tables
+-- loop it - Make sure to manage this one
+-- carefully so you dont start the server 
+-- on fire. :)
+------------------------------------------
 
 While 1=1
 BEGIN
+	-- Add delay if required
+	-- waitfor delay '0:0:2'
+	
 	-- Setup variables
 	DECLARE @mytempname varchar(max)
 	DECLARE @psmyscript varchar(max)

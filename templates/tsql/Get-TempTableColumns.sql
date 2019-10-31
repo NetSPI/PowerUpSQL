@@ -1,9 +1,8 @@
 
 -- List temp tables, columns, and column types
-SELECT (SELECT CASE WHEN (select len(t1.name) - len(replace(t1.name,'#',''))) > 1 THEN 1 END) as GlobalTempTable, 
-	   (SELECT CASE WHEN t1.name like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 END) as LocalTempTable,
-	   (SELECT CASE WHEN t1.name not like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 END) as TableVariable,
-	   (SELECT CASE WHEN t1.name like '#%' THEN 1 END) as TempTable, 
+SELECT (SELECT CASE WHEN (select len(t1.name) - len(replace(t1.name,'#',''))) > 1 THEN 1 ELSE 0 END) as GlobalTempTable, 
+	   (SELECT CASE WHEN t1.name like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 ELSE 0 END) as LocalTempTable,
+	   (SELECT CASE WHEN t1.name not like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 ELSE 0 END) as TableVariable,
 	   t1.name as 'tablename',
 	   t2.name as 'columnname',
 	   t3.name 

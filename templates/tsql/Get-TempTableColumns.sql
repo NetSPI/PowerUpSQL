@@ -1,7 +1,7 @@
 -- List temp tables, columns, and column types
-SELECT t1.name as 'tablename',
-	   t2.name as 'columnname',
-	   t3.name,
+SELECT t1.name as 'Table_Name',
+	   t2.name as 'Column_Name',
+	   t3.name as 'Type_Name',
 	   t1.create_date,
 	   t1.modify_date,
 	   (SELECT CASE WHEN (select len(t1.name) - len(replace(t1.name,'#',''))) > 1 THEN 1 ELSE 0 END) as GlobalTempTable, 

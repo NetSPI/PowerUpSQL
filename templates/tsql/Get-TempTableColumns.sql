@@ -1,7 +1,7 @@
 -- List temp tables, columns, and column types
 SELECT t1.name as 'Table_Name',
 	   t2.name as 'Column_Name',
-	   t3.name as 'Type_Name',
+	   t3.name as 'Column_Type',
 	   t1.create_date,
 	   t1.modify_date,
 	   t1.parent_object_id,

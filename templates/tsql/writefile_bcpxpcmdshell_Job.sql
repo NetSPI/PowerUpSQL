@@ -107,7 +107,7 @@ EXECUTE MASTER..xp_cmdshell @runcmdps, NO_OUTPUT
 -- Delete the PowerShell script
 DECLARE @runcmddel nvarchar(4000)
 SET @runcmddel= ''DEL /Q "'' + @PsFilePath +''"''
--- EXECUTE MASTER..xp_cmdshell @runcmddel, NO_OUTPUT
+EXECUTE MASTER..xp_cmdshell @runcmddel, NO_OUTPUT
 ', 
 		@database_name=N'master', 
 		@flags=0

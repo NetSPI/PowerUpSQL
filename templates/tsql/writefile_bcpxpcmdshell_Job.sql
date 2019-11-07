@@ -90,6 +90,9 @@ SELECT  @Command = ''
 -- Execute that command 
 EXECUTE sp_ExecuteSQL @command, N''@MyPowerShellCode varchar(MAX)'', @MyPowerShellCode
 
+-- Add delay for lab race condition - Change as needed
+WAITFOR DELAY ''00:00:5''
+
 -- Execute bcp via xp_cmdshell (as the service account) to save the contents of the temp table to MyPowerShellScript.ps1
 SELECT @Command = ''bcp "SELECT PsCode from ['' + @MyGlobalTempTable + '']'' + ''" queryout "''+ @PsFilePath + ''" -c -T -S '' + @@SERVERNAME
 

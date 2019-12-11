@@ -25246,12 +25246,11 @@ function Test-Subnet ([string]$cidr, [string]$ip)
 {
     $network, [int]$subnetlen = $cidr.Split('/')
     $a = [uint32[]]$network.split('.')
-    [uint32] $unetwork = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
-
-    $mask = (-bnot [uint32]0) -shl (32 - $subnetlen)
+    [uint32] $unetwork = ([math]::Floor($a[0] * [math]::Pow(2,24))) + ([math]::Floor($a[1] * [math]::Pow(2,16))) + ([math]::Floor($a[2] * [math]::Pow(2,8))) + $a[3]
+    $mask = ([math]::Floor((-bnot [uint32]0) * [math]::Pow(2,(32 - $subnetlen))))
 
     $a = [uint32[]]$ip.split('.')
-    [uint32] $uip = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+    [uint32] $uip = ([math]::Floor($a[0] * [math]::Pow(2,24))) + ([math]::Floor($a[1] * [math]::Pow(2,16))) + ([math]::Floor($a[2] * [math]::Pow(2,8))) + $a[3]
 
     $unetwork -eq ($mask -band $uip)
 }

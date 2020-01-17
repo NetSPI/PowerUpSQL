@@ -19934,21 +19934,21 @@ Function Invoke-SQLAuditPrivXpDirtree
                                 $HashType = ''
                                 $Hash = ''
 
-                                [string]$PassCleartext = Get-Inveigh -Cleartext Y
+                                [string]$PassCleartext = Get-Inveigh -Cleartext
                                 if($PassCleartext)
                                 {
                                     $HashType = 'Cleartext'
                                     $Hash = $PassCleartext
                                 }
 
-                                [string]$PassNetNTLMv1 = Get-Inveigh -NTLMv1 Y
+                                [string]$PassNetNTLMv1 = Get-Inveigh -NTLMv1
                                 if($PassNetNTLMv1)
                                 {
                                     $HashType = 'NetNTLMv1'
                                     $Hash = $PassNetNTLMv1
                                 }
 
-                                [string]$PassNetNTLMv2 = Get-Inveigh -NTLMv2 Y
+                                [string]$PassNetNTLMv2 = Get-Inveigh -NTLMv2
                                 if($PassNetNTLMv2)
                                 {
                                     $HashType = 'NetNTLMv2'
@@ -20275,21 +20275,21 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 $HashType = ''
                                 $Hash = ''
 
-                                [string]$PassCleartext = Get-Inveigh -Cleartext Y
+                                [string]$PassCleartext = Get-Inveigh -Cleartext
                                 if($PassCleartext)
                                 {
                                     $HashType = 'Cleartext'
                                     $Hash = $PassCleartext
                                 }
 
-                                [string]$PassNetNTLMv1 = Get-Inveigh -NTLMv1 Y
+                                [string]$PassNetNTLMv1 = Get-Inveigh -NTLMv1
                                 if($PassNetNTLMv1)
                                 {
                                     $HashType = 'NetNTLMv1'
                                     $Hash = $PassNetNTLMv1
                                 }
 
-                                [string]$PassNetNTLMv2 = Get-Inveigh -NTLMv2 Y
+                                [string]$PassNetNTLMv2 = Get-Inveigh -NTLMv2
                                 if($PassNetNTLMv2)
                                 {
                                     $HashType = 'NetNTLMv2'

@@ -26116,4 +26116,588 @@ Function Invoke-SQLDumpInfo
     }
 }
 
+
+# ----------------------------------
+#  Invoke-SQLUploadFileOle
+# ----------------------------------
+# Author: Mariusz B. / mgeeky
+# Reference: https://www.blackarrow.net/mssqlproxy-pivoting-clr/
+Function  Invoke-SQLUploadFileOle
+{
+    <#
+            .SYNOPSIS
+            Uploads given file to the operating system as the SQL Server service account using OLE automation procedures.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER TimeOut
+            Connection time out.
+            .PARAMETER SuppressVerbose
+            Suppress verbose errors.  Used when function is wrapped.
+            .PARAMETER Threads
+            Number of concurrent threads.
+            .PARAMETER InputFile
+            Input file to be uploaded to the SQL Server's filesystem.
+            .PARAMETER OutputFile
+            Destination file path in the target SQL Server's filesystem.
+            .EXAMPLE
+            PS C:\> Invoke-SQLUploadFileOle -Verbose -Instance DEVSRV -InputFile "C:\Windows\win.ini" -OutputFile "C:\Users\Public\win.ini"
+            VERBOSE: DEVSRV : Connection Success.
+            VERBOSE: DEVSRV : You are a sysadmin.
+            VERBOSE: DEVSRV : Show Advanced Options is already enabled.
+            VERBOSE: DEVSRV : Ole Automation Procedures are already enabled.
+            VERBOSE: DEVSRV : Reading input file: C:\windows\win.ini
+            VERBOSE: DEVSRV : Uploading 92 bytes to: C:\Users\Public\win.ini
+            VERBOSE: DEVSRV : Connection Success.
+            VERBOSE: DEVSRV : Success. File uploaded.
+            VERBOSE: Closing the runspace pool
+
+            ComputerName Instance UploadResults
+            ------------ -------- -------------
+            DEVSRV       DEVSRV   True 
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connect using Dedicated Admin Connection.')]
+        [Switch]$DAC,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'Input local file to be uploaded to target server.')]
+        [ValidateScript({
+                    Test-Path $_ -PathType leaf
+        })]
+        [String]$InputFile = "",
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'Destination file path where the file should be uploaded on the remote server.')]
+        [String]$OutputFile = "",
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connection timeout.')]
+        [string]$TimeOut,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Number of threads.')]
+        [int]$Threads = 1,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Setup data table for output
+        $TblCommands = New-Object -TypeName System.Data.DataTable
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $null = $TblResults.Columns.Add('ComputerName')
+        $null = $TblResults.Columns.Add('Instance')
+        $null = $TblResults.Columns.Add('UploadResults')
+
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object -TypeName System.Data.DataTable
+
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
+        if($Instance)
+        {
+            $ProvideInstance = New-Object -TypeName PSObject -Property @{
+                Instance = $Instance
+            }
+        }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
+    }
+
+    Process
+    {
+        # Create list of pipeline items
+        $PipelineItems = $PipelineItems + $_
+    }
+
+    End
+    {
+        # Define code to be multi-threaded
+        $MyScriptBlock = {
+            $Instance = $_.Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance)
+            {
+                $Instance = $env:COMPUTERNAME
+            }
+
+            # Setup DAC string
+            if($DAC)
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+            }
+            else
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+            }
+
+            # Attempt connection
+            try
+            {
+                # Open connection
+                $Connection.Open()
+
+                if(-not $SuppressVerbose)
+                {
+                    Write-Verbose -Message "$Instance : Connection Success."
+                }
+
+                # Switch to track Ole Automation Procedures status
+                $DisableShowAdvancedOptions = 0
+                $DisableOle = 0
+
+                # Get sysadmin status
+                $IsSysadmin = Get-SQLSysadminCheck -Instance $Instance -Credential $Credential -Username $Username -Password $Password -SuppressVerbose | Select-Object -Property IsSysadmin -ExpandProperty IsSysadmin
+
+                # Check if OLE Automation Procedures are enabled
+                if($IsSysadmin -eq 'Yes')
+                {
+                    Write-Verbose -Message "$Instance : You are a sysadmin."
+                    $IsOleEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ole Automation Procedures'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+                    $IsShowAdvancedEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : You are not a sysadmin. This command requires sysadmin privileges."
+
+                    # Add record
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'No sysadmin privileges.')
+                    return
+                }
+
+                # Enable show advanced options if needed
+                if ($IsShowAdvancedEnabled -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Show Advanced Options is already enabled."
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : Show Advanced Options is disabled."
+                    $DisableShowAdvancedOptions = 1
+
+                    # Try to enable Show Advanced Options
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+                    # Check if configuration change worked
+                    $IsShowAdvancedEnabled2 = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+
+                    if ($IsShowAdvancedEnabled2 -eq 1)
+                    {
+                        Write-Verbose -Message "$Instance : Enabled Show Advanced Options."
+                    }
+                    else
+                    {
+                        Write-Verbose -Message "$Instance : Enabling Show Advanced Options failed. Aborting."
+
+                        # Add record
+                        $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Could not enable Show Advanced Options.')
+                        return
+                    }
+                }
+
+                # Enable OLE Automation Procedures if needed
+                if ($IsOleEnabled -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Ole Automation Procedures are already enabled."
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : Ole Automation Procedures are disabled."
+                    $DisableOle = 1
+
+                    # Try to enable Ole Automation Procedures
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ole Automation Procedures',1;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+                    # Check if configuration change worked
+                    $IsOleEnabled2 = Get-SQLQuery -Instance $Instance -Query 'sp_configure "Ole Automation Procedures"' -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+
+                    if ($IsOleEnabled2 -eq 1)
+                    {
+                        Write-Verbose -Message "$Instance : Enabled Ole Automation Procedures."
+                    }
+                    else
+                    {
+                        Write-Verbose -Message "$Instance : Enabling Ole Automation Procedures failed. Aborting."
+
+                        # Add record
+                        $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Could not enable Ole Automation Procedures.')
+
+                        return
+                    }
+                }
+
+                $InputFileFull = (Get-Item $InputFile).FullName
+                write-verbose "$instance : Reading input file: $InputFileFull"
+                try
+                {
+                    $FileBytes = [System.IO.File]::ReadAllBytes($InputFileFull)
+                    $FileDataTmp = New-Object System.Collections.Generic.List[System.Object]
+                    foreach ($b in $FileBytes)
+                    { 
+                        $FileDataTmp.Add($b.ToString("X2"))
+                    }
+
+                    $FileData = [system.String]::Join('', $FileDataTmp.ToArray())
+                }
+                catch
+                {
+                    if(-not $SuppressVerbose)
+                    {
+                        $ErrorMessage = $_.Exception.Message
+                        Write-Verbose "Could not read input file: $ErrorMessage"
+                    }
+
+                    # Add record
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Input file could not be read.')
+                }
+
+                #  Setup query to run command
+                write-verbose "$instance : Uploading $($FileBytes.Length) bytes to: $OutputFile"           
+                $QueryFileUpload = 
+@"
+DECLARE @ob INT;
+EXEC sp_OACreate 'ADODB.Stream', @ob OUTPUT;
+EXEC sp_OASetProperty @ob, 'Type', 1;
+EXEC sp_OAMethod @ob, 'Open';
+EXEC sp_OAMethod @ob, 'Write', NULL, 0x$FileData;
+EXEC sp_OAMethod @ob, 'SaveToFile', NULL, '$OutputFile', 2;
+EXEC sp_OAMethod @ob, 'Close';
+EXEC sp_OADestroy @ob;
+"@
+
+                # Execute query    
+                $null = Get-SQLQuery -Instance $Instance -Query $QueryFileUpload -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
+
+                # Setup query for reading command output
+                $QueryCheckFileExists = "EXEC master..xp_fileexist '$OutputFile' WITH RESULT SETS ((fileexists bit, fileisdirectory bit, parentdirectoryexists bit))"
+
+                # Execute query
+                $CmdResults = Get-SQLQuery -Instance $Instance -Query $QueryCheckFileExists -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property fileexists -ExpandProperty fileexists
+
+                if ($CmdResults -eq $True)
+                {
+                    Write-Verbose -Message "$Instance : Success. File uploaded."
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : Failure. File NOT uploaded."
+                }
+
+                # Display results or add to final results table
+                $null = $TblResults.Rows.Add($ComputerName, $Instance, [string]$CmdResults)
+
+                # Restore 'Ole Automation Procedures state if needed
+                if($DisableOle -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Disabling 'Ole Automation Procedures"
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Ole Automation Procedures',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                }
+
+                # Restore Show Advanced Options state if needed
+                if($DisableShowAdvancedOptions -eq 1)
+                {
+                    Write-Verbose -Message "$Instance : Disabling Show Advanced Options"
+                    Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options',0;RECONFIGURE" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+                }
+
+                # Close connection
+                $Connection.Close()
+
+                # Dispose connection
+                $Connection.Dispose()
+            }
+            catch
+            {
+                # Connection failed
+
+                if(-not $SuppressVerbose)
+                {
+                    $ErrorMessage = $_.Exception.Message
+                    Write-Verbose -Message "$Instance : Connection Failed."
+                    #Write-Verbose  " Error: $ErrorMessage"
+                }
+
+                # Add record
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible or Command Failed')
+            }
+        }
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
+
+        return $TblResults
+    }
+}
+
+
+
+# ----------------------------------
+#  Invoke-SQLDownloadFile
+# ----------------------------------
+# Author: Mariusz B. / mgeeky
+# Reference: https://www.blackarrow.net/mssqlproxy-pivoting-clr/
+Function  Invoke-SQLDownloadFile
+{
+    <#
+            .SYNOPSIS
+            Uploads given file to the operating system as the SQL Server service account using OLE automation procedures.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.
+            .PARAMETER DAC
+            Connect using Dedicated Admin Connection.
+            .PARAMETER TimeOut
+            Connection time out.
+            .PARAMETER SuppressVerbose
+            Suppress verbose errors.  Used when function is wrapped.
+            .PARAMETER Threads
+            Number of concurrent threads.
+            .PARAMETER SourceFile
+            Source file to download from target SQL Server's filesystem.
+            .PARAMETER OutputFile
+            Where to save downloaded file locally on the user's filesystem.
+            .EXAMPLE
+            PS C:\> Invoke-SQLDownloadFile -Verbose -Instance DEVSRV -SourceFile "C:\Windows\win.ini" -OutputFile "C:\Users\Public\win.ini"
+            VERBOSE: Creating runspace pool and session states
+            VERBOSE: DEVSRV : Connection Success.
+            VERBOSE: DEVSRV : File exists. Attempting to download: C:\Windows\win.ini
+            VERBOSE: DEVSRV : Downloaded. Writing 92 to C:\Users\Public\win.ini...
+            VERBOSE: Closing the runspace pool
+
+            ComputerName Instance DownloadResults
+            ------------ -------- ---------------
+            DEVSRV       DEVSRV   True  
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipeline = $true,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connect using Dedicated Admin Connection.')]
+        [Switch]$DAC,
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'Source file to download from target SQL Server filesystem.')]
+        [String]$SourceFile = "",
+
+        [Parameter(Mandatory = $true,
+        HelpMessage = 'Where to save downloaded file locally on the user filesystem.')]
+        [String]$OutputFile = "",
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Connection timeout.')]
+        [string]$TimeOut,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Number of threads.')]
+        [int]$Threads = 1,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        # Setup data table for output
+        $TblCommands = New-Object -TypeName System.Data.DataTable
+        $TblResults = New-Object -TypeName System.Data.DataTable
+        $null = $TblResults.Columns.Add('ComputerName')
+        $null = $TblResults.Columns.Add('Instance')
+        $null = $TblResults.Columns.Add('DownloadResults')
+
+
+        # Setup data table for pipeline threading
+        $PipelineItems = New-Object -TypeName System.Data.DataTable
+
+        # set instance to local host by default
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Ensure provided instance is processed
+        if($Instance)
+        {
+            $ProvideInstance = New-Object -TypeName PSObject -Property @{
+                Instance = $Instance
+            }
+        }
+
+        # Add instance to instance list
+        $PipelineItems = $PipelineItems + $ProvideInstance
+    }
+
+    Process
+    {
+        # Create list of pipeline items
+        $PipelineItems = $PipelineItems + $_
+    }
+
+    End
+    {
+        # Define code to be multi-threaded
+        $MyScriptBlock = {
+            $Instance = $_.Instance
+
+            # Parse computer name from the instance
+            $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+            # Default connection to local default instance
+            if(-not $Instance)
+            {
+                $Instance = $env:COMPUTERNAME
+            }
+
+            # Setup DAC string
+            if($DAC)
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
+            }
+            else
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -TimeOut $TimeOut
+            }
+
+            # Attempt connection
+            try
+            {
+                # Open connection
+                $Connection.Open()
+
+                if(-not $SuppressVerbose)
+                {
+                    Write-Verbose -Message "$Instance : Connection Success."
+                }
+
+                # Setup query for reading command output
+                $QueryCheckFileExists = "EXEC master..xp_fileexist '$SourceFile' WITH RESULT SETS ((fileexists bit, fileisdirectory bit, parentdirectoryexists bit))"
+
+                # Execute query
+                $CmdResults = Get-SQLQuery -Instance $Instance -Query $QueryCheckFileExists -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property fileexists -ExpandProperty fileexists
+
+                if ($CmdResults -eq $True)
+                {
+                    Write-Verbose -Message "$Instance : File exists. Attempting to download: $SourceFile"
+
+                    $QueryFileDownload = "SELECT * FROM OPENROWSET(BULK N'$SourceFile', SINGLE_BLOB) rs"
+
+                    # Execute query    
+                    $FileBytes = Get-SQLQuery -Instance $Instance -Query $QueryFileDownload -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property BulkColumn -ExpandProperty BulkColumn
+
+                    $FileBytesArr = $FileBytes -split ' '
+
+                    Write-Verbose "$Instance : Downloaded. Writing $($FileBytesArr.Length) to $OutputFile..."
+
+                    $FileContents = ($FileBytesArr | % {[byte][convert]::ToInt32($_)})
+
+                    [IO.File]::WriteAllBytes($OutputFile, $FileContents)
+
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",$True)
+                }
+                else
+                {
+                    Write-Verbose -Message "$Instance : Failure. Specified file does not exist."
+
+                    $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Source file does not exist')
+                }
+
+                # Close connection
+                $Connection.Close()
+
+                # Dispose connection
+                $Connection.Dispose()
+            }
+            catch
+            {
+                # Connection failed
+
+                if(-not $SuppressVerbose)
+                {
+                    $ErrorMessage = $_.Exception.Message
+                    Write-Verbose -Message "$Instance : Connection Failed."
+                    Write-Verbose  " Error: $ErrorMessage"
+                }
+
+                $null = $TblResults.Rows.Add("$ComputerName","$Instance",'Not Accessible or Command Failed')
+            }
+        }
+
+        # Run scriptblock using multi-threading
+        $PipelineItems | Invoke-Parallel -ScriptBlock $MyScriptBlock -ImportSessionFunctions -ImportVariables -Throttle $Threads -RunspaceTimeout 2 -Quiet -ErrorAction SilentlyContinue
+
+        return $TblResults
+    }
+}
+
+
 #endregion

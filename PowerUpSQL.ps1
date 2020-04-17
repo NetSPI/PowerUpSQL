@@ -2003,6 +2003,8 @@ Function  Invoke-SQLOSCmdPython
             SQL Server or domain account password to authenticate with.
             .PARAMETER Credential
             SQL Server credential.
+			.PARAMETER Database
+            Database that you have rights to execute commands.
             .PARAMETER Instance
             SQL Server instance to connection to.
             .PARAMETER DAC
@@ -2053,6 +2055,23 @@ Function  Invoke-SQLOSCmdPython
             nt authority\system
 
             VERBOSE: Closing the runspace pool
+			
+			.EXAMPLE
+            PS C:\> Invoke-SQLOSCmdPython -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Database trusted_db -Command "whoami" -RawResults
+            VERBOSE: Creating runspace pool and session states
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Connection Success.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : You are a sysadmin.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Show Advanced Options is disabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Enabled Show Advanced Options.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : External scripts are disabled.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Enabled external scripts.
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Executing command: whoami
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Disabling external scripts
+            VERBOSE: MSSQLSRV04\SQLSERVER2014 : Disabling Show Advanced Options
+
+            nt authority\system
+
+            VERBOSE: Closing the runspace pool
     #>
     [CmdletBinding()]
     Param(
@@ -2063,6 +2082,10 @@ Function  Invoke-SQLOSCmdPython
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
+		
+		[Parameter(Mandatory = $false,
+        HelpMessage = 'SQL Server database to connection to.')]
+        [string]$Database,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Windows credentials.')]
@@ -2158,6 +2181,12 @@ Function  Invoke-SQLOSCmdPython
                 # Create connection object
                 $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DAC -TimeOut $TimeOut
             }
+			# Setup database string
+            if($Database)
+            {
+                # Create connection object
+                $Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -Database $Database -Credential $Credential -TimeOut $TimeOut
+            }
             else
             {
                 # Create connection object
@@ -2190,6 +2219,12 @@ Function  Invoke-SQLOSCmdPython
                     Write-Verbose -Message "$Instance : You are a sysadmin."
                     $IsExternalScriptsEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'external scripts enabled'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
                     $IsShowAdvancedEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+                }
+				if($Database)
+                {
+                    Write-Verbose -Message "$Instance : Executing on $Database"
+                    $IsExternalScriptsEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'external scripts enabled'" -Username $Username -Password $Password -Database $Database -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
+                    $IsShowAdvancedEnabled = Get-SQLQuery -Instance $Instance -Query "sp_configure 'Show Advanced Options'" -Username $Username -Password $Password -Database $Database -Credential $Credential -SuppressVerbose | Select-Object -Property config_value -ExpandProperty config_value
                 }
                 else
                 {
@@ -2262,8 +2297,13 @@ Function  Invoke-SQLOSCmdPython
                 }
 
                 # Check if the configuration has been change in the run state 
-                $EnabledInRunValue = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name LIKE 'external scripts enabled'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -ExpandProperty value_in_use            
-                if($EnabledInRunValue -eq 0){
+                if($IsSysadmin -eq 'Yes'){
+					$EnabledInRunValue = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name LIKE 'external scripts enabled'" -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Select-Object -ExpandProperty value_in_use            
+                }
+				if($Database){
+					$EnabledInRunValue = Get-SQLQuery -Instance $Instance -Query "SELECT value_in_use FROM master.sys.configurations WHERE name LIKE 'external scripts enabled'" -Username $Username -Password $Password -Database $Database -Credential $Credential -SuppressVerbose | Select-Object -ExpandProperty value_in_use
+				}
+				if($EnabledInRunValue -eq 0){
                     Write-Verbose -Message "$Instance : The 'external scripts enabled' setting is not enabled in runtime."
                     Write-Verbose -Message "$Instance : - The SQL Server service will need to be manually restarted for the change to take effect."
                     Write-Verbose -Message "$Instance : - Not recommended unless you're the DBA."
@@ -2287,8 +2327,12 @@ WITH RESULT SETS (([Output] nvarchar(max)))
 "@
 
                 # Execute query    
-                $CmdResults = Get-SQLQuery -Instance $Instance -Query $QueryCmdExecute -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | select Output -ExpandProperty Output
-
+                if($IsSysadmin -eq 'Yes'){
+					$CmdResults = Get-SQLQuery -Instance $Instance -Query $QueryCmdExecute -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | select Output -ExpandProperty Output
+				}
+				if($Database){
+					$CmdResults = Get-SQLQuery -Instance $Instance -Query $QueryCmdExecute -Username $Username -Password $Password -Database $Database -Credential $Credential -SuppressVerbose | select Output -ExpandProperty Output
+				}
                 # Display results or add to final results table
                 if($RawResults)
                 {
@@ -2341,6 +2385,7 @@ WITH RESULT SETS (([Output] nvarchar(max)))
         return $TblResults
     }
 }
+
 
 # ----------------------------------
 #  Invoke-SQLOSCmdOle

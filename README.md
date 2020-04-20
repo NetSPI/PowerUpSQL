@@ -33,7 +33,7 @@ For setup instructions, <a href="https://github.com/NetSPI/PowerUpSQL/wiki/Power
 ### Issue Reports
 
 I perform QA on functions before we publish them, but it's hard to consider every scenario. So I just wanted to say thanks to those of you that have taken the time to give me a heads up on issues with PowerUpSQL so that we can make it better. 
-* Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject 
+* Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject, @cobbr_io
 
 ### License
 * BSD 3-Clause

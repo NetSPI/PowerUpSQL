@@ -25242,18 +25242,45 @@ function Invoke-Parallel
 
 # Source: http://www.padisetty.com/2014/05/powershell-bit-manipulation-and-network.html
 # Notes: Changed name from checkSubnet to Test-Subnet (Approved Verbs)
+# Updates by Ryan Cobb (cobbr)
 function Test-Subnet ([string]$cidr, [string]$ip)
 {
     $network, [int]$subnetlen = $cidr.Split('/')
     $a = [uint32[]]$network.split('.')
-    [uint32] $unetwork = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+    [uint32] $unetwork = (Convert-BitShift $a[0] -Left 24) + (Convert-BitShift $a[1] -Left 16) + (Convert-BitShift $a[2] -Left 8) + $a[3]
 
-    $mask = (-bnot [uint32]0) -shl (32 - $subnetlen)
+    $mask = Convert-BitShift (-bnot [uint32]0) -Left (32 - $subnetlen)
 
     $a = [uint32[]]$ip.split('.')
-    [uint32] $uip = ($a[0] -shl 24) + ($a[1] -shl 16) + ($a[2] -shl 8) + $a[3]
+    [uint32] $uip = (Convert-BitShift $a[0] -Left 24) + (Convert-BitShift $a[1] -Left 16) + (Convert-BitShift $a[2] -Left 8) + $a[3]
 
     $unetwork -eq ($mask -band $uip)
+}
+
+# Source: https://stackoverflow.com/questions/35116636/bit-shifting-in-powershell-2-0
+function Convert-BitShift {
+    param (
+        [Parameter(Position = 0, Mandatory = $True)]
+        [int] $Number,
+
+        [Parameter(ParameterSetName = 'Left', Mandatory = $False)]
+        [int] $Left,
+
+        [Parameter(ParameterSetName = 'Right', Mandatory = $False)]
+        [int] $Right
+    ) 
+
+    $shift = 0
+    if ($PSCmdlet.ParameterSetName -eq 'Left')
+    { 
+        $shift = $Left
+    }
+    else
+    {
+        $shift = -$Right
+    }
+
+    return [math]::Floor($Number * [math]::Pow(2,$shift))
 }
 
 

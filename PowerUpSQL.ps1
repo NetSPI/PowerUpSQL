@@ -7472,6 +7472,8 @@ Function  Get-SQLDomainUser
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .PARAMETER FilterUser
             Domain user to filter for.
             .PARAMETER UserState
@@ -7540,6 +7542,11 @@ Function  Get-SQLDomainUser
 
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Domain user to filter for.')]
         [string]$FilterUser,
 
@@ -7599,9 +7606,9 @@ Function  Get-SQLDomainUser
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath" -UseAdHoc            
         }else{
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=Person)(objectClass=user)$PwLastSetFilter(SamAccountName=$FilterUser)$UserStateFilter)" -LdapFields "samaccountname,name,admincount,whencreated,whenchanged,adspath"          
         }
     }
 
@@ -7637,6 +7644,8 @@ Function  Get-SQLDomainSubnet
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7681,6 +7690,11 @@ Function  Get-SQLDomainSubnet
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -7697,7 +7711,12 @@ Function  Get-SQLDomainSubnet
     Process
     {
         # Get the domain of the server
-        $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        if($TargetDomain)
+        {
+            $Domain = $TargetDomain
+        }else{
+            $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        }
         $DomainDistinguishedName = Get-SQLDomainObject -SuppressVerbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath "$Domain" -LdapFilter "(name=$Domain)" -LdapFields 'distinguishedname' -UseAdHoc | Select-Object distinguishedname -ExpandProperty distinguishedname
         
         # Call Get-SQLDomainObject    
@@ -7740,6 +7759,8 @@ Function  Get-SQLDomainSite
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainComputer -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7784,6 +7805,11 @@ Function  Get-SQLDomainSite
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -7800,7 +7826,12 @@ Function  Get-SQLDomainSite
     Process
     {
         # Get the domain of the server
-        $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        if($TargetDomain)
+        {
+            $Domain = $TargetDomain
+        }else{
+            $Domain = Get-SQLServerInfo -SuppressVerbose -Instance $Instance -Username $Username -Password $Password | Select-Object DomainName -ExpandProperty DomainName
+        }
         $DomainDistinguishedName = Get-SQLDomainObject -SuppressVerbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath "$Domain" -LdapFilter "(name=$Domain)" -LdapFields 'distinguishedname' -UseAdHoc | Select-Object distinguishedname -ExpandProperty distinguishedname
         
         # Call Get-SQLDomainObject    
@@ -7953,6 +7984,8 @@ Function  Get-SQLDomainOu
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainOu -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -7997,6 +8030,11 @@ Function  Get-SQLDomainOu
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8014,9 +8052,9 @@ Function  Get-SQLDomainOu
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged' -UseAdHoc            
         }else{
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter '(objectCategory=organizationalUnit)' -LdapFields 'name,distinguishedname,adspath,instancetype,whencreated,whenchanged'
         }
     }
 
@@ -8053,6 +8091,8 @@ Function  Get-SQLDomainAccountPolicy
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainAccountPolicy -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -8097,6 +8137,12 @@ Function  Get-SQLDomainAccountPolicy
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8126,9 +8172,9 @@ Function  Get-SQLDomainAccountPolicy
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink' -UseAdHoc            
         }else{
-            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter '(objectClass=domainDNS)' -LdapFields 'pwdhistorylength,lockoutthreshold,lockoutduration,lockoutobservationwindow,minpwdlength,minpwdage,pwdproperties,whenchanged,gplink'
         }
 
         $Results | ForEach-Object {
@@ -8183,6 +8229,8 @@ Function  Get-SQLDomainGroup
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .PARAMETER FilterGroup
             Domain group to filter for.
             .EXAMPLE
@@ -8234,6 +8282,11 @@ Function  Get-SQLDomainGroup
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8256,9 +8309,9 @@ Function  Get-SQLDomainGroup
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'samaccountname,adminCount,whencreated,whenchanged,adspath' -UseAdHoc            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'samaccountname,adminCount,whencreated,whenchanged,adspath' -UseAdHoc            
         }else{
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'samaccountname,adminCount,whencreated,whenchanged,adspath'            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectClass=Group)(SamAccountName=$FilterGroup))" -LdapFields 'samaccountname,adminCount,whencreated,whenchanged,adspath'            
         }
     }
 
@@ -8293,6 +8346,8 @@ Function  Get-SQLDomainTrust
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainTrust -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -8337,6 +8392,11 @@ Function  Get-SQLDomainTrust
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8364,9 +8424,9 @@ Function  Get-SQLDomainTrust
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectClass=trustedDomain)" -LdapFields 'trustpartner,distinguishedname,trusttype,trustdirection,trustattributes,whencreated,whenchanged,adspath' -UseAdHoc            
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(objectClass=trustedDomain)" -LdapFields 'trustpartner,distinguishedname,trusttype,trustdirection,trustattributes,whencreated,whenchanged,adspath' -UseAdHoc            
         }else{
-            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectClass=trustedDomain)" -LdapFields 'trustpartner,distinguishedname,trusttype,trustdirection,trustattributes,whencreated,whenchanged,adspath'            
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(objectClass=trustedDomain)" -LdapFields 'trustpartner,distinguishedname,trusttype,trustdirection,trustattributes,whencreated,whenchanged,adspath'            
         }
 
         $Result | ForEach-Object {
@@ -8452,6 +8512,8 @@ Function  Get-SQLDomainPasswordsLAPS
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainPasswordsLAPS -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -8496,6 +8558,11 @@ Function  Get-SQLDomainPasswordsLAPS
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8518,9 +8585,9 @@ Function  Get-SQLDomainPasswordsLAPS
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,ms-MCS-AdmPwd,adspath' -UseAdHoc            
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,ms-MCS-AdmPwd,adspath' -UseAdHoc            
         }else{
-            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,ms-MCS-AdmPwd,adspath'            
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,ms-MCS-AdmPwd,adspath'            
         }
         
         $Result | ForEach-Object {
@@ -8570,6 +8637,8 @@ Function  Get-SQLDomainController
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainController -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -8614,6 +8683,11 @@ Function  Get-SQLDomainController
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8631,9 +8705,9 @@ Function  Get-SQLDomainController
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))" -LdapFields 'name,dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount' -UseAdHoc            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))" -LdapFields 'name,dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount' -UseAdHoc            
         }else{
-            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))" -LdapFields 'name,dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount'            
+            Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))" -LdapFields 'name,dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount'            
         }
 
     }
@@ -8669,6 +8743,8 @@ Function  Get-SQLDomainExploitableSystem
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .EXAMPLE
             PS C:\> Get-SQLDomainExploitableSystem -Instance SQLServer1\STANDARDDEV2014 -Verbose -UseAdHoc 
             .EXAMPLE
@@ -8711,6 +8787,11 @@ Function  Get-SQLDomainExploitableSystem
         [Parameter(Mandatory = $false,
         HelpMessage = 'Use adhoc connection for executing the query instead of a server link.  The link option (default) will create an ADSI server link and use OpenQuery. The AdHoc option will enable adhoc queries, and use OpenRowSet.')]
         [Switch]$UseAdHoc,
+
+        [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -8822,9 +8903,9 @@ Function  Get-SQLDomainExploitableSystem
     {
         # Call Get-SQLDomainObject    
         if($UseAdHoc){
-            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount' -UseAdHoc            
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount' -UseAdHoc            
         }else{
-            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount'            
+            $Result = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(objectCategory=Computer)" -LdapFields 'dnshostname,operatingsystem,operatingsystemversion,operatingsystemservicepack,whenchanged,logoncount'            
         }
 
         # Iterate through each exploit
@@ -8889,6 +8970,8 @@ Function  Get-SQLDomainGroupMember
             SQL Server credential.
             .PARAMETER Instance
             SQL Server instance to connection to.
+            .PARAMETER TargetDomain
+            Domain to query.
             .PARAMETER FilterGroup
             Domain group to filter for.
             .EXAMPLE
@@ -8940,6 +9023,11 @@ Function  Get-SQLDomainGroupMember
         [Switch]$UseAdHoc,
 
         [Parameter(Mandatory = $false,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Domain to query.')]
+        [string]$TargetDomain,
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
         [switch]$SuppressVerbose
     )
@@ -8967,18 +9055,18 @@ Function  Get-SQLDomainGroupMember
     {
         # Call Get-SQLDomainObject to get group DN
         if($UseAdHoc){
-            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -UseAdHoc -SuppressVerbose
+            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -UseAdHoc -SuppressVerbose
         }else{
-            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -SuppressVerbose       
+            $FullDN = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=group)(samaccountname=$FilterGroup))" -LdapFields 'distinguishedname' -SuppressVerbose       
         }
 
         $DN = $FullDN.distinguishedname
 
         # Call Get-SQLDomainObject to get group membership
         if($UseAdHoc){
-            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname' -UseAdHoc
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname' -UseAdHoc
         }else{
-            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname'     
+            $Results = Get-SQLDomainObject -Verbose -Instance $Instance -Username $Username -Password $Password -LinkUsername $LinkUsername -LinkPassword $LinkPassword -LdapPath $TargetDomain -LdapFilter "(&(objectCategory=user)(memberOf=$DN))" -LdapFields 'samaccountname,displayname'     
         }
 
         $Results | ForEach-Object {           

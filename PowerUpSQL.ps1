@@ -15174,7 +15174,9 @@ Function Get-SQLServerLinkCrawl{
     .PARAMETER TimeOut
     Connection timeout.
     .PARAMETER Query
-    Custom SQL query to run on each server.
+    Custom SQL query to run. If QueryTarget isn's given, this will run on each server.
+    PARAMETER QueryTarget
+    Link to run SQL query on.
     .PARAMETER Export
     Convert collected data to exportable format.
     .Example
@@ -15227,8 +15229,12 @@ Function Get-SQLServerLinkCrawl{
         [int]$TimeOut = 2,
 
         [Parameter(Mandatory=$false,
-        HelpMessage="Custom SQL query to run on each server.")]
+        HelpMessage="Custom SQL query to run. If QueryTarget isn's given, this will run on each server.")]
         [string]$Query,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Link to run SQL query on.")]
+        [string]$QueryTarget,
 
         [Parameter(Mandatory=$false,
         HelpMessage="Convert collected data to exportable format.")]
@@ -15252,7 +15258,7 @@ Function Get-SQLServerLinkCrawl{
             $i--
             foreach($Server in $List){
                 if($Server.Instance -eq "") {
-                    $List = (Get-SQLServerLinkData -list $List -server $Server -query $Query)
+                    $List = (Get-SQLServerLinkData -list $List -server $Server -query $Query -QueryTarget $QueryTarget)
                     $i++
 
                     # Verbose output
@@ -15306,7 +15312,11 @@ Function Get-SQLServerLinkData{
 
         [Parameter(Mandatory=$false,
         HelpMessage="Custom SQL query to run")]
-        $Query
+        $Query,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Target of custom SQL query to run")]
+        $QueryTarget
     )
 
     Begin
@@ -15330,17 +15340,19 @@ Function Get-SQLServerLinkData{
             $Server.Links = [array]$SqlInfoTable.srvname
 
             if($Query -ne ""){
-                if($Query -like '*xp_cmdshell*'){
-                    $Query =  $Query + " WITH RESULT SETS ((output VARCHAR(8000)))"
-                }
-                if($Query -like '*xp_dirtree*'){
-                    $Query = $Query + "  WITH RESULT SETS ((output VARCHAR(8000), depth int))"
-                }
-                $SqlInfoTable = Get-SqlQuery -instance $Instance -Query ((Get-SQLServerLinkQuery -path $Server.Path -sql $Query)) -Timeout $Timeout -Username $UserName -Password $Password -Credential $Credential
-                if($Query -like '*WITH RESULT SETS*'){
-                    $Server.CustomQuery = $SqlInfoTable.output
-                } else {
-                    $Server.CustomQuery = $SqlInfoTable
+                if($QueryTarget -eq "" -or ($QueryTarget -ne "" -and $Server.Instance -eq $QueryTarget)){
+                    if($Query -like '*xp_cmdshell*'){
+                        $Query =  $Query + " WITH RESULT SETS ((output VARCHAR(8000)))"
+                    }
+                    if($Query -like '*xp_dirtree*'){
+                        $Query = $Query + "  WITH RESULT SETS ((output VARCHAR(8000), depth int))"
+                    }
+                    $SqlInfoTable = Get-SqlQuery -instance $Instance -Query ((Get-SQLServerLinkQuery -path $Server.Path -sql $Query)) -Timeout $Timeout -Username $UserName -Password $Password -Credential $Credential
+                    if($Query -like '*WITH RESULT SETS*'){
+                        $Server.CustomQuery = $SqlInfoTable.output
+                    } else {
+                        $Server.CustomQuery = $SqlInfoTable
+                    }
                 }
             }
 

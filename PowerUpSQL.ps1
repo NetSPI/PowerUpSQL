@@ -15061,9 +15061,9 @@ Function  Get-SQLServerLoginDefaultPw
         $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
         $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null
         $DefaultPasswords.Rows.Add("SQLEXPRESS","admin","ca_admin") | out-null
-        $DefaultPasswords.Rows.Add("SQLEXPRESS","gcs_client","SysGal.5560") | Out-Null     #SA password = GCSsa5560 
-        $DefaultPasswords.Rows.Add("SQLEXPRESS","gcs_web_client","SysGal.5560") | out-null #SA password = GCSsa5560 
-        $DefaultPasswords.Rows.Add("SQLEXPRESS","NBNUser","NBNPassword") | out-null
+        #$DefaultPasswords.Rows.Add("SQLEXPRESS","gcs_client","SysGal.5560") | Out-Null     #SA password = GCSsa5560 
+        #$DefaultPasswords.Rows.Add("SQLEXPRESS","gcs_web_client","SysGal.5560") | out-null #SA password = GCSsa5560 
+        #$DefaultPasswords.Rows.Add("SQLEXPRESS","NBNUser","NBNPassword") | out-null
         $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null 
         $DefaultPasswords.Rows.Add("TEW_SQLEXPRESS","tew","tew") | Out-Null
         $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null

@@ -15626,6 +15626,10 @@ function Get-DomainObject
             .EXAMPLE
             PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))"
             .EXAMPLE
+            PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1:389
+            .Note It will use the security context of the current process to authenticate to the domain controller.
+            .Note IP/Port can be specified to reach a pivot machine.
+            .EXAMPLE
             PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1  -Username Domain\User  -Password Password123!
             .Note
             This was based on Will Schroeder's Get-ADObject function from https://github.com/PowerShellEmpire/PowerTools/blob/master/PowerView/powerview.ps1
@@ -15679,15 +15683,19 @@ function Get-DomainObject
         if ($DomainController)
         {
            
-            # Verify credentials were provided
-            if(-not $Username){
-                Write-Output "A username and password must be provided when setting a specific domain controller."
-                Break
-            }
-
             # Test credentials and grab domain
             try {
-                $objDomain = (New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController", $Credential.UserName, $Credential.GetNetworkCredential().Password).distinguishedname
+
+                $ArgumentList = New-Object Collections.Generic.List[string]
+                $ArgumentList.Add("LDAP://$DomainController")
+
+                if($Username){
+                    $ArgumentList.Add($Credential.UserName)
+                    $ArgumentList.Add($Credential.GetNetworkCredential().Password)
+                }
+
+                $objDomain = (New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList $ArgumentList).distinguishedname
+
             }catch{
                 Write-Output "Authentication failed."
             }
@@ -15696,14 +15704,10 @@ function Get-DomainObject
             if($LdapPath)
             {
                 $LdapPath = '/'+$LdapPath+','+$objDomain
-                $objDomainPath = New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController$LdapPath", $Credential.UserName, $Credential.GetNetworkCredential().Password
-            }
-            else
-            {
-                $objDomainPath = New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList "LDAP://$DomainController", $Credential.UserName, $Credential.GetNetworkCredential().Password
+                $ArgumentList[0] = "LDAP://$DomainController$LdapPath"
             }
 
-            $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList $objDomainPath
+            $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList $ArgumentList
         }
         else
         {

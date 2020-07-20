@@ -28,12 +28,12 @@ For setup instructions, <a href="https://github.com/NetSPI/PowerUpSQL/wiki/Power
 ### Author and Contributors
 * Author: Scott Sutherland (@_nullbind)
 * Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)
-* Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), @cobbr_io, @mariuszbit, @0xe7, and @ktaranov
+* Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), @cobbr_io, @mariuszbit, @0xe7, phackt(@phackt_ul), and @ktaranov
 
 ### Issue Reports
 
 I perform QA on functions before we publish them, but it's hard to consider every scenario. So I just wanted to say thanks to those of you that have taken the time to give me a heads up on issues with PowerUpSQL so that we can make it better. 
-* Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject, @christruncer, rvrsh3ll(@424f424f)
+* Bug Reporters: @ClementNotin, @runvirus, @CaledoniaProject, @christruncer, rvrsh3ll(@424f424f),@mubix (Rob Fuller)
 
 
 ### License

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2020
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.106
+        Version: 1.107
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15393,6 +15393,49 @@ Function Get-SQLServerLinkQuery{
     }
 }
 
+
+# ----------------------------------
+#  Test-FolderWriteAccess
+# ----------------------------------
+# Author: Scott Sutherland
+Function Test-FolderWriteAccess
+{
+    <#
+            .SYNOPSIS
+            Check if the current user has write access to a provided directory by creating a temp file and removing it.
+            .PARAMETER OutFolder
+            Output directory path.
+            .EXAMPLE
+            PS C:\> Test-FolderWriteAccess "c:\windows\system32"
+            False 
+            .EXAMPLE
+            PS C:\> Test-FolderWriteAccess "$env:LOCALAPPDATA"
+            True
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+        ValueFromPipeline = $true,
+        ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'Folder you would like to test write access to.')]
+        [string]$OutFolder
+    )
+
+    Process
+    {
+        # Create randomized 15 character file name
+        $WriteTestFile = (-join ((65..90) + (97..122) | Get-Random -Count 15 | % {[char]$_}))
+
+        # Test Write Access
+        Try { 
+            write-output "test" | Out-File "$OutFolder\$WriteTestFile"
+            rm "$OutFolder\$WriteTestFile"
+            return $true
+        }Catch{  
+            return $false
+        }
+    }
+}
 #endregion
 
 #########################################################################
@@ -25987,8 +26030,8 @@ function Convert-BitShift {
 
 #########################################################################
 #
-#region                 Primary FUNCTIONs
-#          Invoke-SQLDump, Invoke-SQLAudit, Invoke-SQLEscalatePriv
+#region          PRIMARY FUNCTIONS
+#                Invoke-SQLDump, Invoke-SQLAudit, Invoke-SQLEscalatePriv
 #
 #########################################################################
 
@@ -26091,6 +26134,15 @@ Function Invoke-SQLAudit
 
     Begin
     {
+
+        # If provided, verify write access to target directory
+        if($OutFolder){
+            if((Test-FolderWriteAccess "$OutFolder") -eq $false){
+                Write-Verbose -Message 'YOU DONT APPEAR TO HAVE WRITE ACCESS TO THE PROVIDED DIRECTORY.'
+                BREAK
+            }
+        }        
+
         # Table for output
         $TblData = New-Object -TypeName System.Data.DataTable
         $null = $TblData.Columns.Add('ComputerName')

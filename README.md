@@ -28,7 +28,7 @@ For setup instructions, <a href="https://github.com/NetSPI/PowerUpSQL/wiki/Power
 ### Author and Contributors
 * Author: Scott Sutherland (@_nullbind)
 * Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)
-* Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), @cobbr_io, @mariuszbit, @0xe7, phackt(@phackt_ul), @vsamiamv, and @ktaranov
+* Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), @TVqQAAMA, @cobbr_io, @mariuszbit, @0xe7, phackt(@phackt_ul), @vsamiamv, and @ktaranov
 
 ### Issue Reports
 

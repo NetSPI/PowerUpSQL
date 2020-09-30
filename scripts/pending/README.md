@@ -15,4 +15,6 @@
 
 	Author: Antti Rantasaari
 	Get-MSSQLCredentialPasswords.psm1
-
+	
+	Author: Scott Sutherland
+	Invoke-HuntSQLServers.ps1

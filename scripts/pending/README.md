@@ -18,3 +18,6 @@
 	
 	Author: Scott Sutherland
 	Invoke-HuntSQLServers.ps1
+	
+	Author: Scott Sutherland
+	SQLC2.ps1

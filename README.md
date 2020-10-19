@@ -5,7 +5,6 @@
 [![stars badge]][stars] 
 [![forks badge]][forks] 
 [![issues badge]][issues] 
-![Twitter Follow](https://img.shields.io/twitter/follow/_nullbind.svg?style=social)
 
 [licence badge]:https://img.shields.io/badge/license-New%20BSD-blue.svg
 [stars badge]:https://img.shields.io/github/stars/NetSPI/PowerUpSQL.svg
@@ -27,7 +26,7 @@ PowerUpSQL includes functions that support SQL Server discovery, weak configurat
 For setup instructions, <a href="https://github.com/NetSPI/PowerUpSQL/wiki/PowerUpSQL-Cheat-Sheet">cheat Sheets</a>, blogs, function overviews, and usage information check out the wiki: <a href="  https://github.com/NetSPI/PowerUpSQL/wiki">https://github.com/NetSPI/PowerUpSQL/wiki</a>
 
 ### Author and Contributors
-* Author: Scott Sutherland (@_nullbind)
+* Author: Scott Sutherland (@_nullbind) ![Twitter Follow](https://img.shields.io/twitter/follow/_nullbind.svg?style=social)
 * Major Contributors: Antti Rantasaari, Eric Gruber (@egru), Thomas Elling (@thomaselling)
 * Contributors: Alexander Leary (@0xbadjuju), @leoloobeek, Andrew Luke(@Sw4mpf0x), Mike Manzotti (@mmanzo_), @TVqQAAMA, @cobbr_io, @mariuszbit, @0xe7 (@exploitph), phackt(@phackt_ul), @vsamiamv, and @ktaranov
 

@@ -5,6 +5,7 @@
 [![stars badge]][stars] 
 [![forks badge]][forks] 
 [![issues badge]][issues] 
+![Twitter Follow](https://img.shields.io/twitter/follow/_nullbind.svg?style=social)
 
 [licence badge]:https://img.shields.io/badge/license-New%20BSD-blue.svg
 [stars badge]:https://img.shields.io/github/stars/NetSPI/PowerUpSQL.svg

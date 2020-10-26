@@ -112,7 +112,9 @@
         'Invoke-SQLOSCmdPython',       
         'Invoke-SQLOSCmdR',  
         'Invoke-SQLOSCmdAgentJob',
-        'Invoke-TokenManipulation'
+        'Invoke-TokenManipulation',
+        'Get-DomainObject',
+        'Get-DomainSpn'
     )
     FileList          = 'PowerUpSQL.psm1', 'PowerUpSQL.ps1', 'README.md'
 }

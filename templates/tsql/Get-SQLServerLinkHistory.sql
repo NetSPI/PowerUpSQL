@@ -6,7 +6,7 @@ Goal:
 Identify linked server usage by qurying the pla cache.
 
 Potential Solution: 
-You can modify the query below to identify openquery, openrowset and specific link name usage (queries additiona lquery).  
+You can modify the query below to identify openquery, openrowset and specific link name usage (would require appending names to query).  
 However, I still need a solution for four part named references.
 
 Requiremets:

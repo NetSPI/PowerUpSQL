@@ -3,7 +3,7 @@ Script:
 Get-SQLServerLinkHistory
 
 Goal: 
-Identify linked server usage by qurying the pla cache.
+Identify linked server usage by qurying the plan cache.
 
 Potential Solution: 
 You can modify the query below to identify openquery, openrowset and specific link name usage (would require appending names to query).  
@@ -13,7 +13,8 @@ Requiremets:
 Sysadmin or required SELECT privileges.
 
 Known limitations:
- - If linked server is used via view/function it may not appear in your result set.
+ - If linked server is used via view/function it may not appear in your result set. In these instances you would have to search the 
+   source code for link name references in functions/views, then search the plan cache for those function/views.
  - It will only include any sql that is in the plan cache.
  - The plan cache is cleared on restart.
  - SQL Server will clear out old plans from the cache once it's size limits are reached (can we check when it was last cleared?)

@@ -9,6 +9,9 @@ Potential Solution:
 You can modify the query below to identify openquery, openrowset and specific link name usage (queries additiona lquery).  
 However, I still need a solution for four part named references.
 
+Requiremets:
+Sysadmin or required SELECT privileges.
+
 Known limitations:
  - If linked server is used via view/function it may not appear in your result set.
  - It will only include any sql that is in the plan cache.

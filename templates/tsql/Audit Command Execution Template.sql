@@ -67,7 +67,11 @@ FOR SERVER AUDIT [DerbyconAudit]
 ADD (EXECUTE ON OBJECT::[dbo].[xp_cmdshell] BY [dbo]),					-- Audit xp_cmdshell execution
 ADD (EXECUTE ON OBJECT::[dbo].[sp_addextendedproc] BY [dbo]),				-- Audit additional of custom extended stored procedures
 ADD (EXECUTE ON OBJECT::[dbo].[sp_execute_external_script] BY [dbo]), 			-- Audit execution of external scripts such as R and Python
-ADD (EXECUTE ON OBJECT::[dbo].[Sp_oacreate] BY [dbo])					-- Audit OLE Automation Procedure execution
+ADD (EXECUTE ON OBJECT::[dbo].[Sp_oacreate] BY [dbo]),					-- Audit OLE Automation Procedure execution
+ADD (SELECT ON OBJECT::[MASTER].[dbo].[sysservers] BY [dbo]),           -- Log listing links via sysserver access
+ADD (EXECUTE ON OBJECT::[MASTER].[dbo].[sp_linkedservers] BY [dbo]),    -- Log listing links via sp_linkedservers 
+ADD (EXECUTE ON OBJECT::[MASTER].[dbo].[sp_addlinkedserver] BY [dbo]),  -- Log linked server creation
+ADD (EXECUTE ON OBJECT::[MASTER].[dbo].[sp_addlinkedsrvlogin] BY [dbo]) -- Log linked server user configuration 
 WITH (STATE = ON)
 
 

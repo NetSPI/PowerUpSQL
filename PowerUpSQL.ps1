@@ -179,7 +179,7 @@ Function Get-SQLConnectionObject
             $AuthenticationType = "Current Windows Credentials"
 
             # Set connection string
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1$AppNameString$EncryptString$TrustCertString$WorkstationString"
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=$TimeOut$AppNameString$EncryptString$TrustCertString$WorkstationString"
         }
         
         # Set authentcation type - provided windows user
@@ -17808,13 +17808,8 @@ Function  Invoke-SQLUploadFileOle
                 try
                 {
                     $FileBytes = [System.IO.File]::ReadAllBytes($InputFileFull)
-                    $FileDataTmp = New-Object System.Collections.Generic.List[System.Object]
-                    foreach ($b in $FileBytes)
-                    { 
-                        $FileDataTmp.Add($b.ToString("X2"))
-                    }
-
-                    $FileData = [system.String]::Join('', $FileDataTmp.ToArray())
+                    $FileDataTmp = [System.BitConverter]::ToString($FileBytes)
+                    $FileData = ($FileDataTmp -replace "\-", "")
                 }
                 catch
                 {

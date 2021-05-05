@@ -1,0 +1,5 @@
+-- https://msdn.microsoft.com/en-us/library/ms179856.aspx
+-- This could potentially be used for a dictionary attack inline
+-- Note: This format also supports the four part naming.
+SELECT *  FROM OPENDATASOURCE('SQLNCLI', 'Server=MSSQLSRV04\SQLSERVER2016;Trusted_Connection=yes;').master.dbo.sysdatabases
+SELECT *  FROM OPENDATASOURCE('SQLNCLI', 'Server=MSSQLSRV04\SQLSERVER2016;uid=test;password=test').master.dbo.sysdatabases

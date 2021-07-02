@@ -17518,7 +17518,8 @@ Function  Get-SQLServerPasswordHash
                 [string]$_.PrincipalType,
                 $_.CreateDate,
                 [string]$_.DefaultDatabaseName,
-            [string]$_.PasswordHash)
+                [string](-join('0x0',(($_.PasswordHash).ToUpper().TrimStart("0X"))))
+                )
         }
 
         # Status user

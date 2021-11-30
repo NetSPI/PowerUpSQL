@@ -3,3 +3,6 @@
 -- Note: This format also supports the four part naming.
 SELECT *  FROM OPENDATASOURCE('SQLNCLI', 'Server=MSSQLSRV04\SQLSERVER2016;Trusted_Connection=yes;').master.dbo.sysdatabases
 SELECT *  FROM OPENDATASOURCE('SQLNCLI', 'Server=MSSQLSRV04\SQLSERVER2016;uid=test;password=test').master.dbo.sysdatabases
+
+-- You can also provide SQL Login creds if you want.  It can potentially be used for password guessing.
+select * FROM	OpenDataSource('SQLOLEDB','Data Source=PFCDB05;User ID=pfcnormal;Password=pfcnormal').mydatabse.dbo.[MyTable]

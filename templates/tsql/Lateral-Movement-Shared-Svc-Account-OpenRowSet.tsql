@@ -13,6 +13,3 @@ DECLARE @sql NVARCHAR(MAX)
 set @sql = 'select a.* from openrowset(''SQLNCLI'', ''Server=SQLSERVER2;Trusted_Connection=yes;'', ''select * from master.dbo.sysdatabases'') as a'
 select @sql
 EXEC sp_executeSQL @sql
-
--- You can also provide SQL Login cred if you want.  It can potentially be used for password guessing.
--- SELECT * FROM OPENROWSET('SQLOLEDB', 'Network=DBMSSOCN; Address=10.0.2.2;uid=foo; pwd=password', 'SELECT column1 FROM tableA')

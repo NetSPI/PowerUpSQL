@@ -1,4 +1,4 @@
-#requires -version 2
+﻿#requires -version 2
 <#
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2020
@@ -796,7 +796,7 @@ Function Get-SQLQuery
         }
         else
         {
-            Write-Output -InputObject 'No query provided to Get-SQLQuery function.'
+            Write-Host -InputObject 'No query provided to Get-SQLQuery function.'
             Break
         }
     }
@@ -3156,7 +3156,7 @@ Function  Invoke-SQLOSCmdAgentJob
             ActiveX VBScript/Jscript SubSystem code based on scripts on Microsoft documentation.
             .EXAMPLE
             Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem CmdExec -Command "echo hello > c:\windows\temp\test1.txt"
-            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem PowerShell -Command 'write-output "hello world" | out-file c:\windows\temp\test2.txt' -Sleep 20
+            Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem PowerShell -Command 'Write-Host "hello world" | out-file c:\windows\temp\test2.txt' -Sleep 20
             Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem VBScript -Command 'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\test3.txt' 
             Invoke-SQLOSCmdAgentJob -Verbose -Instance MSSQLSRV04\SQLSERVER2014 -Username sa -Password 'EvilLama!' -SubSystem JScript   -Command 'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\test4.txt' 
             .EXAMPLE
@@ -14706,7 +14706,7 @@ function Create-SQLFileCLRDll
             Write-Verbose "Searching for csc.exe..." 
             $CSCPath = Get-ChildItem -Recurse "C:\Windows\Microsoft.NET\" -Filter "csc.exe" | Sort-Object fullname -Descending | Select-Object fullname -First 1 -ExpandProperty fullname
             if(-not $CSCPath){
-                Write-Output "No csc.exe found."
+                Write-Host "No csc.exe found."
                 return
             }else{
                 Write-Verbose "csc.exe found."
@@ -14770,9 +14770,9 @@ function Create-SQLFileCLRDll
         $MySQLCommand | Out-File $CommandPath 
 
         # Status user
-        Write-Output "C# File: $SRCPath"
-        Write-Output "CLR DLL: $DllPath"
-        Write-Output "SQL Cmd: $CommandPath"        
+        Write-Host "C# File: $SRCPath"
+        Write-Host "CLR DLL: $DllPath"
+        Write-Host "SQL Cmd: $CommandPath"        
     }
     
     End 
@@ -15479,7 +15479,7 @@ Function Test-FolderWriteAccess
 
         # Test Write Access
         Try { 
-            write-output "test" | Out-File "$OutFolder\$WriteTestFile"
+            Write-Host "test" | Out-File "$OutFolder\$WriteTestFile"
             rm "$OutFolder\$WriteTestFile"
             return $true
         }Catch{  
@@ -15794,7 +15794,7 @@ function Get-DomainObject
                 if(-not $objDomain){ throw }
 
             }catch{
-                Write-Output "Authentication failed or domain controller is not reachable."
+                Write-Host "Authentication failed or domain controller is not reachable."
                 Break
             }
 
@@ -15805,7 +15805,9 @@ function Get-DomainObject
                 $ArgumentList[0] = "LDAP://$DomainController$LdapPath"
             }
 
-            $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList $ArgumentList
+            $objDomainPath= New-Object System.DirectoryServices.DirectoryEntry -ArgumentList $ArgumentList
+
+            $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher $objDomainPath
         }
         else
         {
@@ -16472,8 +16474,8 @@ function Get-SQLInstanceBroadcast
 
             # Show error message
             $ErrorMessage = $_.Exception.Message
-            Write-Output -Message " Operation Failed."
-            Write-Output -Message " Error: $ErrorMessage"     
+            Write-Host -Message " Operation Failed."
+            Write-Host -Message " Error: $ErrorMessage"     
         }
     }
 
@@ -16764,7 +16766,7 @@ Function  Get-SQLInstanceFile
         }
         else
         {
-            Write-Output -InputObject 'File path does not appear to be valid.'
+            Write-Host -InputObject 'File path does not appear to be valid.'
             break
         }
 
@@ -18168,10 +18170,10 @@ Function   Get-SQLPersistRegRun
             Command to run.
 
             .Example
-            PS C:\> Get-SQLPersistRegRun -Verbose -Name PureEvil -Command 'PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"' -Instance "SQLServer1\STANDARDDEV2014"
+            PS C:\> Get-SQLPersistRegRun -Verbose -Name PureEvil -Command 'PowerShell.exe -C "Write-Host hacker | Out-File C:\temp\iamahacker.txt"' -Instance "SQLServer1\STANDARDDEV2014"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write value: PureEvil
-            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: PowerShell.exe -C "Write-Host hacker | Out-File C:\temp\iamahacker.txt"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
 
@@ -18216,7 +18218,7 @@ Function   Get-SQLPersistRegRun
         [Parameter(Mandatory = $false,
         ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'The command to run.')]
-        [string]$Command = 'PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"',
+        [string]$Command = 'PowerShell.exe -C "Write-Host hacker | Out-File C:\temp\iamahacker.txt"',
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -18365,10 +18367,10 @@ Function   Get-SQLPersistRegDebugger
             VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
 
             .Example
-            PS C:\> Get-SQLPersistRegDebugger-Verbose -Name sethc.exe -Command "PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"" -Instance "SQLServer1\STANDARDDEV2014"
+            PS C:\> Get-SQLPersistRegDebugger-Verbose -Name sethc.exe -Command "PowerShell.exe -C "Write-Host hacker | Out-File C:\temp\iamahacker.txt"" -Instance "SQLServer1\STANDARDDEV2014"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Connection Success.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write debugger for: sethc.exe
-            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: PowerShell.exe -C "Write-Output hacker | Out-File C:\temp\iamahacker.txt"
+            VERBOSE: SQLServer1\STANDARDDEV2014 : Attempting to write command: PowerShell.exe -C "Write-Host hacker | Out-File C:\temp\iamahacker.txt"
             VERBOSE: SQLServer1\STANDARDDEV2014 : Registry entry written.
             VERBOSE: SQLServer1\STANDARDDEV2014 : Done.
 
@@ -23273,7 +23275,7 @@ Function Invoke-SQLImpersonateServiceCmd
     Process {
 
         # Status user        
-        Write-Output "Note: The verbose flag will give you more info if you need it."
+        Write-Host "Note: The verbose flag will give you more info if you need it."
 
         # Get SQL services
         Write-Verbose "Gathering list of SQL Server services running locally..."
@@ -23309,7 +23311,7 @@ Function Invoke-SQLImpersonateServiceCmd
                 # Run executable as service account
                 if($s_pathname -like "$p_ExecutablePath"){
 
-                    Write-Output "$s_instance - Service: $s_displayname - Running command `"$Exe`" as $s_serviceaccount"
+                    Write-Host "$s_instance - Service: $s_displayname - Running command `"$Exe`" as $s_serviceaccount"
 
                     # Setup command
                     $MyCmd = "/C $Exe"
@@ -23326,7 +23328,7 @@ Function Invoke-SQLImpersonateServiceCmd
     End {
     
         # Status user
-        Write-Output "All done."
+        Write-Host "All done."
     }
 }
 
@@ -23616,7 +23618,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
 	    $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
 	    $MethodBuilder.SetImplementationFlags('Runtime, Managed')
 	    
-	    Write-Output $TypeBuilder.CreateType()
+	    Write-Host $TypeBuilder.CreateType()
 	}
 
 
@@ -23649,7 +23651,7 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
 	    $HandleRef = New-Object System.Runtime.InteropServices.HandleRef($tmpPtr, $Kern32Handle)
 
 	    # Return the address of the function
-	    Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
+	    Write-Host $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
 	}
 
     ###############################
@@ -25117,11 +25119,11 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
         {
             if ($Success)
             {
-                Write-Output "RevertToSelf was successful. Running as: $([Environment]::UserDomainName)\$([Environment]::UserName)"
+                Write-Host "RevertToSelf was successful. Running as: $([Environment]::UserDomainName)\$([Environment]::UserName)"
             }
             else
             {
-                Write-Output "RevertToSelf failed. Running as: $([Environment]::UserDomainName)\$([Environment]::UserName)"
+                Write-Host "RevertToSelf failed. Running as: $([Environment]::UserDomainName)\$([Environment]::UserName)"
             }
         }
     }
@@ -25233,14 +25235,14 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
             elseif ($ImpersonateUser)
             {
                 Invoke-ImpersonateUser -hToken $hToken | Out-Null
-                Write-Output "Running As: $([Environment]::UserDomainName)\$([Environment]::UserName)"
+                Write-Host "Running As: $([Environment]::UserDomainName)\$([Environment]::UserName)"
             }
 
             Free-AllTokens -TokenInfoObjs $AllTokens
         }
         elseif ($PsCmdlet.ParameterSetName -ieq "WhoAmI")
         {
-            Write-Output "$([Environment]::UserDomainName)\$([Environment]::UserName)"
+            Write-Host "$([Environment]::UserDomainName)\$([Environment]::UserName)"
         }
         else #Enumerate tokens
         {
@@ -25248,11 +25250,11 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
 
             if ($PsCmdlet.ParameterSetName -ieq "ShowAll")
             {
-                Write-Output $AllTokens
+                Write-Host $AllTokens
             }
             else
             {
-                Write-Output (Get-UniqueTokens -AllTokens $AllTokens).TokenByUser.Values
+                Write-Host (Get-UniqueTokens -AllTokens $AllTokens).TokenByUser.Values
             }
 
             Invoke-RevertToSelf
@@ -25311,11 +25313,11 @@ function Test-IsLuhnValid
 
     if ((($checksum + $checksumDigit) % 10) -eq 0 -and $NumCount -ge 12)
     {
-        Write-Output -InputObject $true
+        Write-Host -InputObject $true
     }
     else
     {
-        Write-Output -InputObject $false
+        Write-Host -InputObject $false
     }
 }
 
@@ -25359,7 +25361,7 @@ function ConvertTo-Digits
         $digits[$i] = $digit
         $n = [math]::Floor($n / 10)
     }
-    Write-Output -InputObject $digits
+    Write-Host -InputObject $digits
 }
 
 

@@ -1,1 +1,17 @@
 
+-- Get list of procedures
+SELECT * FROM sysobjects where type = 'p'
+
+-- Indirectly get sp source for procedures
+sp_helptext 'sp_helptext'
+
+-- Directly get native sp source
+SELECT * FROM master.sys.all_sql_modules
+
+-- Directly get native sp source
+SELECT TEXT FROM master.sys.syscomments 
+
+-- Directly get custom sp source
+SELECT ROUTINE_CATALOG,SPECIFIC_SCHEMA,ROUTINE_NAME,ROUTINE_DEFINITION
+FROM MASTER.INFORMATION_SCHEMA.ROUTINES
+ORDER BY ROUTINE_NAME

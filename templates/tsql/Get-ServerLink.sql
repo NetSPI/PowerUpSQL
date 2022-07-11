@@ -33,7 +33,7 @@ sp_linkedservers
 select * from master..sysservers
 select * from master.dbo.sysservers
 select * from master.sys.servers
-select * from FROM master.sys.sysxsrvs -- requires some additional execution context
+select * from FROM master.sys.sysxsrvs -- This is a system base table - https://docs.microsoft.com/en-us/sql/relational-databases/system-tables/system-base-tables?view=sql-server-ver16
 
 
 

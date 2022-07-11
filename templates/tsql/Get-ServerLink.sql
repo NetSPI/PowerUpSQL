@@ -27,7 +27,13 @@ LEFT JOIN [sys].[linked_logins] b
 LEFT JOIN [sys].[server_principals] c
 	ON c.principal_id = b.local_principal_id
 
+-- Alternative Options
 
+sp_linkedservers
+select * from master..sysservers
+select * from master.dbo.sysservers
+select * from master.sys.servers
+select * from FROM master.sys.sysxsrvs -- requires some additional execution context
 
 
 

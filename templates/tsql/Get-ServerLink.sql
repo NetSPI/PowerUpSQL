@@ -33,7 +33,7 @@ sp_linkedservers
 select * from master..sysservers
 select * from master.dbo.sysservers
 select * from master.sys.servers
-select * from FROM master.sys.sysxsrvs -- This is a system base table and can only be accessed via a dedicated administrator connection (DAC).
+select * from FROM master.sys.sysxsrvs -- This is a system base table and can only be accessed via a dedicated administrator connection (DAC) with a sysadmin login.
 
 
 

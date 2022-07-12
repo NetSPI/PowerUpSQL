@@ -1,3 +1,8 @@
+-- Script: Get-MailCredential.sql
+-- Requirements: Sysadmin or required SELECT privileges.
+-- Description: Returns a row for SMTP credential.  Everything but the cleartext credential is shown.
+-- Reference: https://msdn.microsoft.com/en-us/library/ms187404.aspx
+
 SELECT name,  
 c.credential_id,
 ms.account_id,

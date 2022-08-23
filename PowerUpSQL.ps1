@@ -3613,7 +3613,7 @@ Function  Get-SQLServerInfo
             END
 
             -- Get SQL Server Service Account
-            DECLARE @ServiceaccountName varchar(250)
+            DECLARE @ServiceAccountName varchar(250)
             EXECUTE master.dbo.xp_instance_regread
             N'HKEY_LOCAL_MACHINE', @SQLServerInstance,
             N'ObjectName',@ServiceAccountName OUTPUT, N'no_output'

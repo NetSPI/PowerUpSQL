@@ -15306,6 +15306,8 @@ Function Get-SQLServerLinkCrawl{
 
         $List += $Server
         $SqlInfoTable = New-Object System.Data.DataTable
+
+        $Visited = [System.Collections.Generic.HashSet[string]]::new()
     }
     
     Process
@@ -15320,14 +15322,25 @@ Function Get-SQLServerLinkCrawl{
                         Write-Verbose "$Path exceeds max depth. Skipping..."
                         continue
                     }
-                    $List = (Get-SQLServerLinkData -list $List -server $Server -query $Query -QueryTarget $QueryTarget)
+
+                    $TempList = (Get-SQLServerLinkData -list $List -server $Server -query $Query -QueryTarget $QueryTarget)
+                    if ($Server.Instance -ne "Broken Link") {
+                        # if we've already been to this server with the same user, there's nothing new to log or find
+                        $key = "{0}:{1}" -f $Server.Instance, $Server.User
+                        if ($Visited.Contains($key)) {
+                            Write-Verbose "$Path has already been traversed with $($Server.User). Skipping..."
+                            continue
+                        }
+                        $Visited.Add($key) | Out-Null
+                    }
+                    $List = $TempList
                     $i++
 
                     # Verbose output
                     Write-Verbose "--------------------------------"
                     Write-Verbose " Server: $($Server.Instance)"
                     Write-Verbose "--------------------------------"
-                    Write-Verbose " - Link Path to server: $($Server.Path -join ' -> ')"                    
+                    Write-Verbose " - Link Path to server: $Path"
                     Write-Verbose " - Link Login: $($Server.User)"                                   
                     Write-Verbose " - Link IsSysAdmin: $($Server.Sysadmin)"
                     Write-Verbose " - Link Count: $($Server.Links.Count)"                    

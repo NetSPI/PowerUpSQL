@@ -15228,6 +15228,8 @@ Function Get-SQLServerLinkCrawl{
     Custom SQL query to run. If QueryTarget isn's given, this will run on each server.
     PARAMETER QueryTarget
     Link to run SQL query on.
+    .PARAMETER MaxDepth
+    Max crawl depth.
     .PARAMETER Export
     Convert collected data to exportable format.
     .Example
@@ -15288,6 +15290,10 @@ Function Get-SQLServerLinkCrawl{
         [string]$QueryTarget,
 
         [Parameter(Mandatory=$false,
+        HelpMessage="Max crawl depth.")]
+        [int]$MaxDepth,
+
+        [Parameter(Mandatory=$false,
         HelpMessage="Convert collected data to exportable format.")]
         [switch]$Export
     )
@@ -15309,6 +15315,11 @@ Function Get-SQLServerLinkCrawl{
             $i--
             foreach($Server in $List){
                 if($Server.Instance -eq "") {
+                    $Path = $Server.Path -join ' -> '
+                    if ($MaxDepth -ne 0 -and ($Server.Path.Count - 1) -gt $MaxDepth) {
+                        Write-Verbose "$Path exceeds max depth. Skipping..."
+                        continue
+                    }
                     $List = (Get-SQLServerLinkData -list $List -server $Server -query $Query -QueryTarget $QueryTarget)
                     $i++
 
@@ -15324,6 +15335,8 @@ Function Get-SQLServerLinkCrawl{
                 }   
             } 
         }
+
+        $List = $List | Where-Object { $MaxDepth -eq 0 -or ($_.Path.Count - 1) -le $MaxDepth}
 
         if($Export){
             $LinkList = New-Object System.Data.Datatable

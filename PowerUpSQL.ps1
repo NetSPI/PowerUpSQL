@@ -15363,7 +15363,7 @@ Function Get-SQLServerLinkCrawl{
             } 
         }
 
-        $List = $List | Where-Object { $MaxDepth -eq 0 -or ($_.Path.Count - 1) -le $MaxDepth}
+        $List = $List | Where-Object { $MaxDepth -eq 0 -or ($_.Path.Count - 1) -le $MaxDepth }
 
         if($Export){
             $LinkList = New-Object System.Data.Datatable

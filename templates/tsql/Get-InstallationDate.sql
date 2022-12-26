@@ -1,6 +1,7 @@
 -- Option 1: createdat FROM master.sys.syslogins 
 -- $server.VersionMajor -ge 9
--- works on 2022, 2016, but not on 2014
+-- Tested version: 2022, 2016, 2014
+-- Requirements: sysadmin
 -- Reference: https://www.dbrnd.com/2016/03/sql-server-script-to-find-installation-date-time-and-authentication-mode/
 SELECT 
 	createdate AS InstallationDate 

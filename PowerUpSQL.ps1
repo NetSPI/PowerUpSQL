@@ -15163,7 +15163,11 @@ Function  Get-SQLServerLoginDefaultPw
         }else{
             Write-Verbose "$Instance : No instance match found."
             return 
-        }        
+        }
+
+ 	if($TblResultsTemp.GetType().Name  -eq  "DataRow"){
+        	$TblResultsTemp = ,$TblResultsTemp
+	} 
 
         # Test login
 		#Write-Verbose ($instance).ToString()

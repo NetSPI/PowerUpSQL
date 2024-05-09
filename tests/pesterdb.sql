@@ -1,5 +1,7 @@
 -- Script: pesterdb.sql
 -- Description: This script can be used to configure a new SQL Server 2014 instance for PowerUpSQL Pester tests.
+-- https://github.com/NetSPI/PowerUpSQL/blob/master/tests/pesterdb.sql
+-- Author: Scott Sutherland, NetSPI
 
 ------------------------------------------------------------
 -- Create Logins, Database Users, and Grant Assembly Privs

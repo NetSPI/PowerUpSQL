@@ -1056,3 +1056,17 @@ GO
 
 use msdb
 EXEC dbo.sp_start_job N'OS COMMAND EXECUTION EXAMPLE - ActiveX: JSCRIPT' ; 
+
+----------------------------------------------------------------------
+-- Create Global Temp Tables
+----------------------------------------------------------------------
+
+-- Create table variable
+If not Exists (SELECT name FROM tempdb.sys.objects WHERE name = 'table_variable')
+DECLARE @table_variable TABLE (Spy_id INT NOT NULL, SpyName text NOT NULL, RealName text NULL);
+
+-- Insert records into table variable
+INSERT INTO @table_variable (Spy_id, SpyName, RealName) VALUES (1,'Black Widow','Scarlett Johansson')
+INSERT INTO @table_variable (Spy_id, SpyName, RealName) VALUES (2,'Ethan Hunt','Tom Cruise')
+INSERT INTO @table_variable (Spy_id, SpyName, RealName) VALUES (3,'Evelyn Salt','Angelina Jolie')
+INSERT INTO @table_variable (Spy_id, SpyName, RealName) VALUES (4,'James Bond','Sean Connery')

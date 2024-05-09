@@ -781,11 +781,11 @@ GO
 USE [msdb]
 GO
 
-/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - CMDEXEC]    Script Date: 8/29/2017 11:23:50 AM ******/
+/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - CMDEXEC]    Script Date: 5/9/2024 9:12:13 AM ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 8/29/2017 11:23:50 AM ******/
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 9:12:13 AM ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
@@ -794,21 +794,19 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-DECLARE @user varchar(8000)
-SET @user = SYSTEM_USER
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'OS COMMAND EXECUTION EXAMPLE - CMDEXEC', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 
 		@notify_level_page=0, 
-		@delete_level=1, 
+		@delete_level=0, 
 		@description=N'No description available.', 
 		@category_name=N'[Uncategorized (Local)]', 
-		@owner_login_name=@user, @job_id = @jobId OUTPUT
+		@owner_login_name=N'MSSQLSRV04\Administrator', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [RUN COMMAND  - CMDEXEC]    Script Date: 8/29/2017 11:23:50 AM ******/
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMMAND  - CMDEXEC', 
+/****** Object:  Step [Run CMD]    Script Date: 5/9/2024 9:12:13 AM ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Run CMD', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
 		@on_success_action=1, 
@@ -818,11 +816,24 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMM
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'CmdExec', 
-		@command=N'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\blah.txt', 
+		@command=N'c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\artifact-cmd.txt', 
 		@flags=0
-		--,@proxy_name=N'WinUser1'		
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'CmdDaily', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20240509, 
+		@active_end_date=99991231, 
+		@active_start_time=0, 
+		@active_end_time=235959, 
+		@schedule_uid=N'11e6216d-c317-4cfd-81c9-053ad9b22dbc'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N'(local)'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -834,9 +845,6 @@ EndSave:
 
 GO
 
-use msdb
-EXEC dbo.sp_start_job N'OS COMMAND EXECUTION EXAMPLE - CMDEXEC' ; 
-
 ----------------------------------------------------------------------
 -- Create agent jobs that execute OS commands - PowerShell
 ----------------------------------------------------------------------
@@ -844,11 +852,11 @@ EXEC dbo.sp_start_job N'OS COMMAND EXECUTION EXAMPLE - CMDEXEC' ;
 USE [msdb]
 GO
 
-/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - POWERSHELL]    Script Date: 8/29/2017 11:28:39 AM ******/
+/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - POWERSHELL]    Script Date: 5/9/2024 9:09:22 AM ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 8/29/2017 11:28:39 AM ******/
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 9:09:22 AM ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
@@ -857,21 +865,19 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-DECLARE @user varchar(8000)
-SET @user = SYSTEM_USER
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'OS COMMAND EXECUTION EXAMPLE - POWERSHELL', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 
 		@notify_level_page=0, 
-		@delete_level=1, 
+		@delete_level=0, 
 		@description=N'No description available.', 
 		@category_name=N'[Uncategorized (Local)]', 
-		@owner_login_name=@user, @job_id = @jobId OUTPUT
+		@owner_login_name=N'MSSQLSRV04\Administrator', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [RUN COMMAND - POWERHSHELL]    Script Date: 8/29/2017 11:28:39 AM ******/
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMMAND - POWERHSHELL', 
+/****** Object:  Step [Run PowerShell]    Script Date: 5/9/2024 9:09:22 AM ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Run PowerShell', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
 		@on_success_action=1, 
@@ -881,12 +887,25 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMM
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'PowerShell', 
-		@command=N'write-output "hello world" | out-file c:\windows\temp\blah.txt', 
+		@command=N'hello world" | out-file c:\windows\temp\artifact-powershell.txt', 
 		@database_name=N'master', 
 		@flags=0
-		--,@proxy_name=N'WinUser1'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'PowershellDaily', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20240509, 
+		@active_end_date=99991231, 
+		@active_start_time=0, 
+		@active_end_time=235959, 
+		@schedule_uid=N'5040c673-1700-4296-a892-71e7140e1054'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N'(local)'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -898,9 +917,6 @@ EndSave:
 
 GO
 
-use msdb
-EXEC dbo.sp_start_job N'OS COMMAND EXECUTION EXAMPLE - POWERSHELL' ; 
-
 ----------------------------------------------------------------------
 -- Create agent jobs that execute OS commands - ActiveX VBScript
 ----------------------------------------------------------------------
@@ -908,11 +924,11 @@ EXEC dbo.sp_start_job N'OS COMMAND EXECUTION EXAMPLE - POWERSHELL' ;
 USE [msdb]
 GO
 
-/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT]    Script Date: 8/29/2017 10:27:36 AM ******/
+/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT1]    Script Date: 5/9/2024 9:06:00 AM ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 8/29/2017 10:27:36 AM ******/
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 9:06:00 AM ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
@@ -921,21 +937,19 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-DECLARE @user varchar(8000)
-SET @user = SYSTEM_USER
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT1', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 
 		@notify_level_page=0, 
-		@delete_level=1, 
+		@delete_level=0, 
 		@description=N'No description available.', 
 		@category_name=N'[Uncategorized (Local)]', 
-		@owner_login_name=@user, @job_id = @jobId OUTPUT
+		@owner_login_name=N'MSSQLSRV04\Administrator', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [RUN COMMAND - ActiveX: VBSCRIPT]    Script Date: 8/29/2017 10:27:36 AM ******/
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMMAND - ActiveX: VBSCRIPT', 
+/****** Object:  Step [RUN ActiveX: VBSCRIPT]    Script Date: 5/9/2024 9:06:00 AM ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN ActiveX: VBSCRIPT', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
 		@on_success_action=1, 
@@ -949,15 +963,28 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMM
 
 dim shell
 set shell= CreateObject ("WScript.Shell")
-shell.run("c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\blah.txt")
+shell.run("c:\windows\system32\cmd.exe /c echo hello > c:\windows\temp\artifact-vbscript.txt")
 set shell = nothing
 
 END FUNCTION', 
 		@database_name=N'VBScript', 
 		@flags=0
-		--,@proxy_name=N'WinUser1'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'VBDaily', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20240509, 
+		@active_end_date=99991231, 
+		@active_start_time=0, 
+		@active_end_time=235959, 
+		@schedule_uid=N'1572a7dc-cafb-4a4b-b92e-ed4715f154b0'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N'(local)'
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -968,10 +995,7 @@ QuitWithRollback:
 EndSave:
 
 GO
-
-use msdb
-EXEC dbo.sp_start_job N'OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT' ;  
-
+	
 ----------------------------------------------------------------------
 -- Create agent jobs that execute OS commands - ActiveX JScript
 ----------------------------------------------------------------------
@@ -1019,7 +1043,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'RUN COMM
 		@command=N'function RunCmd()
 {
 	var objShell = new ActiveXObject("shell.application");
-        	objShell.ShellExecute("cmd.exe", "/c echo hello > c:\\windows\\temp\\blah.txt", "", "open", 0);
+        	objShell.ShellExecute("cmd.exe", "/c echo hello > c:\\windows\\temp\\artifact-jscript.txt", "", "open", 0);
  }
 
 RunCmd();
@@ -1072,3 +1096,122 @@ INSERT INTO ##GlobalTempTbl (Spy_id, SpyName, RealName) VALUES (2,'Ethan Hunt','
 INSERT INTO ##GlobalTempTbl (Spy_id, SpyName, RealName) VALUES (3,'Evelyn Salt','Angelina Jolie')
 INSERT INTO ##GlobalTempTbl (Spy_id, SpyName, RealName) VALUES (4,'James Bond','Sean Connery')
 GO
+
+------------------------------------------------------------
+-- Create agent job that uses vulnerable global temp tables
+------------------------------------------------------------
+
+USE [msdb]
+GO
+
+/****** Object:  Job [Temp Table Race Condition]    Script Date: 5/9/2024 8:52:15 AM ******/
+BEGIN TRANSACTION
+DECLARE @ReturnCode INT
+SELECT @ReturnCode = 0
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 8:52:15 AM ******/
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
+BEGIN
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+END
+
+DECLARE @jobId BINARY(16)
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'Temp Table Race Condition', 
+		@enabled=1, 
+		@notify_level_eventlog=0, 
+		@notify_level_email=0, 
+		@notify_level_netsend=0, 
+		@notify_level_page=0, 
+		@delete_level=0, 
+		@description=N'No description available.', 
+		@category_name=N'[Uncategorized (Local)]', 
+		@owner_login_name=N'MSSQLSRV04\Administrator', @job_id = @jobId OUTPUT
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [run tsql]    Script Date: 5/9/2024 8:52:15 AM ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'run tsql', 
+		@step_id=1, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=0, 
+		@retry_interval=0, 
+		@os_run_priority=0, @subsystem=N'TSQL', 
+		@command=N'-- Set filename for PowerShell script
+Set @PsFileName = ''''MyPowerShellScript.ps1''''
+
+-- Set target directory for PowerShell script to be written to
+SELECT  @TargetDirectory = REPLACE(CAST((SELECT SERVERPROPERTY(''''ErrorLogFileName'''')) as VARCHAR(MAX)),''''ERRORLOG'''','''''''')
+
+-- Create full output path for creating the PowerShell script 
+SELECT @PsFilePath = @TargetDirectory +  @PsFileName
+
+-- Define the PowerShell code
+SET @MyPowerShellCode = ''''Write-Output "hello world" | Out-File "'''' +  @TargetDirectory + ''''intendedoutput.txt"''''
+
+-- Create a global temp table with a unique name using dynamic SQL 
+SELECT  @MyGlobalTempTable =  ''''##temp'''' + CONVERT(VARCHAR(12), CONVERT(INT, RAND() * 1000000))
+
+-- Create a command to insert the PowerShell code stored in the @MyPowerShellCode variable, into the global temp table
+SELECT  @Command = ''''
+        CREATE TABLE ['''' + @MyGlobalTempTable + ''''](MyID int identity(1,1), PsCode varchar(MAX)) 
+        INSERT INTO  ['''' + @MyGlobalTempTable + ''''](PsCode) 
+        SELECT @MyPowerShellCode''''
+
+-- Execute that command 
+EXECUTE sp_ExecuteSQL @command, N''''@MyPowerShellCode varchar(MAX)'''', @MyPowerShellCode
+
+-- Execute bcp via xp_cmdshell (as the service account) to save the contents of the temp table to MyPowerShellScript.ps1
+SELECT @Command = ''''bcp "SELECT PsCode from ['''' + @MyGlobalTempTable + '''']'''' + ''''" queryout "''''+ @PsFilePath + ''''" -c -T -S '''' + @@SERVERNAME-- Write the file
+EXECUTE MASTER..xp_cmdshell @command, NO_OUTPUT
+
+-- Run the PowerShell script
+DECLARE @runcmdps nvarchar(4000)
+SET @runcmdps = ''''Powershell -C "$x = gc ''''''''''''+ @PsFilePath + '''''''''''';iex($X)"''''
+EXECUTE MASTER..xp_cmdshell @runcmdps, NO_OUTPUT
+
+-- Run the PowerShell script
+DECLARE @runcmdps nvarchar(4000)
+SET @runcmdps = ''''Powershell -C "$x = gc ''''''''''''+ @PsFilePath + '''''''''''';iex($X)"''''
+EXECUTE MASTER..xp_cmdshell @runcmdps, NO_OUTPUT
+
+-- Delete the PowerShell script
+DECLARE @runcmddel nvarchar(4000)
+SET @runcmddel= ''''DEL /Q "'''' + @PsFilePath +''''"''''
+EXECUTE MASTER..xp_cmdshell @runcmddel, NO_OUTPUT', 
+		@database_name=N'master', 
+		@flags=0
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'RunDaily-TSQL', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20240509, 
+		@active_end_date=99991231, 
+		@active_start_time=0, 
+		@active_end_time=235959, 
+		@schedule_uid=N'c06927ff-3307-4ca2-b17e-826e3c4942aa'
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N'(local)'
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+COMMIT TRANSACTION
+GOTO EndSave
+QuitWithRollback:
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
+EndSave:
+
+GO
+
+
+
+
+
+

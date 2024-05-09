@@ -731,9 +731,26 @@ GO
 
 -- Disable clr strict security
 -- SQL Server 2017 introduced the ‘clr strict security’ configuration. Microsoft documentation states that the setting needs to be disabled to allow the creation of UNSAFE or EXTERNAL assemblies.
-sp_configure 'clr strict security',0
-RECONFIGURE
-GO
+DECLARE @MajorVersion INT;
+
+-- Get the major version number of SQL Server
+SELECT @MajorVersion = LEFT(CAST(SERVERPROPERTY('ProductVersion') AS VARCHAR), CHARINDEX('.', CAST(SERVERPROPERTY('ProductVersion') AS VARCHAR)) - 1);
+
+-- Check if the SQL Server version is 2017 or later
+IF @MajorVersion >= 14  -- SQL Server 2017 is version 14.x
+BEGIN
+    -- Disable 'clr strict security' configuration
+    EXEC sp_configure 'clr strict security', 0;
+    RECONFIGURE;
+    GO    
+    PRINT 'CLR strict security configuration has been disabled.';
+    GO
+END
+ELSE
+BEGIN
+    PRINT 'CLR strict security configuration cannot be modified. The SQL Server version is not 2017 or later.';
+    GO
+END;
 	
 -- Create assembly
 CREATE ASSEMBLY [CommonLib] 
@@ -756,3 +773,4 @@ GO
 -- Run procedure
 beefdencrypt "EAAAAJVbaCaMSI3k1N99P31tP//K4WzvBUEaNW94Ed9yWyhB"
 GO
+

@@ -1,9 +1,9 @@
-﻿#requires -version 2
+#requires -version 2
 <#
         File: PowerUpSQL.ps1
-        Author: Scott Sutherland (@_nullbind), NetSPI - 2020
+        Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.107
+        Version: 1.108
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -26581,12 +26581,12 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLDatabaseUser -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_Users.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_users.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_Users.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_users.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -26707,12 +26707,12 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLServerConfiguration -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Configuration.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_configuration.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Configuration.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_configuration.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -26875,12 +26875,12 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLStoredProcedureCLR -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedur_CLR.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_clr.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_CLR_stored_procedure_CLR.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_clr.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -26917,12 +26917,12 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLServerInfo -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_version.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_version.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -26959,12 +26959,12 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLAgentJob -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Agent_Job.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_agent_job.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_Agent_Jobs.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_agent_jobs.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -26973,12 +26973,43 @@ Function Invoke-SQLDumpInfo
         $Results = Get-SQLOleDbProvder -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_OleDbProvders.xml'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_oledbproviders.xml'
             $Results | Export-Clixml $OutPutPath
         }
         else
         {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_OleDbProvders.csv'
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_oledbproviders.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting temp table information
+        Write-Verbose -Message "$Instance - Getting temp table information..."
+        $Query = @'
+                -- List temp tables, columns, and column types
+                SELECT t1.name as 'Table_Name',
+	                   t2.name as 'Column_Name',
+	                   t3.name as 'Column_Type',
+	                   t1.create_date,
+	                   t1.modify_date,
+	                   t1.parent_object_id,
+	                   OBJECT_ID(t1.parent_object_id) as parent_object,
+	                   (SELECT CASE WHEN (select len(t1.name) - len(replace(t1.name,'#',''))) > 1 THEN 1 ELSE 0 END) as GlobalTempTable, 
+	                   (SELECT CASE WHEN t1.name like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 ELSE 0 END) as LocalTempTable,
+	                   (SELECT CASE WHEN t1.name not like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 ELSE 0 END) as TableVariable
+                FROM tempdb.sys.objects AS t1
+                JOIN tempdb.sys.columns AS t2 ON t1.OBJECT_ID = t2.OBJECT_ID
+                JOIN sys.types AS t3 ON t2.system_type_id = t3.system_type_id
+                WHERE t1.name like '#%';
+'@
+        $Results = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_temp_tables.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_temp_tables.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 

@@ -887,7 +887,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Run Powe
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'PowerShell', 
-		@command=N'hello world" | out-file c:\windows\temp\artifact-powershell.txt', 
+		@command=N'"hello world" | out-file c:\windows\temp\artifact-powershell.txt', 
 		@database_name=N'master', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -924,7 +924,7 @@ GO
 USE [msdb]
 GO
 
-/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT1]    Script Date: 5/9/2024 9:06:00 AM ******/
+/****** Object:  Job [OS COMMAND EXECUTION EXAMPLE - ActiveX: VBSCRIPT]    Script Date: 5/9/2024 9:06:00 AM ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
@@ -1104,11 +1104,11 @@ GO
 USE [msdb]
 GO
 
-/****** Object:  Job [Temp Table Race Condition]    Script Date: 5/9/2024 8:52:15 AM ******/
+/****** Object:  Job [Temp Table Race Condition]    Script Date: 5/9/2024 9:32:18 AM ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 8:52:15 AM ******/
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 9:32:18 AM ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
@@ -1128,7 +1128,7 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'Temp Table Race Condition',
 		@category_name=N'[Uncategorized (Local)]', 
 		@owner_login_name=N'MSSQLSRV04\Administrator', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [run tsql]    Script Date: 5/9/2024 8:52:15 AM ******/
+/****** Object:  Step [run tsql]    Script Date: 5/9/2024 9:32:18 AM ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'run tsql', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
@@ -1139,48 +1139,75 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'run tsql
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'TSQL', 
-		@command=N'-- Set filename for PowerShell script
-Set @PsFileName = ''''MyPowerShellScript.ps1''''
+		@command=N'---------------------------------------
+-- Script: writefile_bcpxpcmdshell.sql
+-- Author/Modifications: Scott Sutherland
+-- Based on https://www.simple-talk.com/sql/t-sql-programming/the-tsql-of-text-files/ 
+-- Description:
+-- Write PowerShell code to disk and run it using bcp and xp_cmdshell.
+---------------------------------------
+
+-- Enable xp_cmdshell
+sp_configure ''show advanced options'',1
+RECONFIGURE
+GO
+
+sp_configure ''xp_cmdshell'',1
+RECONFIGURE
+GO
+
+-- Create variables
+DECLARE @MyPowerShellCode NVARCHAR(MAX)
+DECLARE @PsFileName NVARCHAR(4000)
+DECLARE @TargetDirectory NVARCHAR(4000)
+DECLARE @PsFilePath NVARCHAR(4000)
+DECLARE @MyGlobalTempTable NVARCHAR(4000)
+DECLARE @Command NVARCHAR(4000)
+
+-- Set filename for PowerShell script
+Set @PsFileName = ''MyPowerShellScript.ps1''
 
 -- Set target directory for PowerShell script to be written to
-SELECT  @TargetDirectory = REPLACE(CAST((SELECT SERVERPROPERTY(''''ErrorLogFileName'''')) as VARCHAR(MAX)),''''ERRORLOG'''','''''''')
+SELECT  @TargetDirectory = REPLACE(CAST((SELECT SERVERPROPERTY(''ErrorLogFileName'')) as VARCHAR(MAX)),''ERRORLOG'','''')
 
 -- Create full output path for creating the PowerShell script 
 SELECT @PsFilePath = @TargetDirectory +  @PsFileName
+SELECT @PsFilePath as PsFilePath
 
 -- Define the PowerShell code
-SET @MyPowerShellCode = ''''Write-Output "hello world" | Out-File "'''' +  @TargetDirectory + ''''intendedoutput.txt"''''
+SET @MyPowerShellCode = ''Write-Output "hello world" | Out-File "'' +  @TargetDirectory + ''intendedoutput.txt"''
+SELECT @MyPowerShellCode as PsScriptCode
 
 -- Create a global temp table with a unique name using dynamic SQL 
-SELECT  @MyGlobalTempTable =  ''''##temp'''' + CONVERT(VARCHAR(12), CONVERT(INT, RAND() * 1000000))
+SELECT  @MyGlobalTempTable =  ''##temp'' + CONVERT(VARCHAR(12), CONVERT(INT, RAND() * 1000000))
 
 -- Create a command to insert the PowerShell code stored in the @MyPowerShellCode variable, into the global temp table
-SELECT  @Command = ''''
-        CREATE TABLE ['''' + @MyGlobalTempTable + ''''](MyID int identity(1,1), PsCode varchar(MAX)) 
-        INSERT INTO  ['''' + @MyGlobalTempTable + ''''](PsCode) 
-        SELECT @MyPowerShellCode''''
-
+SELECT  @Command = ''
+		CREATE TABLE ['' + @MyGlobalTempTable + ''](MyID int identity(1,1), PsCode varchar(MAX)) 
+		INSERT INTO  ['' + @MyGlobalTempTable + ''](PsCode) 
+		SELECT @MyPowerShellCode''
+				
 -- Execute that command 
-EXECUTE sp_ExecuteSQL @command, N''''@MyPowerShellCode varchar(MAX)'''', @MyPowerShellCode
+EXECUTE sp_ExecuteSQL @command, N''@MyPowerShellCode varchar(MAX)'', @MyPowerShellCode
 
 -- Execute bcp via xp_cmdshell (as the service account) to save the contents of the temp table to MyPowerShellScript.ps1
-SELECT @Command = ''''bcp "SELECT PsCode from ['''' + @MyGlobalTempTable + '''']'''' + ''''" queryout "''''+ @PsFilePath + ''''" -c -T -S '''' + @@SERVERNAME-- Write the file
+SELECT @Command = ''bcp "SELECT PsCode from ['' + @MyGlobalTempTable + '']'' + ''" queryout "''+ @PsFilePath + ''" -c -T -S '' + @@SERVERNAME
+
+-- Write the file
 EXECUTE MASTER..xp_cmdshell @command, NO_OUTPUT
 
--- Run the PowerShell script
-DECLARE @runcmdps nvarchar(4000)
-SET @runcmdps = ''''Powershell -C "$x = gc ''''''''''''+ @PsFilePath + '''''''''''';iex($X)"''''
-EXECUTE MASTER..xp_cmdshell @runcmdps, NO_OUTPUT
+-- Drop the global temp table
+EXECUTE ( ''Drop table '' + @MyGlobalTempTable )
 
 -- Run the PowerShell script
 DECLARE @runcmdps nvarchar(4000)
-SET @runcmdps = ''''Powershell -C "$x = gc ''''''''''''+ @PsFilePath + '''''''''''';iex($X)"''''
+SET @runcmdps = ''Powershell -C "$x = gc ''''''+ @PsFilePath + '''''';iex($X)"''
 EXECUTE MASTER..xp_cmdshell @runcmdps, NO_OUTPUT
 
 -- Delete the PowerShell script
 DECLARE @runcmddel nvarchar(4000)
-SET @runcmddel= ''''DEL /Q "'''' + @PsFilePath +''''"''''
-EXECUTE MASTER..xp_cmdshell @runcmddel, NO_OUTPUT', 
+SET @runcmddel= ''DEL /Q "'' + @PsFilePath +''"''
+-- EXECUTE MASTER..xp_cmdshell @runcmddel, NO_OUTPUT', 
 		@database_name=N'master', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -1209,6 +1236,7 @@ QuitWithRollback:
 EndSave:
 
 GO
+
 
 
 

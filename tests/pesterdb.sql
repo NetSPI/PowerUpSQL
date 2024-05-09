@@ -1104,11 +1104,11 @@ GO
 USE [msdb]
 GO
 
-/****** Object:  Job [Temp Table Race Condition]    Script Date: 5/9/2024 9:32:18 AM ******/
+/****** Object:  Job [Temp Table Race Condition]    Script Date: 5/9/2024 9:34:10 AM ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 9:32:18 AM ******/
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 5/9/2024 9:34:10 AM ******/
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
 BEGIN
 EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
@@ -1128,7 +1128,7 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'Temp Table Race Condition',
 		@category_name=N'[Uncategorized (Local)]', 
 		@owner_login_name=N'MSSQLSRV04\Administrator', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [run tsql]    Script Date: 5/9/2024 9:32:18 AM ******/
+/****** Object:  Step [run tsql]    Script Date: 5/9/2024 9:34:10 AM ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'run tsql', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
@@ -1217,8 +1217,8 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'RunDaily-
 		@enabled=1, 
 		@freq_type=4, 
 		@freq_interval=1, 
-		@freq_subday_type=1, 
-		@freq_subday_interval=0, 
+		@freq_subday_type=4, 
+		@freq_subday_interval=1, 
 		@freq_relative_interval=0, 
 		@freq_recurrence_factor=0, 
 		@active_start_date=20240509, 
@@ -1236,8 +1236,6 @@ QuitWithRollback:
 EndSave:
 
 GO
-
-
 
 
 

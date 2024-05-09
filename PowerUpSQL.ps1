@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.108
+        Version: 1.109
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15289,7 +15289,11 @@ Function Get-SQLServerLinkCrawl{
 
         [Parameter(Mandatory=$false,
         HelpMessage="Convert collected data to exportable format.")]
-        [switch]$Export
+        [switch]$Export,
+
+        [Parameter(Mandatory=$false,
+        HelpMessage="Convert collected data to exportable format that is easier to work with.")]
+        [switch]$Export2
     )
 
     Begin
@@ -15325,6 +15329,7 @@ Function Get-SQLServerLinkCrawl{
             } 
         }
 
+        # Return exportable format
         if($Export){
             $LinkList = New-Object System.Data.Datatable
             [void]$LinkList.Columns.Add("Instance")
@@ -15340,9 +15345,48 @@ Function Get-SQLServerLinkCrawl{
             }
 
             return $LinkList
-        } else {
-            return $List
+            break
         }
+
+        # Return exportable format 2
+        if($Export2){
+            $LinkList = $output  | 
+            foreach {
+                [string]$StringLinkPath = ""
+                $Path = $_.path 
+                $PathCount = $Path.count - 1       
+                $LinkSrc = $Path[$PathCount - 1]
+                $LinkDes = $Path[$PathCount]
+                $LinkUser = $_.user
+                $LinkDesSysadmin = $_.Sysadmin
+                $Instance = $_.instance 
+                $LinkDesVersion = $_.Version
+                $Path |
+                foreach {
+                    if ( $StringLinkPath -eq ""){
+                        [string]$StringLinkPath = "$_" 
+                    }else{
+                        [string]$StringLinkPath = "$StringLinkPath -> $_"         
+                    }
+                }
+                $Object = New-Object PSObject        
+                $Object | add-member Noteproperty LinkSrc          $LinkSrc
+                $Object | add-member Noteproperty LinkName         $LinkDes
+                $Object | add-member Noteproperty LinkInstance     $Instance     
+                $Object | add-member Noteproperty LinkUser         $LinkUser
+                $Object | add-member Noteproperty LinkSysadmin     $LinkDesSysadmin        
+                $Object | add-member Noteproperty LinkVersion      $LinkDesVersion 
+                $Object | add-member Noteproperty LinkHops         $PathCount 
+                $Object | add-member Noteproperty LinkPath         $StringLinkPath
+                $Object 
+            } 
+           
+            return $LinkList
+            break
+        }
+        
+        # Return powershell object (default)
+        $List
     }
   
     End

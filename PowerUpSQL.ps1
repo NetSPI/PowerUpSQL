@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.111
+        Version: 1.112
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -5653,7 +5653,7 @@ Function  Get-SQLDatabaseSchema
                 FROM 
                     sys.schemas AS s
                 JOIN 
-                    [master].[INFORMATION_SCHEMA].[SCHEMATA] AS i 
+                    [$DbName].[INFORMATION_SCHEMA].[SCHEMATA] AS i 
                 ON 
                     s.name = i.SCHEMA_NAME
                 $SchemaNameFilter

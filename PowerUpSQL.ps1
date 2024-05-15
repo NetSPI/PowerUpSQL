@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.109
+        Version: 1.110
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -9448,9 +9448,9 @@ Function  Get-SQLServiceAccount
             DECLARE		@AgentInstance	 	VARCHAR(250)
             DECLARE		@IntegrationVersion	VARCHAR(250)
             DECLARE		@DBEngineLogin		VARCHAR(100)
-            DECLARE		@AgentLogin		VARCHAR(100)
+            DECLARE		@AgentLogin		    VARCHAR(100)
             DECLARE		@BrowserLogin		VARCHAR(100)
-            DECLARE     	@WriterLogin		VARCHAR(100)
+            DECLARE     @WriterLogin		VARCHAR(100)
             DECLARE		@AnalysisLogin		VARCHAR(100)
             DECLARE		@ReportLogin		VARCHAR(100)
             DECLARE		@IntegrationDtsLogin	VARCHAR(100)
@@ -9504,7 +9504,24 @@ Function  Get-SQLServiceAccount
     End
     {
         # Return data
-        $TblServiceAccount
+        # $TblServiceAccount
+
+        # Create new table
+        $TblNewObject = New-Object -TypeName System.Data.DataTable
+        $null = $TblNewObject.Columns.Add("ComputerName") 
+        $null = $TblNewObject.Columns.Add("Instance") 
+        $null = $TblNewObject.Columns.Add("ServiceType") 
+        $null = $TblNewObject.Columns.Add("ServiceAccount")
+        
+        # Add rows
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"AgentService",$TblServiceAccount.AgentLogin)
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"AnalysisService",$TblServiceAccount.AnalysisLogin)
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"BrowserService",$TblServiceAccount.BrowserLogin)
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"SQLService",$TblServiceAccount.DBEngineLogin)
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"IntegrationService",$TblServiceAccount.IntegrationLogin)
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"ReportService",$TblServiceAccount.ReportLogin)
+        $TblNewObject.Rows.Add($TblServiceAccount.ComputerName,$TblServiceAccount.Instance,"WriterService",$TblServiceAccount.WriterLogin)
+        $TblNewObject
     }
 }
 

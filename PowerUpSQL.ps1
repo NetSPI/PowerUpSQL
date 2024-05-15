@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.110
+        Version: 1.111
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -5559,8 +5559,12 @@ Function  Get-SQLDatabaseSchema
         [string]$SchemaName,
 
         [Parameter(Mandatory = $false,
-        HelpMessage = "Don't select tables from default databases.")]
+        HelpMessage = "Don't select schemas from default databases.")]
         [switch]$NoDefaults,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = "Show database role based schemas. Hidden by default.")]
+        [switch]$ShowRoleSchemas,
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
@@ -5640,13 +5644,20 @@ Function  Get-SQLDatabaseSchema
             # Define Query
             $Query = "  USE $DbName;
                 SELECT  '$ComputerName' as [ComputerName],
-                '$Instance' as [Instance],
-                CATALOG_NAME as [DatabaseName],
-                SCHEMA_NAME as [SchemaName],
-                SCHEMA_OWNER as [SchemaOwner]
-                FROM    [$DbName].[INFORMATION_SCHEMA].[SCHEMATA]
+                    '$Instance' as [Instance],
+                    DB_NAME() AS database_name,
+                    s.schema_id AS schema_id,
+                    s.name AS schema_name,
+                    s.principal_id AS owner_id,
+                    USER_NAME(s.principal_id) AS owner_name
+                FROM 
+                    sys.schemas AS s
+                JOIN 
+                    [master].[INFORMATION_SCHEMA].[SCHEMATA] AS i 
+                ON 
+                    s.name = i.SCHEMA_NAME
                 $SchemaNameFilter
-            ORDER BY SCHEMA_NAME"
+                ORDER BY schema_name;"
 
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose
@@ -5659,7 +5670,11 @@ Function  Get-SQLDatabaseSchema
     End
     {
         # Return data
-        $TblSchemas
+        if($ShowRoleSchemas){
+            $TblResults 
+        }else{
+            $TblResults | Where schema_id -lt 1000
+        }
     }
 }
 

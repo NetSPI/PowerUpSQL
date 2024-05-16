@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.114
+        Version: 1.115
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4903,17 +4903,18 @@ Function  Get-SQLTableTemp
         }
 
         # Define Query
-        $Query = "SELECT 'tempdb' as 'Database_Name',
+        $Query = "SELECT SERVERPROPERTY('MachineName') as Computer_Name,
+                'tempdb' as 'Database_Name',
                 SCHEMA_NAME(t1.schema_id) AS 'Schema_Name',
                 t1.name AS 'Table_Name',
-                t2.name AS 'Column_Name',
-                t3.name AS 'Column_Type',
                 CASE
                     WHEN (SELECT CASE WHEN LEN(t1.name) - LEN(REPLACE(t1.name,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
                     WHEN t1.name LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t1.name) - LEN(REPLACE(t1.name,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
                     WHEN t1.name NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t1.name) - LEN(REPLACE(t1.name,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
                     ELSE NULL
                 END AS Table_Type,
+                t2.name AS 'Column_Name',
+                t3.name AS 'Column_Type',
                 t1.is_ms_shipped,
                 t1.is_published,
                 t1.is_schema_published,

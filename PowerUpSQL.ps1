@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.115
+        Version: 1.116
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4904,6 +4904,7 @@ Function  Get-SQLTableTemp
 
         # Define Query
         $Query = "SELECT SERVERPROPERTY('MachineName') as Computer_Name,
+                @@SERVERNAME AS Instance,
                 'tempdb' as 'Database_Name',
                 SCHEMA_NAME(t1.schema_id) AS 'Schema_Name',
                 t1.name AS 'Table_Name',

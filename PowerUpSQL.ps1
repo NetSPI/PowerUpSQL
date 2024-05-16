@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.112
+        Version: 1.113
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4743,6 +4743,191 @@ Function  Get-SQLTable
             # Append results
             $TblTables = $TblTables + $TblResults
         }
+    }
+
+    End
+    {
+        # Return data
+        $TblTables
+    }
+}
+
+# ----------------------------------
+#  Get-SQLTableTemp
+# ----------------------------------
+# Author: Scott Sutherland
+Function  Get-SQLTableTemp
+{
+    <#
+            .SYNOPSIS
+            Returns table information from target SQL Servers.
+            .PARAMETER Username
+            SQL Server or domain account to authenticate with.
+            .PARAMETER Password
+            SQL Server or domain account password to authenticate with.
+            .PARAMETER Credential
+            SQL Server credential.
+            .PARAMETER Instance
+            SQL Server instance to connection to.                        
+            .EXAMPLE
+            PS C:\> Get-SQLTableTemp -Instance SQLServer1\STANDARDDEV2014
+            
+            Table_Name          : #B6E36D7A
+            Column_Name         : SnapshotDataId
+            Column_Type         : uniqueidentifier
+            Table_Type          : TableVariable
+            is_ms_shipped       : False
+            is_published        : False
+            is_schema_published : False
+            create_date         : 5/14/2024 6:09:48 PM
+            modify_date         : 5/14/2024 6:09:48 PM 
+
+            Table_Name          : #LocalTempTbl____________________________________________
+                                  _________________________________________________________
+                                  __00000000002D
+            Column_Name         : Testing123
+            Column_Type         : text
+            Table_Type          : LocalTempTable
+            is_ms_shipped       : False
+            is_published        : False
+            is_schema_published : False
+            create_date         : 5/15/2024 4:37:46 PM
+            modify_date         : 5/15/2024 4:37:46 PM
+
+            Table_Name          : ##GlobalTempTbl
+            Column_Name         : Spy_id
+            Column_Type         : int
+            Table_Type          : GlobalTempTable
+            is_ms_shipped       : False
+            is_published        : False
+            is_schema_published : False
+            create_date         : 5/15/2024 4:38:10 PM
+            modify_date         : 5/15/2024 4:38:10 PM
+
+            Table_Name          : ##GlobalTempTbl
+            Column_Name         : SpyName
+            Column_Type         : text
+            Table_Type          : GlobalTempTable
+            is_ms_shipped       : False
+            is_published        : False
+            is_schema_published : False
+            create_date         : 5/15/2024 4:38:10 PM
+            modify_date         : 5/15/2024 4:38:10 PM
+
+            Table_Name          : ##GlobalTempTbl
+            Column_Name         : RealName
+            Column_Type         : text
+            Table_Type          : GlobalTempTable
+            is_ms_shipped       : False
+            is_published        : False
+            is_schema_published : False
+            create_date         : 5/15/2024 4:38:10 PM
+            modify_date         : 5/15/2024 4:38:10 PM
+            .EXAMPLE
+            PS C:\> Get-SQLInstanceDomain | Get-SQLTableTemp -Verbose 
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account to authenticate with.')]
+        [string]$Username,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server or domain account password to authenticate with.')]
+        [string]$Password,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Windows credentials.')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter(Mandatory = $false,
+                ValueFromPipelineByPropertyName = $true,
+        HelpMessage = 'SQL Server instance to connection to.')]
+        [string]$Instance,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Suppress verbose errors.  Used when function is wrapped.')]
+        [switch]$SuppressVerbose
+    )
+
+    Begin
+    {
+        $TblTables = New-Object -TypeName System.Data.DataTable
+
+        # Setup table filter
+        if($TableName)
+        {
+            $TableFilter = " where table_name like '%$TableName%'"
+        }
+        else
+        {
+            $TableFilter = ''
+        }
+    }
+
+    Process
+    {
+        # Note: Tables queried by this function can be executed by any login.
+
+        # Parse computer name from the instance
+        $ComputerName = Get-ComputerNameFromInstance -Instance $Instance
+
+        # Default connection to local default instance
+        if(-not $Instance)
+        {
+            $Instance = $env:COMPUTERNAME
+        }
+
+        # Test connection to instance
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | Where-Object -FilterScript {
+            $_.Status -eq 'Accessible'
+        }
+        if($TestConnection)
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Success."
+                Write-Verbose -Message "$Instance : Grabbing tables from databases below:"
+            }
+        }
+        else
+        {
+            if( -not $SuppressVerbose)
+            {
+                Write-Verbose -Message "$Instance : Connection Failed."
+            }
+            return
+        }
+
+        # Define Query
+        $Query = "SELECT 
+            t1.name AS 'Table_Name',
+            t2.name AS 'Column_Name',
+            t3.name AS 'Column_Type',
+            CASE
+                WHEN (SELECT CASE WHEN LEN(t1.name) - LEN(REPLACE(t1.name,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
+                WHEN t1.name LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t1.name) - LEN(REPLACE(t1.name,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
+                WHEN t1.name NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t1.name) - LEN(REPLACE(t1.name,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
+                ELSE NULL
+            END AS Table_Type,
+            t1.is_ms_shipped,
+            t1.is_published,
+            t1.is_schema_published,
+            t1.create_date,
+            t1.modify_date
+        FROM tempdb.sys.objects AS t1
+        JOIN tempdb.sys.columns AS t2 ON t1.OBJECT_ID = t2.OBJECT_ID
+        JOIN sys.types AS t3 ON t2.system_type_id = t3.system_type_id
+        WHERE t1.name LIKE '#%';"
+
+        # Execute Query
+        $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+
+        # Append results
+        $TblTables = $TblTables + $TblResults        
     }
 
     End
@@ -26652,7 +26837,7 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
-        # Getting DatabaseUsers
+        # Getting Database Users
         Write-Verbose -Message "$Instance - Getting database users for databases..."
         $Results = Get-SQLDatabaseUser -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
@@ -26666,7 +26851,7 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
-        # Getting DatabasePrivs
+        # Getting Database Privs
         Write-Verbose -Message "$Instance - Getting privileges for databases..."
         $Results = Get-SQLDatabasePriv -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
@@ -26680,7 +26865,7 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
-        # Getting DatabaseRoles
+        # Getting Database Roles
         Write-Verbose -Message "$Instance - Getting database roles..."
         $Results = Get-SQLDatabaseRole -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
@@ -26708,7 +26893,7 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
-        # Getting DatabaseTables
+        # Getting Database Schemas
         Write-Verbose -Message "$Instance - Getting database schemas..."
         $Results = Get-SQLDatabaseSchema -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
@@ -26722,7 +26907,21 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
-        # Getting DatabaseTables
+        # Getting Temp Tables
+        Write-Verbose -Message "$Instance - Getting temp tables..."
+        $Results = Get-SQLTableTemp -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_temp_tables.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_temp_tables.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Database Tables
         Write-Verbose -Message "$Instance - Getting database tables..."
         $Results = Get-SQLTable -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -NoDefaults
         if($xml)
@@ -27056,38 +27255,7 @@ Function Invoke-SQLDumpInfo
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_oledbproviders.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
-        }
-
-        # Getting temp table information
-        Write-Verbose -Message "$Instance - Getting temp table information..."
-        $Query = @'
-                -- List temp tables, columns, and column types
-                SELECT t1.name as 'Table_Name',
-	                   t2.name as 'Column_Name',
-	                   t3.name as 'Column_Type',
-	                   t1.create_date,
-	                   t1.modify_date,
-	                   t1.parent_object_id,
-	                   OBJECT_ID(t1.parent_object_id) as parent_object,
-	                   (SELECT CASE WHEN (select len(t1.name) - len(replace(t1.name,'#',''))) > 1 THEN 1 ELSE 0 END) as GlobalTempTable, 
-	                   (SELECT CASE WHEN t1.name like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 ELSE 0 END) as LocalTempTable,
-	                   (SELECT CASE WHEN t1.name not like '%[_]%' AND (select len(t1.name) - len(replace(t1.name,'#',''))) = 1 THEN 1 ELSE 0 END) as TableVariable
-                FROM tempdb.sys.objects AS t1
-                JOIN tempdb.sys.columns AS t2 ON t1.OBJECT_ID = t2.OBJECT_ID
-                JOIN sys.types AS t3 ON t2.system_type_id = t3.system_type_id
-                WHERE t1.name like '#%';
-'@
-        $Results = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose 
-        if($xml)
-        {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_temp_tables.xml'
-            $Results | Export-Clixml $OutPutPath
-        }
-        else
-        {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_temp_tables.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath
-        }
+        }        
 
         Write-Verbose -Message "$Instance - END"
     }

@@ -1,3 +1,8 @@
+-- Script: Get-TempTableColumns.sql
+-- Author: Scott Sutherland
+-- Description: Return a list of all temp table types.
+-- Include table variables, local temp tables, and global temp tables.
+
 SELECT 
     t1.name AS 'Table_Name',
     t2.name AS 'Column_Name',

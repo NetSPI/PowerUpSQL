@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.120
+        Version: 1.121
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -15600,12 +15600,12 @@ Function Get-SQLServerLinkCrawl{
 
         # Return exportable format 2
         if($Export2){
-            $LinkList = $output  | 
+            $LinkList = $List | 
             foreach {
                 [string]$StringLinkPath = ""
                 $Path = $_.path 
                 $PathCount = $Path.count - 1       
-                $LinkSrc = $Path[$PathCount - 1]
+                $LinkSrc = $Path[$PathCount -1]
                 $LinkDes = $Path[$PathCount]
                 $LinkUser = $_.user
                 $LinkDesSysadmin = $_.Sysadmin

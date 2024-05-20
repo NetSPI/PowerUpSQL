@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.116
+        Version: 1.117
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4732,7 +4732,12 @@ Function  Get-SQLTable
                 TABLE_CATALOG AS [DatabaseName],
                 TABLE_SCHEMA AS [SchemaName],
                 TABLE_NAME as [TableName],
-                TABLE_TYPE as [TableType]
+                CASE
+                    WHEN (SELECT CASE WHEN LEN(TABLE_NAME) - LEN(REPLACE(TABLE_NAME,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
+                    WHEN TABLE_NAME LIKE '%[_]%' AND (SELECT CASE WHEN LEN(TABLE_NAME) - LEN(REPLACE(TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
+                    WHEN TABLE_NAME NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(TABLE_NAME) - LEN(REPLACE(TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
+                    ELSE  TABLE_TYPE
+                END AS Table_Type
                 FROM [$DbName].[INFORMATION_SCHEMA].[TABLES]
                 $TableFilter
             ORDER BY TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME"

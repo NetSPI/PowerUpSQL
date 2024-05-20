@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.121
+        Version: 1.122
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4660,7 +4660,7 @@ Function  Get-SQLTable
         # Setup table filter
         if($TableName)
         {
-            $TableFilter = " WHERE t.TABLE_NAME like '%$TableName%'"
+            $TableFilter = " WHERE t.TableName like '%$TableName%'"
         }
         else
         {
@@ -4729,15 +4729,15 @@ Function  Get-SQLTable
             $Query = "  USE $DbName;
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                t.TABLE_CATALOG AS [DATABASE_NAME],
-                t.TABLE_SCHEMA AS [SCHEMA_NAME],
-                t.TABLE_NAME AS [TABLE_NAME],
+                t.TABLE_CATALOG AS [DatabaseName],
+                t.TABLE_SCHEMA AS [SchemaName],
+                t.TABLE_NAME AS [TableName],
                 CASE
                     WHEN (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
                     WHEN t.TABLE_NAME LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
                     WHEN t.TABLE_NAME NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
                     ELSE t.TABLE_TYPE
-                END AS Table_Type,
+                END AS TableType,
                 s.is_ms_shipped,
                 s.is_published,
                 s.is_schema_published,
@@ -4747,7 +4747,7 @@ Function  Get-SQLTable
             JOIN sys.tables st ON t.TABLE_NAME = st.name AND t.TABLE_SCHEMA = OBJECT_SCHEMA_NAME(st.object_id)
             JOIN sys.objects s ON st.object_id = s.object_id
             $TableFilter
-            ORDER BY TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME"
+            ORDER BY t.TABLE_CATALOG, t.TABLE_SCHEMA, t.TABLE_NAME"
 
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

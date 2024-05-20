@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.118
+        Version: 1.119
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -5047,7 +5047,7 @@ Function  Get-SQLColumn
         # Setup table filter
         if($TableName)
         {
-            $TableNameFilter = " and TABLE_NAME like '%$TableName%'"
+            $TableNameFilter = " and t.TABLE_NAME like '%$TableName%'"
         }
         else
         {
@@ -5057,7 +5057,7 @@ Function  Get-SQLColumn
         # Setup column filter
         if($ColumnName)
         {
-            $ColumnFilter = " and column_name like '$ColumnName'"
+            $ColumnFilter = " and c.COLUMN_NAME like '$ColumnName'"
         }
         else
         {
@@ -5067,7 +5067,7 @@ Function  Get-SQLColumn
         # Setup column filter
         if($ColumnNameSearch)
         {
-            $ColumnSearchFilter = " and column_name like '%$ColumnNameSearch%'"
+            $ColumnSearchFilter = " and c.COLUMN_NAME like '%$ColumnNameSearch%'"
         }
         else
         {
@@ -5087,11 +5087,11 @@ Function  Get-SQLColumn
 
                 if($i -eq ($Keywords.Count -1))
                 {
-                    $ColumnSearchFilter = "and column_name like '%$Keyword%'"
+                    $ColumnSearchFilter = "and c.COLUMN_NAME like '%$Keyword%'"
                 }
                 else
                 {
-                    $ColumnSearchFilter = $ColumnSearchFilter + " or column_name like '%$Keyword%'"
+                    $ColumnSearchFilter = $ColumnSearchFilter + " or c.COLUMN_NAME like '%$Keyword%'"
                 }
             }
         }
@@ -5152,17 +5152,34 @@ Function  Get-SQLColumn
             $Query = "  USE $DbName;
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                TABLE_CATALOG AS [DatabaseName],
-                TABLE_SCHEMA AS [SchemaName],
-                TABLE_NAME as [TableName],
-                COLUMN_NAME as [ColumnName],
-                DATA_TYPE as [ColumnDataType],
-                CHARACTER_MAXIMUM_LENGTH as [ColumnMaxLength]
-                FROM	[$DbName].[INFORMATION_SCHEMA].[COLUMNS] WHERE 1=1
-                $ColumnSearchFilter
-                $ColumnFilter
-                $TableNameFilter
-            ORDER BY TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME"
+                t.TABLE_CATALOG AS [DatabaseName],
+                t.TABLE_SCHEMA AS [SchemaName],
+                t.TABLE_NAME as [TableName],
+                CASE
+                    WHEN (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
+                    WHEN t.TABLE_NAME LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
+                    WHEN t.TABLE_NAME NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
+                    ELSE t.TABLE_TYPE
+                END AS [TableType],
+                c.COLUMN_NAME as [ColumnName],
+                c.DATA_TYPE as [ColumnDataType],
+	            c.CHARACTER_MAXIMUM_LENGTH as [ColumnMaxLength],
+                st.is_ms_shipped,
+                st.is_published,
+                st.is_schema_published,
+                st.create_date,
+                st.modify_date AS modified_date
+            FROM [$DbName].[INFORMATION_SCHEMA].[TABLES] t
+            JOIN sys.tables st ON t.TABLE_NAME = st.name AND t.TABLE_SCHEMA = OBJECT_SCHEMA_NAME(st.object_id)
+            JOIN sys.objects s ON st.object_id = s.object_id
+            LEFT JOIN sys.extended_properties ep ON s.object_id = ep.major_id 
+                AND ep.minor_id = 0 
+            JOIN [$DbName].[INFORMATION_SCHEMA].[COLUMNS] c ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
+            WHERE 1=1
+            $ColumnSearchFilter
+            $ColumnFilter
+            $TableNameFilter
+            ORDER BY t.TABLE_CATALOG, t.TABLE_SCHEMA, t.TABLE_NAME, c.ORDINAL_POSITION"
 
             # Execute Query
             $TblResults = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -SuppressVerbose

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.117
+        Version: 1.118
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4660,7 +4660,7 @@ Function  Get-SQLTable
         # Setup table filter
         if($TableName)
         {
-            $TableFilter = " where table_name like '%$TableName%'"
+            $TableFilter = " WHERE TABLE_NAME like '%$TableName%'"
         }
         else
         {
@@ -4729,17 +4729,24 @@ Function  Get-SQLTable
             $Query = "  USE $DbName;
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                TABLE_CATALOG AS [DatabaseName],
-                TABLE_SCHEMA AS [SchemaName],
-                TABLE_NAME as [TableName],
+                t.TABLE_CATALOG AS [DATABASE_NAME],
+                t.TABLE_SCHEMA AS [SCHEMA_NAME],
+                t.TABLE_NAME AS [TABLE_NAME],
                 CASE
-                    WHEN (SELECT CASE WHEN LEN(TABLE_NAME) - LEN(REPLACE(TABLE_NAME,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
-                    WHEN TABLE_NAME LIKE '%[_]%' AND (SELECT CASE WHEN LEN(TABLE_NAME) - LEN(REPLACE(TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
-                    WHEN TABLE_NAME NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(TABLE_NAME) - LEN(REPLACE(TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
-                    ELSE  TABLE_TYPE
-                END AS Table_Type
-                FROM [$DbName].[INFORMATION_SCHEMA].[TABLES]
-                $TableFilter
+                    WHEN (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) > 1 THEN 1 ELSE 0 END) = 1 THEN 'GlobalTempTable'
+                    WHEN t.TABLE_NAME LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'LocalTempTable'
+                    WHEN t.TABLE_NAME NOT LIKE '%[_]%' AND (SELECT CASE WHEN LEN(t.TABLE_NAME) - LEN(REPLACE(t.TABLE_NAME,'#','')) = 1 THEN 1 ELSE 0 END) = 1 THEN 'TableVariable'
+                    ELSE t.TABLE_TYPE
+                END AS Table_Type,
+                s.is_ms_shipped,
+                s.is_published,
+                s.is_schema_published,
+                s.create_date,
+                s.modify_date AS modified_date
+            FROM [$DbName].[INFORMATION_SCHEMA].[TABLES] t
+            JOIN sys.tables st ON t.TABLE_NAME = st.name AND t.TABLE_SCHEMA = OBJECT_SCHEMA_NAME(st.object_id)
+            JOIN sys.objects s ON st.object_id = s.object_id
+            $TableFilter
             ORDER BY TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME"
 
             # Execute Query

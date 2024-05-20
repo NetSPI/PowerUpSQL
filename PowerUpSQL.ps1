@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.119
+        Version: 1.120
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -4660,7 +4660,7 @@ Function  Get-SQLTable
         # Setup table filter
         if($TableName)
         {
-            $TableFilter = " WHERE TABLE_NAME like '%$TableName%'"
+            $TableFilter = " WHERE t.TABLE_NAME like '%$TableName%'"
         }
         else
         {

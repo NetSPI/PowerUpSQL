@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.126
+        Version: 1.128
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -12260,21 +12260,25 @@ Function  Get-SQLTriggerDml
             $Query = "  use [$DbName];
                 SELECT  '$ComputerName' as [ComputerName],
                 '$Instance' as [Instance],
-                '$DbName' as [DatabaseName],
-                name as [TriggerName],
-                object_id as [TriggerId],
+                '$DbName' AS [DatabaseName],
+                SCHEMA_NAME(o.schema_id) AS [SchemaName],
+                t.name AS [TriggerName],
+                t.object_id AS [TriggerId],
                 [TriggerType] = 'DATABASE',
-                type_desc as [ObjectType],
-                parent_class_desc as [ObjectClass],
-                OBJECT_DEFINITION(OBJECT_ID) as [TriggerDefinition],
-                create_date,
-                modify_date,
-                is_ms_shipped,
-                is_disabled,
-                is_not_for_replication,
-                is_instead_of_trigger
-                FROM [$DbName].[sys].[triggers] WHERE 1=1
-                $TriggerNameFilter"
+                t.type_desc AS [ObjectType],
+                t.parent_class_desc AS [ObjectClass],
+                OBJECT_DEFINITION(t.object_id) AS [TriggerDefinition],
+                t.create_date,
+                t.modify_date,
+                t.is_ms_shipped,
+                t.is_disabled,
+                t.is_not_for_replication,
+                t.is_instead_of_trigger
+            FROM 
+                [sys].[triggers] t
+            INNER JOIN 
+                [sys].[objects] o ON t.parent_id = o.object_id
+            WHERE 1=1 $TriggerNameFilter"
 
             # Execute Query
             $TblDmlTriggersTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -27123,6 +27127,21 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
+
+        # Getting Stored Procedures that use Global Temp Tables
+        Write-Verbose -Message "$Instance - Getting stored procedures that use global temp tables..."
+        $Results = Get-SQLStoredProcedure -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | where ProcedureDefinition -like "*##*"
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_globaltmptbl.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Database_stored_procedure_globaltmptbl.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Custom XP Stored Procedures 
         Write-Verbose -Message "$Instance - Getting custom extended stored procedures..."
         $Results = Get-SQLStoredProcedureXP -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -27207,6 +27226,20 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
+        # Getting Triggers DML that use Global Temp Tables
+        Write-Verbose -Message "$Instance - Getting DML triggers that use global temp tables..."
+        $Results = Get-SQLTriggerDml -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | where TriggerDefinition -like "*##*"
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml_globaltmptbl.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_dml_globaltmptbl.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
         # Getting Triggers DDL
         Write-Verbose -Message "$Instance - Getting DDL triggers..."
         $Results = Get-SQLTriggerDdl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
@@ -27218,6 +27251,20 @@ Function Invoke-SQLDumpInfo
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_ddl.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Triggers DDL that use Global Temp Tables
+        Write-Verbose -Message "$Instance - Getting DDL triggers that use global temp tables..."
+        $Results = Get-SQLTriggerDdl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose | where TriggerDefinition -like "*##*"
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_ddl_globaltmptbl.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_triggers_ddl_globaltmptbl.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -27263,8 +27310,8 @@ Function Invoke-SQLDumpInfo
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
-        # Getting Agent Jobs Information
-        Write-Verbose -Message "$Instance - Getting Agent Jobs information..."
+        # Getting Agent Jobs 
+        Write-Verbose -Message "$Instance - Getting Agent Jobs..."
         $Results = Get-SQLAgentJob -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
         if($xml)
         {
@@ -27274,6 +27321,20 @@ Function Invoke-SQLDumpInfo
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_agent_jobs.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Agent Jobs that use  Global Temp Tables
+        Write-Verbose -Message "$Instance - Getting Agent Jobs that use global temp tables..."
+        $Results = Get-SQLAgentJob -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose -Keyword "##"
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_agent_job_globaltmptbl.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_agent_jobs_globaltmptbl.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 

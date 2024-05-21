@@ -682,7 +682,7 @@ GO
 USE testdb3;
 GO
 
-CREATE TRIGGER trg_InsertHello
+CREATE TRIGGER trigger_dml_gtt
 ON NOCList
 AFTER INSERT
 AS

@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.128
+        Version: 1.129
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -12625,9 +12625,9 @@ Function  Get-SQLStoredProcedureCLR
         # Check count
         $CLRCount = $TblAssemblyFiles.Rows.Count
         if ($CLRCount -gt 0){
-            Write-Verbose "$Instance : Found $CLRCount CLR stored procedures"
+            Write-Verbose "$Instance : - Found $CLRCount CLR stored procedures"
         }else{
-            Write-Verbose "$Instance : No CLR stored procedures found."    
+            Write-Verbose "$Instance : - No CLR stored procedures found."    
         }
 
         # Return data
@@ -26810,7 +26810,12 @@ Function Invoke-SQLDumpInfo
 
         [Parameter(Mandatory = $false,
         HelpMessage = 'Write output to csv files.')]
-        [switch]$csv
+        [switch]$csv,
+
+        [Parameter(Mandatory = $false,
+        HelpMessage = 'Crawl available SQL Server links.')]
+        [switch]$CrawlLinks
+        
     )
 
     Begin
@@ -27068,20 +27073,6 @@ Function Invoke-SQLDumpInfo
         else
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_rolemembers.csv'
-            $Results | Export-Csv -NoTypeInformation $OutPutPath
-        }
-
-        # Getting Server Links
-        Write-Verbose -Message "$Instance - Getting server links..."
-        $Results = Get-SQLServerLink -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
-        if($xml)
-        {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links.xml'
-            $Results | Export-Clixml $OutPutPath
-        }
-        else
-        {
-            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
         }
 
@@ -27350,7 +27341,37 @@ Function Invoke-SQLDumpInfo
         {
             $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_oledbproviders.csv'
             $Results | Export-Csv -NoTypeInformation $OutPutPath
-        }        
+        } 
+        
+        # Getting Server Links
+        Write-Verbose -Message "$Instance - Getting server links..."
+        $Results = Get-SQLServerLink -Instance $Instance -Username $Username -Password $Password -Credential $Credential -SuppressVerbose
+        if($xml)
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links.xml'
+            $Results | Export-Clixml $OutPutPath
+        }
+        else
+        {
+            $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links.csv'
+            $Results | Export-Csv -NoTypeInformation $OutPutPath
+        }
+
+        # Getting Server Links via Crawl
+        if($CrawlLinks){
+            Write-Verbose -Message "$Instance - Crawling linked servers..."
+            $Results = Get-SQLServerLinkCrawl -Instance $Instance -Username $Username -Password $Password -Credential $Credential -Export2
+            if($xml)
+            {
+                $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links_crawl.xml'
+                $Results | Export-Clixml $OutPutPath
+            }
+            else
+            {
+                $OutPutPath = "$OutFolder\$OutPutInstance"+'_Server_links_crawl.csv'
+                $Results | Export-Csv -NoTypeInformation $OutPutPath
+            }
+        }               
 
         Write-Verbose -Message "$Instance - END"
     }

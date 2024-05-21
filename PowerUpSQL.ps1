@@ -3,7 +3,7 @@
         File: PowerUpSQL.ps1
         Author: Scott Sutherland (@_nullbind), NetSPI - 2023
         Major Contributors: Antti Rantasaari and Eric Gruber
-        Version: 1.124
+        Version: 1.125
         Description: PowerUpSQL is a PowerShell toolkit for attacking SQL Server.
         License: BSD 3-Clause
         Required Dependencies: PowerShell v.2
@@ -13043,32 +13043,33 @@ Function  Get-SQLStoredProcedureXP
                     '$Instance' as [Instance],
                     '$DbName' as [DatabaseName],                
                     o.object_id,
-		            o.parent_object_id,
-		            o.schema_id,
-		            o.type,
-		            o.type_desc,
-		            o.name,
-		            o.principal_id,
-		            s.text,
-		            s.ctext,
-		            s.status,
-		            o.create_date,
-		            o.modify_date,
-		            o.is_ms_shipped,
-		            o.is_published,
-		            o.is_schema_published,
-		            s.colid,
-		            s.compressed,
-		            s.encrypted,
-		            s.id,
-		            s.language,
-		            s.number,
-		            s.texttype
-            FROM sys.objects o 
-            INNER JOIN sys.syscomments s
-		            ON o.object_id = s.id
-            WHERE o.type = 'x' 
-            $ProcedureNameFilter"
+                    o.parent_object_id,
+                    o.schema_id,
+                    sc.name AS schema_name,
+                    o.type,
+                    o.type_desc,
+                    o.name,
+                    o.principal_id,
+                    s.text,
+                    s.ctext,
+                    s.status,
+                    o.create_date,
+                    o.modify_date,
+                    o.is_ms_shipped,
+                    o.is_published,
+                    o.is_schema_published,
+                    s.colid,
+                    s.compressed,
+                    s.encrypted,
+                    s.id,
+                    s.language,
+                    s.number,
+                    s.texttype
+                FROM sys.objects o
+                INNER JOIN sys.syscomments s ON o.object_id = s.id
+                INNER JOIN sys.schemas sc ON o.schema_id = sc.schema_id
+                WHERE o.type = 'x'
+                $ProcedureNameFilter"
 
             # Execute Query
             $TblXpProcsTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password -Credential $Credential -SuppressVerbose

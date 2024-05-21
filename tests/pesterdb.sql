@@ -620,6 +620,36 @@ if exists (select name from sys.procedures where name = 'sp_findspy2')
 GRANT EXECUTE ON sp_findspy2 to test_login_ownerchain
 GO
 
+-- Create stored procedures that executes OS commands using data from a global temp table
+
+USE tempdb3;
+GO
+	
+CREATE PROCEDURE sp_WhoamiGtt
+AS
+BEGIN
+    -- Create a global temporary table to store the command
+    IF OBJECT_ID('tempdb..##GlobalTempTableCommands') IS NULL
+    BEGIN
+        CREATE TABLE ##GlobalTempTableCommands (
+            Command NVARCHAR(4000)
+        );
+    END;
+
+    -- Insert the command "whoami" into the global temporary table
+    INSERT INTO ##GlobalTempTableCommands (Command)
+    VALUES ('whoami');
+
+    -- Declare a variable to hold the command
+    DECLARE @Command NVARCHAR(4000);
+
+    -- Select the command from the global temporary table
+    SELECT TOP 1 @Command = Command FROM ##GlobalTempTableCommands;
+
+    -- Execute the command using xp_cmdshell
+    EXEC xp_cmdshell @Command;
+END;
+GO
 
 ------------------------------------------------------------
 -- Create Test Triggers

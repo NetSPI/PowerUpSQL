@@ -15418,7 +15418,11 @@ Function  Get-SQLServerLoginDefaultPw
         }else{
             Write-Verbose "$Instance : No instance match found."
             return 
-        }        
+        }
+
+ 	if($TblResultsTemp.GetType().Name  -eq  "DataRow"){
+        	$TblResultsTemp = ,$TblResultsTemp
+	} 
 
         # Test login
 		#Write-Verbose ($instance).ToString()
@@ -15428,8 +15432,8 @@ Function  Get-SQLServerLoginDefaultPw
 		# Grab and iterate username and password
 		for($i=0; $i -lt $TblResultsTemp.count; $i++){
 			#Write-Verbose $TblResultsTemp
-			$CurrentUsername = $TblResultsTemp.username[$i]
-			$CurrentPassword = $TblResultsTemp.password[$i]
+			$CurrentUsername = $TblResultsTemp[$i].username
+			$CurrentPassword = $TblResultsTemp[$i].password
 			$LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose
 			if($LoginTest){
 
